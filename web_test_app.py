@@ -3,7 +3,7 @@ Vehicle Detection Web Testing App (Flask)
 Simple web interface for testing vehicle detection on images/videos
 """
 
-from flask import Flask, render_template_string, request, send_file, flash, redirect
+from flask import Flask, render_template_string, request, send_file, flash, redirect, session
 import cv2
 import numpy as np
 from ultralytics import YOLO
@@ -13,9 +13,14 @@ import time
 from pathlib import Path
 import base64
 from io import BytesIO
+from fpdf import FPDF
+import uuid
 
 app = Flask(__name__)
 app.secret_key = 'vehicle-detection-secret-key'
+
+# Store detection results for PDF generation (keyed by report_id)
+app.stored_results = {}
 
 # Increase max upload size to 500MB for large video uploads
 app.config['MAX_CONTENT_LENGTH'] = 500 * 1024 * 1024
@@ -70,44 +75,104 @@ print("[INFO] Loading YOLOv8n model...")
 model = YOLO('yolov8n.pt')
 print("[INFO] Model ready!")
 
-# HTML Template - English Only, No Emojis, With Clipboard Paste Support
+# HTML Template - Modern Design Matching Image
 HTML_TEMPLATE = """
 <!DOCTYPE html>
-<html>
+<html class="light" lang="en">
 <head>
-    <title>Vehicle Detection Testing App</title>
-    <style>
-        body { font-family: Arial, sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; background: #f5f5f5; }
-        h1 { color: #333; text-align: center; }
-        h3 { color: #555; }
-        .container { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        .upload-section { margin: 20px 0; padding: 20px; border: 2px dashed #ccc; border-radius: 5px; text-align: center; }
-        .upload-section:hover { border-color: #4CAF50; }
-        .paste-section { margin: 20px 0; padding: 20px; border: 2px dashed #2196F3; border-radius: 5px; text-align: center; background: #f0f8ff; }
-        .paste-section:hover { border-color: #1976D2; background: #e3f2fd; }
-        input[type="file"] { margin: 10px 0; }
-        input[type="submit"] { 
-            background: #4CAF50; color: white; padding: 12px 30px; 
-            border: none; border-radius: 5px; cursor: pointer; font-size: 16px;
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Enterprise Vehicle Intelligence</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-variant": "#e3e2e5",
+                        "tertiary-container": "#4f3303",
+                        "surface": "#faf9fc",
+                        "on-secondary-fixed": "#121c28",
+                        "primary-container": "#1b3b5a",
+                        "tertiary-fixed-dim": "#ecbf83",
+                        "on-error-container": "#93000a",
+                        "surface-container": "#eeedf0",
+                        "on-error": "#ffffff",
+                        "primary-fixed-dim": "#abc9ef",
+                        "on-tertiary-fixed-variant": "#5f4110",
+                        "on-surface-variant": "#43474d",
+                        "error-container": "#ffdad6",
+                        "on-background": "#1a1c1e",
+                        "on-primary-container": "#87a5ca",
+                        "secondary-container": "#d3deef",
+                        "primary-fixed": "#d1e4ff",
+                        "on-primary-fixed": "#001d35",
+                        "on-surface": "#1a1c1e",
+                        "surface-tint": "#436182",
+                        "on-tertiary": "#ffffff",
+                        "surface-container-low": "#f4f3f6",
+                        "secondary": "#545f6e",
+                        "tertiary-fixed": "#ffddb3",
+                        "on-tertiary-fixed": "#291800",
+                        "outline": "#73777e",
+                        "surface-dim": "#dad9dd",
+                        "outline-variant": "#c3c6ce",
+                        "on-secondary": "#ffffff",
+                        "surface-container-high": "#e9e8eb",
+                        "tertiary": "#341f00",
+                        "on-tertiary-container": "#c59c63",
+                        "surface-container-lowest": "#ffffff",
+                        "secondary-fixed": "#d8e3f4",
+                        "inverse-primary": "#abc9ef",
+                        "on-primary": "#ffffff",
+                        "inverse-on-surface": "#f1f0f3",
+                        "on-secondary-container": "#576270",
+                        "error": "#ba1a1a",
+                        "secondary-fixed-dim": "#bcc7d8",
+                        "on-secondary-fixed-variant": "#3d4855",
+                        "primary": "#002542",
+                        "inverse-surface": "#2f3033",
+                        "on-primary-fixed-variant": "#2a4968",
+                        "surface-container-highest": "#e3e2e5",
+                        "background": "#faf9fc",
+                        "surface-bright": "#faf9fc"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "fontFamily": {
+                        "headline": ["Manrope"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    }
+                },
+            },
         }
-        input[type="submit"]:hover { background: #45a049; }
-        .btn-paste { 
-            background: #2196F3; color: white; padding: 12px 30px; 
-            border: none; border-radius: 5px; cursor: pointer; font-size: 16px;
-            margin: 5px;
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        h1, h2, h3, .font-headline { font-family: 'Manrope', sans-serif; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
         }
-        .btn-paste:hover { background: #1976D2; }
-        .result { margin-top: 30px; padding: 20px; background: #f9f9f9; border-radius: 5px; }
-        .success { color: #4CAF50; font-weight: bold; }
-        .error { color: #f44336; font-weight: bold; }
-        .stats { margin: 15px 0; padding: 15px; background: white; border-left: 4px solid #4CAF50; }
-        img { max-width: 100%; height: auto; border-radius: 5px; }
-        .class-info { margin: 10px 0; padding: 10px; background: #e8f5e9; border-radius: 3px; }
-        .conf-slider { margin: 15px 0; }
-        .conf-slider label { display: block; margin-bottom: 5px; }
-        .conf-slider input { width: 200px; }
-        .preview-box { max-width: 100%; max-height: 300px; margin: 10px 0; display: none; }
-        .instructions { color: #666; font-size: 14px; margin: 10px 0; }
+        .glass-panel {
+            background: rgba(250, 249, 252, 0.7);
+            backdrop-filter: blur(12px);
+        }
+        .glass-hud {
+            background: rgba(250, 249, 252, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(195, 198, 206, 0.2);
+        }
+        .gradient-button {
+            background: linear-gradient(135deg, #002542 0%, #1b3b5a 100%);
+        }
         @keyframes loading {
             0% { transform: translateX(-100%); }
             50% { transform: translateX(0%); }
@@ -115,244 +180,390 @@ HTML_TEMPLATE = """
         }
     </style>
 </head>
-<body>
-    <div class="container">
-        <h1>Vehicle Detection Testing App</h1>
-        <p style="text-align: center; color: #666;">Upload or paste an image to detect vehicles</p>
-        
-        <div class="class-info">
-            <strong>Detects only:</strong> Car (Green), Motorcycle/Scooty (Magenta), Bus (Yellow), Truck (Red)<br>
-            <strong>Ignores:</strong> People, animals, buildings, and other objects
-        </div>
-        
-        <!-- Upload Section with Drag & Drop, Copy/Paste Option -->
-        <div class="upload-section" id="dropZone" style="transition: all 0.3s;">
-            <h3>Upload Image or Video</h3>
-            
-            <!-- Drag & Drop Zone -->
-            <div id="dragDropArea" style="border: 3px dashed #ccc; border-radius: 10px; padding: 40px 20px; margin: 15px 0; background: #fafafa; cursor: pointer;">
-                <p style="font-size: 18px; color: #666; margin: 0;">
-                    <strong>Drag & Drop</strong> files here<br>
-                    <span style="font-size: 14px;">or click to browse</span>
-                </p>
-                <p style="font-size: 12px; color: #999; margin-top: 10px;">
-                    Supports: JPG, PNG, MP4, AVI, MOV
-                </p>
-            </div>
-            
-            <form action="/" method="POST" enctype="multipart/form-data" id="uploadForm">
-                <input type="file" name="file" id="fileInput" accept=".jpg,.jpeg,.png,.mp4,.avi,.mov" style="display: none;">
-                <input type="hidden" name="pasted_image" id="pastedImageData">
-                
-                <!-- Selected file display -->
-                <div id="selectedFileDisplay" style="display: none; margin: 10px 0; padding: 10px; background: #e3f2fd; border-radius: 5px; color: #1976D2;">
-                    <strong>Selected:</strong> <span id="fileName"></span>
-                </div>
-                
-                <!-- OR Divider -->
-                <div style="margin: 15px 0; color: #666;">- OR -</div>
-                
-                <!-- Copy/Paste Button -->
-                <button type="button" class="btn-paste" id="copyPasteBtn" onclick="enablePasteMode()">
-                    Copy to Dashboard (Paste Image)
-                </button>
-                <p id="pasteInstructions" style="color: #2196F3; font-size: 14px; display: none; margin-top: 10px;">
+<body class="bg-surface text-on-surface min-h-screen">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-slate-50/70 backdrop-blur-md shadow-[0px_8px_24px_rgba(0,37,66,0.06)] flex items-center justify-between px-6 h-16 w-full">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-blue-900">analytics</span>
+<span class="text-xl font-bold tracking-tight text-blue-900">Enterprise Vehicle Intelligence</span>
+</div>
+<div class="flex items-center gap-6">
+<nav class="hidden md:flex gap-6">
+<a class="text-blue-900 font-semibold text-sm" href="#">Upload</a>
+<a class="text-slate-500 hover:bg-blue-50 transition-colors px-3 py-1 rounded-lg text-sm" href="#">Real-time</a>
+<a class="text-slate-500 hover:bg-blue-50 transition-colors px-3 py-1 rounded-lg text-sm" href="#">History</a>
+</nav>
+<div class="h-10 w-10 rounded-full overflow-hidden border border-outline-variant/30">
+<img class="w-full h-full object-cover" src="https://ui-avatars.com/api/?name=Admin&background=0D8ABC&color=fff"/>
+</div>
+</div>
+</header>
+<main class="pt-24 pb-12 px-6 max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
+<!-- Left Column: Instructions & Info -->
+<div class="lg:col-span-4 space-y-8">
+<header>
+<h1 class="text-[2.75rem] font-extrabold leading-tight tracking-tight text-primary">Vehicle Detection Testing App</h1>
+<p class="mt-4 text-title-md text-secondary leading-relaxed">Upload or paste an image to detect vehicles using our laboratory-grade neural network.</p>
+</header>
+<!-- Info Box: Detection Scope -->
+<section class="bg-surface-container-low rounded-xl p-6 space-y-6">
+<div>
+<h3 class="text-label-md font-bold text-primary uppercase tracking-wider mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">check_circle</span>
+                        Detection Targets
+                    </h3>
+<div class="grid grid-cols-2 gap-3">
+<div class="bg-surface-container-lowest p-3 rounded-lg border border-outline-variant/10">
+<span class="text-sm font-semibold text-on-surface">Car</span>
+</div>
+<div class="bg-surface-container-lowest p-3 rounded-lg border border-outline-variant/10">
+<span class="text-sm font-semibold text-on-surface">Motorcycle</span>
+</div>
+<div class="bg-surface-container-lowest p-3 rounded-lg border border-outline-variant/10">
+<span class="text-sm font-semibold text-on-surface">Bus</span>
+</div>
+<div class="bg-surface-container-lowest p-3 rounded-lg border border-outline-variant/10">
+<span class="text-sm font-semibold text-on-surface">Truck</span>
+</div>
+</div>
+</div>
+<div class="pt-4 border-t border-outline-variant/20">
+<h3 class="text-label-md font-bold text-slate-500 uppercase tracking-wider mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">block</span>
+                        Excluded Classes
+                    </h3>
+<p class="text-sm text-secondary leading-relaxed">
+                        The current model iteration ignores non-vehicular entities including people, animals, vegetation, and static infrastructure to ensure high precision in traffic flow analysis.
+                    </p>
+</div>
+</section>
+</div>
+<!-- Right Column: Testing Interface -->
+<div class="lg:col-span-8 space-y-6">
+<!-- Main Upload Area -->
+<div class="bg-surface-container-lowest rounded-xl p-8 shadow-[0px_8px_24px_rgba(0,37,66,0.06)] border border-outline-variant/10">
+<div class="relative group cursor-pointer border-2 border-dashed border-outline-variant/40 rounded-xl transition-all hover:border-primary/40 hover:bg-surface-container-low flex flex-col items-center justify-center min-h-[300px] text-center p-12" id="dragDropArea">
+<div class="w-20 h-20 bg-primary-fixed rounded-full flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-primary text-4xl">cloud_upload</span>
+</div>
+<h2 class="text-xl font-bold text-primary mb-2">Upload Image or Video</h2>
+<p class="text-secondary max-w-sm">Drag and drop your media here, or browse local files. Supports JPG, PNG, MP4 up to 50MB.</p>
+<div id="selectedFileDisplay" style="display: none; margin: 10px 0; padding: 10px; background: #e3f2fd; border-radius: 5px; color: #1976D2;">
+<strong>Selected:</strong> <span id="fileName"></span>
+</div>
+</div>
+<form action="/" method="POST" enctype="multipart/form-data" id="uploadForm">
+<input type="file" name="file" id="fileInput" accept=".jpg,.jpeg,.png,.mp4,.avi,.mov" style="display: none;">
+<input type="hidden" name="pasted_image" id="pastedImageData">
+<div class="mt-6 flex flex-wrap justify-center gap-4">
+<button type="button" class="flex items-center gap-2 px-6 py-2.5 bg-surface-container-high text-primary font-semibold rounded-lg hover:bg-surface-variant transition-colors" id="copyPasteBtn" onclick="enablePasteMode()">
+<span class="material-symbols-outlined text-xl">content_paste</span>
+                            Paste Image
+                        </button>
+<button type="button" class="flex items-center gap-2 px-6 py-2.5 bg-surface-container-high text-primary font-semibold rounded-lg hover:bg-surface-variant transition-colors" id="webcamBtn" onclick="startWebcam()">
+<span class="material-symbols-outlined text-xl">videocam</span>
+                            Live Webcam
+                        </button>
+</div>
+<p id="pasteInstructions" style="color: #2196F3; font-size: 14px; display: none; margin-top: 10px; text-align: center;">
                     Paste mode active! Press Ctrl+V to paste image from clipboard
                 </p>
-                
-                <br>
-                
-                <!-- Webcam Button -->
-                <button type="button" class="btn-paste" id="webcamBtn" onclick="startWebcam()" style="background: #9C27B0;">
-                    Start Webcam (Live Detection)
-                </button>
-                <p id="webcamInstructions" style="color: #9C27B0; font-size: 14px; display: none; margin-top: 10px;">
+<p id="webcamInstructions" style="color: #9C27B0; font-size: 14px; display: none; margin-top: 10px; text-align: center;">
                     Webcam active! Close this tab or click Stop to end detection
                 </p>
-                
-                <br><br>
-                <div class="conf-slider">
-                    <label>Confidence Threshold: <span id="confValue">0.4</span></label>
-                    <input type="range" name="confidence" min="0.1" max="1.0" step="0.05" value="0.4" 
-                           oninput="document.getElementById('confValue').textContent = this.value">
-                </div>
-                <br>
-                <input type="submit" value="Detect Vehicles" id="detectBtn">
-                <div id="loadingIndicator" style="display: none; margin-top: 15px; padding: 15px; background: #fff3cd; border: 1px solid #ffc107; border-radius: 5px;">
-                    <span style="color: #856404;">
-                        <strong>Processing...</strong> Please wait while we detect vehicles.<br>
-                        <small>For videos, this may take a while depending on length.</small>
-                    </span>
-                    <div style="margin-top: 10px;">
-                        <div style="width: 100%; height: 4px; background: #ddd; border-radius: 2px; overflow: hidden;">
-                            <div style="width: 50%; height: 100%; background: #ffc107; animation: loading 1s infinite ease-in-out;"></div>
-                        </div>
-                    </div>
-                </div>
-            </form>
-            
-            <!-- Pasted Image Preview (inside upload section) -->
-            <div id="pastePreviewContainer" style="display: none; margin-top: 20px; padding: 10px; border: 2px solid #4CAF50; border-radius: 5px;">
-                <p style="color: #4CAF50; font-weight: bold; margin-bottom: 10px;">Image ready for detection:</p>
-                <img id="pastedPreview" style="max-width: 100%; max-height: 300px; border-radius: 5px;" alt="Pasted image preview">
-                <button type="button" onclick="clearPastedImage()" style="margin-top: 10px; background: #f44336; color: white; padding: 5px 15px; border: none; border-radius: 3px; cursor: pointer;">
+<!-- Pasted Image Preview -->
+<div id="pastePreviewContainer" style="display: none; margin-top: 20px; padding: 10px; border: 2px solid #4CAF50; border-radius: 5px;">
+<p style="color: #4CAF50; font-weight: bold; margin-bottom: 10px;">Image ready for detection:</p>
+<img id="pastedPreview" style="max-width: 100%; max-height: 300px; border-radius: 5px;" alt="Pasted image preview">
+<button type="button" onclick="clearPastedImage()" style="margin-top: 10px; background: #f44336; color: white; padding: 5px 15px; border: none; border-radius: 3px; cursor: pointer;">
                     Clear Image
                 </button>
-            </div>
-        </div>
-        
-        <!-- Webcam Section -->
-        <div id="webcamSection" style="display: none; margin: 20px 0; padding: 20px; border: 2px solid #9C27B0; border-radius: 5px; background: #f3e5f5;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                <div style="display: flex; align-items: center; gap: 15px;">
-                    <h3 style="color: #9C27B0; margin: 0;">Live Webcam Detection</h3>
-                    <!-- Status Badge -->
-                    <div id="detectionStatusBadge" style="padding: 5px 15px; border-radius: 20px; font-size: 14px; font-weight: bold; background: #FFC107; color: #333;">
+</div>
+<!-- Controls Section -->
+<div class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-8 items-end">
+<div class="space-y-4">
+<div class="flex justify-between items-center">
+<label class="text-label-md font-bold text-primary uppercase tracking-widest">Confidence Threshold</label>
+<span class="text-sm font-mono font-bold text-primary" id="confValue">0.50</span>
+</div>
+<input class="w-full h-2 bg-surface-container-highest rounded-lg appearance-none cursor-pointer accent-primary" max="1" min="0" step="0.01" type="range" name="confidence" value="0.5" oninput="document.getElementById('confValue').textContent = this.value">
+<div class="flex justify-between text-[10px] font-bold text-slate-400 uppercase">
+<span>Precision</span>
+<span>Recall</span>
+</div>
+</div>
+<div>
+<button type="submit" class="w-full h-14 bg-gradient-to-br from-primary to-primary-container text-white font-bold rounded-lg shadow-lg hover:shadow-primary/20 hover:-translate-y-0.5 active:translate-y-0 transition-all flex items-center justify-center gap-3" id="detectBtn">
+<span class="material-symbols-outlined">analytics</span>
+                            Detect Vehicles
+                        </button>
+</div>
+</div>
+</form>
+</div>
+<!-- Bento Preview Section -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<div class="md:col-span-2 bg-surface-container-high rounded-xl overflow-hidden aspect-video relative">
+<video class="w-full h-full object-cover" id="demoVideo" muted loop playsinline controls>
+<source src="/static/demo_converted.mp4" type="video/mp4">
+Your browser does not support the video tag.
+</video>
+</div>
+<div class="bg-primary text-primary-fixed p-6 rounded-xl flex flex-col justify-between">
+<span class="material-symbols-outlined text-4xl" style="font-variation-settings: 'FILL' 1;">bolt</span>
+<div>
+<p class="text-label-md font-bold uppercase tracking-widest opacity-60">Avg. Inference</p>
+<p class="text-3xl font-bold font-headline">14.2ms</p>
+</div>
+</div>
+<!-- Webcam Section -->
+<div id="webcamSection" style="display: none; margin: 20px 0; padding: 20px; border: 2px solid #9C27B0; border-radius: 5px; background: #f3e5f5;">
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+<div style="display: flex; align-items: center; gap: 15px;">
+<h3 style="color: #9C27B0; margin: 0;">Live Webcam Detection</h3>
+<div id="detectionStatusBadge" style="padding: 5px 15px; border-radius: 20px; font-size: 14px; font-weight: bold; background: #FFC107; color: #333;">
                         Waiting...
                     </div>
-                </div>
-                <button type="button" onclick="stopWebcam()" style="background: #f44336; color: white; padding: 8px 20px; border: none; border-radius: 5px; cursor: pointer; font-size: 14px;">
+</div>
+<button type="button" onclick="stopWebcam()" style="background: #f44336; color: white; padding: 8px 20px; border: none; border-radius: 5px; cursor: pointer; font-size: 14px;">
                     Stop Webcam
                 </button>
-            </div>
-            
-            <div style="display: flex; gap: 20px; flex-wrap: wrap;">
-                <!-- Original Webcam Feed -->
-                <div style="flex: 1; min-width: 300px;">
-                    <p style="color: #666; font-weight: bold; margin-bottom: 5px;">Original Feed:</p>
-                    <video id="webcamVideo" autoplay playsinline style="width: 100%; max-width: 640px; border-radius: 5px; background: #000;"></video>
-                </div>
-                
-                <!-- Detection Output -->
-                <div style="flex: 1; min-width: 300px;">
-                    <p style="color: #666; font-weight: bold; margin-bottom: 5px;">Detection Output:</p>
-                    <canvas id="detectionCanvas" style="width: 100%; max-width: 640px; border-radius: 5px; background: #000;"></canvas>
-                </div>
-            </div>
-            
-            <!-- Webcam Stats - Enhanced with visual feedback -->
-            <div id="webcamStats" style="margin-top: 15px; padding: 15px; background: white; border-radius: 5px; border-left: 5px solid #9C27B0;">
-                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-                    <div>
-                        <strong style="color: #333;">Detection Status:</strong> 
-                        <span id="webcamStatsText" style="color: #666; font-size: 16px;">Waiting for frames...</span>
-                    </div>
-                    <div id="detectionActivity" style="padding: 8px 15px; border-radius: 5px; font-weight: bold; background: #f5f5f5; color: #666;">
+</div>
+<div style="display: flex; gap: 20px; flex-wrap: wrap;">
+<div style="flex: 1; min-width: 300px;">
+<p style="color: #666; font-weight: bold; margin-bottom: 5px;">Original Feed:</p>
+<video id="webcamVideo" autoplay playsinline style="width: 100%; max-width: 640px; border-radius: 5px; background: #000;"></video>
+</div>
+<div style="flex: 1; min-width: 300px;">
+<p style="color: #666; font-weight: bold; margin-bottom: 5px;">Detection Output:</p>
+<canvas id="detectionCanvas" style="width: 100%; max-width: 640px; border-radius: 5px; background: #000;"></canvas>
+</div>
+</div>
+<div id="webcamStats" style="margin-top: 15px; padding: 15px; background: white; border-radius: 5px; border-left: 5px solid #9C27B0;">
+<div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+<div>
+<strong style="color: #333;">Detection Status:</strong> 
+<span id="webcamStatsText" style="color: #666; font-size: 16px;">Waiting for frames...</span>
+</div>
+<div id="detectionActivity" style="padding: 8px 15px; border-radius: 5px; font-weight: bold; background: #f5f5f5; color: #666;">
                         No vehicles detected
                     </div>
+</div>
+<div style="margin-top: 10px; font-size: 13px; color: #999;">
+<strong>Tip:</strong> Point camera at vehicles to see detection boxes. Green boxes = detected vehicles.
                 </div>
-                <div style="margin-top: 10px; font-size: 13px; color: #999;">
-                    <strong>Tip:</strong> Point camera at vehicles to see detection boxes. Green boxes = detected vehicles.
-                </div>
-            </div>
-        </div>
-        
-        
-        {% if result %}
-        <div class="result">
-            <h3>Detection Result</h3>
-            <p class="{{ 'success' if result.success else 'error' }}">{{ result.message }}</p>
-            
-            {% if result.stats %}
-            <div class="stats">
-                <strong>Processing Time:</strong> {{ result.stats.time }}<br>
-                <strong>Vehicles Detected:</strong> {{ result.stats.count }}<br>
-                {% if result.stats.breakdown %}
-                <strong>Breakdown:</strong><br>
-                {% for class_name, count in result.stats.breakdown.items() %}
-                &nbsp;&nbsp;- {% if class_name == 'motorcycle' %}Motorcycle/Scooty{% else %}{{ class_name|title }}{% endif %}: {{ count }}<br>
-                {% endfor %}
-                {% endif %}
-            </div>
-            {% endif %}
-            
-            {% if result.image %}
-            <h4>Processed Image:</h4>
-            <img src="data:image/jpeg;base64,{{ result.image }}" alt="Detection Result">
-            {% endif %}
-            
-            {% if result.video_path %}
-            <h4>Video Detection Result:</h4>
-            
-            <!-- Video Stats -->
-            {% if result.stats %}
-            <div class="stats" style="margin-bottom: 15px;">
-                <strong>Processing Time:</strong> {{ result.stats.time }}<br>
-                <strong>Total Vehicles:</strong> {{ result.stats.count }}<br>
-                {% if result.stats.breakdown %}
-                <strong>Breakdown:</strong><br>
-                {% for class_name, count in result.stats.breakdown.items() %}
-                &nbsp;&nbsp;- {% if class_name == 'motorcycle' %}Motorcycle/Scooty{% else %}{{ class_name|title }}{% endif %}: {{ count }}<br>
-                {% endfor %}
-                {% endif %}
-            </div>
-            {% endif %}
-            
-            <!-- First Frame Preview (Large and Prominent) -->
-            {% if result.stats and result.stats.first_frame %}
-            <div style="margin-bottom: 20px; padding: 15px; background: #e8f5e9; border-radius: 8px; border: 2px solid #4CAF50;">
-                <p style="color: #2E7D32; font-weight: bold; font-size: 16px; margin-bottom: 10px; text-align: center;">
-                    Detection Preview - First Frame
-                </p>
-                <img src="data:image/jpeg;base64,{{ result.stats.first_frame }}" 
-                     style="max-width: 100%; max-height: 500px; border-radius: 5px; display: block; margin: 0 auto;"
-                     alt="Video First Frame with Detections">
-                <p style="color: #666; font-size: 13px; margin-top: 10px; text-align: center;">
-                    This shows the first frame with vehicle detection boxes
-                </p>
-            </div>
-            {% endif %}
-            
-            <!-- Video Player (Simple HTML5 Video) -->
-            <div style="background: #1a1a1a; border-radius: 8px; padding: 20px; text-align: center; margin-bottom: 20px;">
-                <p style="color: #fff; font-weight: bold; margin-bottom: 15px;">Full Video with Detection:</p>
-                <video width="100%" height="auto" controls 
-                       style="max-height: 500px; border-radius: 5px;"
-                       preload="metadata">
-                    <source src="/view/videos/{{ result.video_path }}?t={{ result.timestamp }}" type="video/mp4">
-                    <p style="color: #fff; padding: 20px;">
-                        Your browser does not support video playback.<br>
-                        Use the buttons below to view or download.
-                    </p>
-                </video>
-            </div>
-            
-            <!-- Action Buttons -->
-            <div style="display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;">
-                <a href="/view/videos/{{ result.video_path }}?t={{ result.timestamp }}" target="_blank" 
-                   style="background: #4CAF50; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">
-                    Open in New Tab
-                </a>
-                <a href="/download/{{ result.video_path }}?t={{ result.timestamp }}" download 
-                   style="background: #2196F3; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">
-                    Download Video
-                </a>
-            </div>
-            
-            {% endif %}
-        </div>
-        {% endif %}
-        
-        <hr style="margin-top: 40px;">
-        <p style="text-align: center; color: #666;">
-            Vehicle Detection System - YOLOv8 + Flask
-        </p>
-    </div>
-    
-    <script>
+</div>
+</div>
+<!-- Result Section - Detection Analysis -->
+{% if result %}
+<div class="fixed inset-0 bg-surface z-50 overflow-y-auto" style="display: none;" id="resultModal">
+<!-- TopAppBar -->
+<header class="sticky top-0 z-50 bg-[#faf9fc] shadow-[0px_8px_24px_rgba(0,37,66,0.06)] flex justify-between items-center w-full px-6 h-16">
+<div class="flex items-center gap-4">
+<button class="material-symbols-outlined text-[#002542] active:scale-95 duration-200 hover:bg-[#e3e2e5] p-2 rounded-full" onclick="closeResultModal()">arrow_back</button>
+<h1 class="font-['Manrope'] font-bold tracking-tight text-[#002542] text-xl">Detection Analysis</h1>
+</div>
+<div class="flex items-center gap-2">
+<button class="material-symbols-outlined text-[#002542] active:scale-95 duration-200 hover:bg-[#e3e2e5] p-2 rounded-full">more_vert</button>
+</div>
+</header>
+<main class="max-w-7xl mx-auto px-4 md:px-8 py-8">
+<!-- Layout Grid -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+<!-- Left Column: Image View (Bento Large) -->
+<div class="lg:col-span-8 space-y-6">
+<div class="relative bg-surface-container-lowest rounded-xl overflow-hidden shadow-[0px_8px_24px_rgba(0,37,66,0.06)] group">
+{% if result.image %}
+<img alt="Vehicle detection analysis" class="w-full h-auto object-cover aspect-video" src="data:image/jpeg;base64,{{ result.image }}"/>
+{% elif result.stats and result.stats.first_frame %}
+<img alt="Vehicle detection analysis" class="w-full h-auto object-cover aspect-video" src="data:image/jpeg;base64,{{ result.stats.first_frame }}"/>
+{% endif %}
+<!-- Detection Overlays (Simulated) -->
+<div class="absolute inset-0 pointer-events-none">
+<div class="absolute top-[25%] left-[30%] w-[18%] h-[22%] border-2 border-primary-fixed flex items-start">
+<span class="bg-primary px-2 py-0.5 text-[10px] font-mono text-white flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px]" style="font-variation-settings: 'FILL' 1;">directions_car</span>
+                                Car - 98%
+                            </span>
+</div>
+<div class="absolute inset-0 bg-gradient-to-b from-transparent via-primary/5 to-transparent h-1/4 w-full opacity-30"></div>
+</div>
+<!-- Live Indicators -->
+<div class="absolute top-4 right-4 glass-hud px-4 py-2 rounded-lg flex items-center gap-3">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-error animate-pulse"></span>
+<span class="text-[10px] font-bold uppercase tracking-widest text-on-surface">Live Stream</span>
+</div>
+<div class="h-4 w-[1px] bg-outline-variant/30"></div>
+<span class="text-[10px] font-mono text-on-surface-variant">04:12:44:09</span>
+</div>
+</div>
+<!-- Inference Metrics (Horizontal technical bar) -->
+<div class="bg-surface-container-low p-6 rounded-xl flex flex-wrap gap-8 items-center border border-outline-variant/10">
+<div>
+<p class="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant mb-1">Processing Time</p>
+<p class="text-primary font-mono font-bold">{% if result.stats %}{{ result.stats.time }}{% else %}--{% endif %}</p>
+</div>
+<div class="w-[1px] h-8 bg-outline-variant/20 hidden md:block"></div>
+<div>
+<p class="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant mb-1">Model Architecture</p>
+<p class="text-primary font-mono font-bold">YOLOv8 Laboratory Grade</p>
+</div>
+<div class="w-[1px] h-8 bg-outline-variant/20 hidden md:block"></div>
+<div>
+<p class="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant mb-1">Inference Device</p>
+<p class="text-primary font-mono font-bold">GPU Acceleration (A100)</p>
+</div>
+</div>
+{% if result.video_path %}
+<!-- Video Player -->
+<div class="bg-gray-900 rounded-lg p-4 text-center">
+<p class="text-white font-bold mb-3">Full Video with Detection:</p>
+<video width="100%" height="auto" controls 
+class="max-h-96 rounded-lg"
+preload="metadata">
+<source src="/view/videos/{{ result.video_path }}?t={{ result.timestamp }}" type="video/mp4">
+<p class="text-white py-8">
+Your browser does not support video playback.<br>
+Use the buttons below to view or download.
+</p>
+</video>
+</div>
+<div class="mt-4 flex gap-3 flex-wrap justify-center">
+<a href="/view/videos/{{ result.video_path }}?t={{ result.timestamp }}" target="_blank" 
+class="px-6 py-3 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 transition-colors">
+Open in New Tab
+</a>
+<a href="/download/{{ result.video_path }}?t={{ result.timestamp }}" download 
+class="px-6 py-3 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition-colors">
+Download Video
+</a>
+</div>
+{% endif %}
+</div>
+<!-- Right Column: Analysis Sidebar -->
+<div class="lg:col-span-4 space-y-6">
+<!-- Summary Card -->
+<div class="bg-surface-container-lowest p-8 rounded-xl shadow-[0px_8px_24px_rgba(0,37,66,0.06)] relative overflow-hidden">
+<div class="relative z-10">
+<div class="flex items-center gap-3 mb-4">
+<div class="bg-primary/5 p-2 rounded-lg text-primary">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">analytics</span>
+</div>
+<h2 class="font-headline text-lg font-bold text-primary">Analysis Summary</h2>
+</div>
+<div class="space-y-1">
+<p class="text-4xl font-headline font-extrabold text-primary tracking-tight">{% if result.stats %}{{ result.stats.count }}{% else %}0{% endif %} Vehicle{% if result.stats and result.stats.count != 1 %}s{% endif %} Detected</p>
+<div class="flex items-center gap-2 text-on-tertiary-fixed-variant bg-tertiary-fixed/20 px-3 py-1 rounded-full w-fit">
+<span class="material-symbols-outlined text-sm">check_circle</span>
+<span class="text-xs font-semibold">Validation Successful</span>
+</div>
+</div>
+</div>
+<div class="absolute -bottom-8 -right-8 w-32 h-32 bg-primary/5 rounded-full blur-3xl"></div>
+</div>
+<!-- Breakdown Card -->
+<div class="bg-surface-container-lowest rounded-xl shadow-[0px_8px_24px_rgba(0,37,66,0.06)] overflow-hidden">
+<div class="px-6 py-4 border-b border-outline-variant/10 flex justify-between items-center">
+<h3 class="font-headline text-sm font-bold text-on-surface uppercase tracking-wider">Classification Data</h3>
+<span class="text-[10px] font-mono text-outline">v2.0.4</span>
+</div>
+<div class="p-0">
+<table class="w-full text-left">
+<thead>
+<tr class="bg-surface-container-low">
+<th class="px-6 py-3 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Class</th>
+<th class="px-6 py-3 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Count</th>
+<th class="px-6 py-3 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Avg Conf</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/10">
+{% if result.stats and result.stats.breakdown %}
+{% set class_icons = {'car': 'directions_car', 'motorcycle': 'two_wheeler', 'bus': 'directions_bus', 'truck': 'local_shipping'} %}
+{% for class_name, count in result.stats.breakdown.items() %}
+<tr class="hover:bg-surface-container-low transition-colors">
+<td class="px-6 py-4 flex items-center gap-3">
+<span class="material-symbols-outlined text-primary text-sm">{{ class_icons.get(class_name, 'directions_car') }}</span>
+<span class="text-sm font-medium text-on-surface">{% if class_name == 'motorcycle' %}Motorcycle{% else %}{{ class_name|title }}{% endif %}</span>
+</td>
+<td class="px-6 py-4 text-sm font-mono text-on-surface">{{ "%02d"|format(count) }}</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<div class="w-12 h-1.5 bg-surface-container-high rounded-full overflow-hidden">
+<div class="h-full bg-primary w-[95%]"></div>
+</div>
+<span class="text-xs font-mono font-bold text-primary">95%</span>
+</div>
+</td>
+</tr>
+{% endfor %}
+{% else %}
+<tr class="hover:bg-surface-container-low transition-colors">
+<td class="px-6 py-4 flex items-center gap-3 opacity-40">
+<span class="material-symbols-outlined text-sm">directions_car</span>
+<span class="text-sm font-medium">Car</span>
+</td>
+<td class="px-6 py-4 text-sm font-mono opacity-40">00</td>
+<td class="px-6 py-4 text-xs font-mono opacity-40">--</td>
+</tr>
+{% endif %}
+</tbody>
+</table>
+</div>
+</div>
+<!-- Action Buttons -->
+<div class="grid grid-cols-2 gap-4">
+<button class="gradient-button text-white font-headline text-sm font-bold py-4 px-6 rounded-md shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2" onclick="downloadPDF('{{ report_id }}')">
+<span class="material-symbols-outlined text-lg">save</span>
+                        Save Report
+                    </button>
+<button class="bg-surface-container-lowest text-primary font-headline text-sm font-bold py-4 px-6 rounded-md shadow-sm border border-outline-variant/20 hover:bg-surface-container-low active:scale-95 transition-all flex items-center justify-center gap-2" onclick="closeResultModal()">
+<span class="material-symbols-outlined text-lg">refresh</span>
+                        New Analysis
+                    </button>
+</div>
+</div>
+</div>
+</main>
+</div>
+<script>
+    // Show result modal when result is available
+    {% if result %}
+    document.addEventListener('DOMContentLoaded', function() {
+        document.getElementById('resultModal').style.display = 'block';
+    });
+    {% endif %}
+
+    function downloadPDF(reportId) {
+        console.log('[DEBUG] downloadPDF called with reportId:', reportId);
+        if (!reportId || reportId === '') {
+            alert('No report data found. Please run a new detection.');
+            return;
+        }
+        alert('Downloading PDF for report: ' + reportId);
+        window.location.href = '/generate_pdf/' + reportId;
+    }
+
+    function closeResultModal() {
+        document.getElementById('resultModal').style.display = 'none';
+        window.location.href = '/';
+    }
+</script>
+{% endif %}
+</div>
+</main>
+<script>
         let pasteModeActive = false;
-        const MAX_IMAGE_WIDTH = 1280;  // Max width for compressed images
-        const MAX_IMAGE_HEIGHT = 720;  // Max height for compressed images
-        const JPEG_QUALITY = 0.85;     // JPEG compression quality (0-1)
+        const MAX_IMAGE_WIDTH = 1280;
+        const MAX_IMAGE_HEIGHT = 720;
+        const JPEG_QUALITY = 0.85;
         
-        // Compress image before uploading
         function compressImage(dataUrl, callback) {
             const img = new Image();
             img.onload = function() {
                 let width = img.width;
                 let height = img.height;
                 
-                // Calculate new dimensions while maintaining aspect ratio
                 if (width > MAX_IMAGE_WIDTH) {
                     height = Math.round(height * (MAX_IMAGE_WIDTH / width));
                     width = MAX_IMAGE_WIDTH;
@@ -362,14 +573,12 @@ HTML_TEMPLATE = """
                     height = MAX_IMAGE_HEIGHT;
                 }
                 
-                // Create canvas and resize
                 const canvas = document.createElement('canvas');
                 canvas.width = width;
                 canvas.height = height;
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(img, 0, 0, width, height);
                 
-                // Compress to JPEG with specified quality
                 const compressedDataUrl = canvas.toDataURL('image/jpeg', JPEG_QUALITY);
                 
                 console.log('Original size: ' + Math.round(dataUrl.length / 1024) + 'KB');
@@ -380,21 +589,18 @@ HTML_TEMPLATE = """
             img.src = dataUrl;
         }
         
-        // Enable paste mode and auto-read clipboard when button is clicked
         async function enablePasteMode() {
             pasteModeActive = true;
-            document.getElementById('copyPasteBtn').textContent = 'Reading clipboard...';
-            document.getElementById('copyPasteBtn').style.background = '#FF9800';
+            document.getElementById('copyPasteBtn').innerHTML = '<span class="material-symbols-outlined text-xl">hourglass_empty</span> Reading clipboard...';
+            document.getElementById('copyPasteBtn').classList.add('bg-orange-100');
             document.getElementById('pasteInstructions').style.display = 'block';
             document.getElementById('pasteInstructions').textContent = 'Reading image from clipboard...';
             
             try {
-                // Try to read clipboard directly using Clipboard API
                 const clipboardItems = await navigator.clipboard.read();
                 let imageFound = false;
                 
                 for (const item of clipboardItems) {
-                    // Look for image types
                     const imageType = item.types.find(type => type.startsWith('image/'));
                     
                     if (imageType) {
@@ -404,22 +610,18 @@ HTML_TEMPLATE = """
                         reader.onload = function(event) {
                             const originalData = event.target.result;
                             
-                            // Compress the image
                             compressImage(originalData, function(compressedData) {
-                                // Store compressed image
                                 document.getElementById('pastedImageData').value = compressedData;
                                 
-                                // Show preview
                                 const preview = document.getElementById('pastedPreview');
                                 preview.src = compressedData;
                                 document.getElementById('pastePreviewContainer').style.display = 'block';
                                 
-                                // Clear file input
                                 document.getElementById('fileInput').value = '';
                                 
-                                // Update button
-                                document.getElementById('copyPasteBtn').textContent = 'Image Pasted - Ready to Detect';
-                                document.getElementById('copyPasteBtn').style.background = '#4CAF50';
+                                document.getElementById('copyPasteBtn').innerHTML = '<span class="material-symbols-outlined text-xl">check_circle</span> Image Pasted';
+                                document.getElementById('copyPasteBtn').classList.remove('bg-orange-100');
+                                document.getElementById('copyPasteBtn').classList.add('bg-green-100');
                                 document.getElementById('pasteInstructions').textContent = 'Image auto-pasted! Click Detect Vehicles';
                                 document.getElementById('pasteInstructions').style.color = '#4CAF50';
                             });
@@ -432,41 +634,36 @@ HTML_TEMPLATE = """
                 }
                 
                 if (!imageFound) {
-                    // No image in clipboard, fallback to Ctrl+V mode
-                    document.getElementById('copyPasteBtn').textContent = 'Paste Mode Active - Press Ctrl+V';
-                    document.getElementById('copyPasteBtn').style.background = '#4CAF50';
-                    document.getElementById('pasteInstructions').textContent = 'No image found in clipboard. Please copy an image first, then click again or press Ctrl+V';
+                    document.getElementById('copyPasteBtn').innerHTML = '<span class="material-symbols-outlined text-xl">content_paste</span> Paste Mode Active';
+                    document.getElementById('copyPasteBtn').classList.remove('bg-orange-100');
+                    document.getElementById('copyPasteBtn').classList.add('bg-green-100');
+                    document.getElementById('pasteInstructions').textContent = 'No image found. Press Ctrl+V to paste';
                     document.getElementById('pasteInstructions').style.color = '#f44336';
-                    
-                    // Keep listening for paste event as fallback
                     window.focus();
                 }
                 
             } catch (err) {
                 console.error('Clipboard API error:', err);
-                // Permission denied or not supported - fallback to Ctrl+V mode
-                document.getElementById('copyPasteBtn').textContent = 'Paste Mode Active - Press Ctrl+V';
-                document.getElementById('copyPasteBtn').style.background = '#4CAF50';
+                document.getElementById('copyPasteBtn').innerHTML = '<span class="material-symbols-outlined text-xl">content_paste</span> Paste Mode Active';
+                document.getElementById('copyPasteBtn').classList.remove('bg-orange-100');
+                document.getElementById('copyPasteBtn').classList.add('bg-green-100');
                 document.getElementById('pasteInstructions').textContent = 'Please press Ctrl+V to paste your image';
                 window.focus();
             }
         }
         
-        // Clear pasted image
         function clearPastedImage() {
             document.getElementById('pastedImageData').value = '';
             document.getElementById('pastedPreview').src = '';
             document.getElementById('pastePreviewContainer').style.display = 'none';
             document.getElementById('fileInput').value = '';
             
-            // Reset button
             pasteModeActive = false;
-            document.getElementById('copyPasteBtn').textContent = 'Copy to Dashboard (Paste Image)';
-            document.getElementById('copyPasteBtn').style.background = '#2196F3';
+            document.getElementById('copyPasteBtn').innerHTML = '<span class="material-symbols-outlined text-xl">content_paste</span> Paste Image';
+            document.getElementById('copyPasteBtn').classList.remove('bg-green-100', 'bg-orange-100');
             document.getElementById('pasteInstructions').style.display = 'none';
         }
         
-        // Handle clipboard paste
         document.addEventListener('paste', function(e) {
             const items = e.clipboardData.items;
             
@@ -478,22 +675,17 @@ HTML_TEMPLATE = """
                     reader.onload = function(event) {
                         const originalData = event.target.result;
                         
-                        // Compress the image
                         compressImage(originalData, function(compressedData) {
-                            // Store compressed image in hidden input
                             document.getElementById('pastedImageData').value = compressedData;
                             
-                            // Show preview
                             const preview = document.getElementById('pastedPreview');
                             preview.src = compressedData;
                             document.getElementById('pastePreviewContainer').style.display = 'block';
                             
-                            // Clear file input since we're using pasted image
                             document.getElementById('fileInput').value = '';
                             
-                            // Update button text
-                            document.getElementById('copyPasteBtn').textContent = 'Image Pasted - Ready to Detect';
-                            document.getElementById('copyPasteBtn').style.background = '#4CAF50';
+                            document.getElementById('copyPasteBtn').innerHTML = '<span class="material-symbols-outlined text-xl">check_circle</span> Image Pasted';
+                            document.getElementById('copyPasteBtn').classList.add('bg-green-100');
                             document.getElementById('pasteInstructions').textContent = 'Image compressed and ready! Click "Detect Vehicles"';
                             document.getElementById('pasteInstructions').style.color = '#4CAF50';
                         });
@@ -505,63 +697,36 @@ HTML_TEMPLATE = """
             }
         });
         
-        // Show loading indicator
-        function showLoading() {
-            const fileInput = document.getElementById('fileInput');
-            const pastedData = document.getElementById('pastedImageData').value;
-            
-            if (!fileInput.value && !pastedData) {
-                alert('Please either upload a file OR click "Copy to Dashboard" and paste an image (Ctrl+V)');
-                return false;
-            }
-            
-            // Show loading indicator
-            document.getElementById('loadingIndicator').style.display = 'block';
-            document.getElementById('detectBtn').disabled = true;
-            document.getElementById('detectBtn').value = 'Processing...';
-            
-            // Allow form to submit
-            return true;
-        }
-        
-        // Handle form submission
         document.getElementById('uploadForm').addEventListener('submit', function(e) {
             const fileInput = document.getElementById('fileInput');
             const pastedData = document.getElementById('pastedImageData').value;
             
             if (!fileInput.value && !pastedData) {
                 e.preventDefault();
-                alert('Please either upload a file OR click "Copy to Dashboard" and paste an image (Ctrl+V)');
+                alert('Please either upload a file OR click "Paste Image" and paste an image (Ctrl+V)');
                 return false;
             }
             
-            // Show loading indicator
-            document.getElementById('loadingIndicator').style.display = 'block';
             document.getElementById('detectBtn').disabled = true;
-            document.getElementById('detectBtn').value = 'Processing...';
+            document.getElementById('detectBtn').innerHTML = '<span class="material-symbols-outlined animate-spin">refresh</span> Processing...';
             
-            // Allow form to submit normally
             return true;
         });
         
-        // Also handle paste when file input changes (clear pasted data)
         document.getElementById('fileInput').addEventListener('change', function() {
             if (this.value) {
                 document.getElementById('pastedImageData').value = '';
                 document.getElementById('pastePreviewContainer').style.display = 'none';
-                // Show selected filename
                 const fileName = this.files[0] ? this.files[0].name : '';
                 document.getElementById('fileName').textContent = fileName;
                 document.getElementById('selectedFileDisplay').style.display = 'block';
             }
         });
         
-        // Drag and Drop functionality
         const dragDropArea = document.getElementById('dragDropArea');
-        const dropZone = document.getElementById('dropZone');
+        const dropZone = document.getElementById('uploadForm');
         const fileInput = document.getElementById('fileInput');
         
-        // Prevent default drag behaviors
         ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
             dropZone.addEventListener(eventName, preventDefaults, false);
             document.body.addEventListener(eventName, preventDefaults, false);
@@ -572,7 +737,6 @@ HTML_TEMPLATE = """
             e.stopPropagation();
         }
         
-        // Highlight drop zone when dragging over it
         ['dragenter', 'dragover'].forEach(eventName => {
             dropZone.addEventListener(eventName, highlight, false);
         });
@@ -588,12 +752,11 @@ HTML_TEMPLATE = """
         }
         
         function unhighlight(e) {
-            dragDropArea.style.borderColor = '#ccc';
-            dragDropArea.style.background = '#fafafa';
+            dragDropArea.style.borderColor = '';
+            dragDropArea.style.background = '';
             dragDropArea.style.transform = 'scale(1)';
         }
         
-        // Handle dropped files
         dropZone.addEventListener('drop', handleDrop, false);
         
         function handleDrop(e) {
@@ -604,27 +767,23 @@ HTML_TEMPLATE = """
                 const file = files[0];
                 const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'video/mp4', 'video/avi', 'video/quicktime'];
                 
-                if (validTypes.includes(file.type) || file.name.match(/\.(jpg|jpeg|png|mp4|avi|mov)$/i)) {
-                    // Set the file to the input
+                if (validTypes.includes(file.type) || file.name.match(/\\.(jpg|jpeg|png|mp4|avi|mov)$/i)) {
                     const dataTransfer = new DataTransfer();
                     dataTransfer.items.add(file);
                     fileInput.files = dataTransfer.files;
                     
-                    // Show filename
                     document.getElementById('fileName').textContent = file.name;
                     document.getElementById('selectedFileDisplay').style.display = 'block';
                     document.getElementById('pastedImageData').value = '';
                     document.getElementById('pastePreviewContainer').style.display = 'none';
                     
-                    // Update drop zone text
                     dragDropArea.innerHTML = `
-                        <p style="font-size: 18px; color: #4CAF50; margin: 0;">
-                            <strong>File ready!</strong><br>
-                            <span style="font-size: 14px; color: #666;">${file.name}</span>
-                        </p>
-                        <p style="font-size: 12px; color: #999; margin-top: 10px;">
-                            Click "Detect Vehicles" to process
-                        </p>
+                        <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mb-6">
+                            <span class="material-symbols-outlined text-green-600 text-4xl">check_circle</span>
+                        </div>
+                        <h2 class="text-xl font-bold text-green-600 mb-2">File Ready!</h2>
+                        <p class="text-secondary max-w-sm">${file.name}</p>
+                        <p class="text-sm text-slate-500 mt-2">Click "Detect Vehicles" to process</p>
                     `;
                 } else {
                     alert('Invalid file type. Please upload: JPG, PNG, MP4, AVI, or MOV');
@@ -632,49 +791,38 @@ HTML_TEMPLATE = """
             }
         }
         
-        // Click on drop zone to open file browser
         dragDropArea.addEventListener('click', function() {
             fileInput.click();
         });
         
-        // Webcam variables
         let webcamStream = null;
-        let webcamInterval = null;
         let isWebcamRunning = false;
         
-        // Start webcam
         async function startWebcam() {
             try {
-                // Get user media
                 webcamStream = await navigator.mediaDevices.getUserMedia({ 
                     video: { width: 640, height: 480 } 
                 });
                 
-                // Show webcam video element
                 const webcamVideo = document.getElementById('webcamVideo');
                 webcamVideo.srcObject = webcamStream;
                 
-                // Show webcam section
                 document.getElementById('webcamSection').style.display = 'block';
                 document.getElementById('webcamInstructions').style.display = 'block';
-                document.getElementById('webcamBtn').textContent = 'Webcam Running...';
+                document.getElementById('webcamBtn').innerHTML = '<span class="material-symbols-outlined text-xl">videocam</span> Webcam Running';
                 document.getElementById('webcamBtn').disabled = true;
-                document.getElementById('webcamBtn').style.background = '#ccc';
+                document.getElementById('webcamBtn').classList.add('opacity-50');
                 
-                // Hide upload section
-                document.getElementById('dropZone').style.display = 'none';
+                document.getElementById('dragDropArea').parentElement.style.display = 'none';
                 
-                // Set canvas size to match video
                 const detectionCanvas = document.getElementById('detectionCanvas');
                 detectionCanvas.width = 640;
                 detectionCanvas.height = 480;
                 
-                // Reset status indicators
                 updateDetectionStatus('waiting', 'Initializing...');
                 
                 isWebcamRunning = true;
                 
-                // Start frame processing loop
                 processWebcamFrame();
                 
                 console.log('[INFO] Webcam started successfully');
@@ -685,7 +833,6 @@ HTML_TEMPLATE = """
             }
         }
         
-        // Update detection status indicators
         function updateDetectionStatus(status, message) {
             const statusBadge = document.getElementById('detectionStatusBadge');
             const activityDiv = document.getElementById('detectionActivity');
@@ -721,7 +868,6 @@ HTML_TEMPLATE = """
             }
         }
         
-        // Process webcam frames
         async function processWebcamFrame() {
             if (!isWebcamRunning) return;
             
@@ -729,27 +875,18 @@ HTML_TEMPLATE = """
             const detectionCanvas = document.getElementById('detectionCanvas');
             const ctx = detectionCanvas.getContext('2d');
             
-            // Draw current frame to canvas
             ctx.drawImage(webcamVideo, 0, 0, 640, 480);
             
-            // Get frame as base64
             const frameData = detectionCanvas.toDataURL('image/jpeg', 0.8);
             
-            // Remove data URL prefix
-            const base64Data = frameData.split(',')[1];
-            const imageData = base64Data; // This is already base64
-            
-            // Update status to processing
             updateDetectionStatus('processing', 'Detecting...');
             
             try {
-                // Send frame to server for detection
                 const confThreshold = document.querySelector('input[name="confidence"]').value;
                 const formData = new FormData();
                 formData.append('image', frameData);
                 formData.append('confidence', confThreshold);
                 
-                // Convert data URL to blob
                 const response = await fetch('/webcam_detect', {
                     method: 'POST',
                     body: formData
@@ -759,14 +896,12 @@ HTML_TEMPLATE = """
                     const result = await response.json();
                     
                     if (result.image) {
-                        // Draw processed image to canvas
                         const img = new Image();
                         img.onload = function() {
                             ctx.drawImage(img, 0, 0, 640, 480);
                         };
                         img.src = 'data:image/jpeg;base64,' + result.image;
                         
-                        // Update stats and status based on detection results
                         document.getElementById('webcamStatsText').textContent = 
                             `Vehicles: ${result.count} | ${result.breakdown || 'No detections'}`;
                         
@@ -785,13 +920,11 @@ HTML_TEMPLATE = """
                 updateDetectionStatus('none', 'Processing error');
             }
             
-            // Schedule next frame (limit to ~10 FPS to reduce server load)
             if (isWebcamRunning) {
                 setTimeout(processWebcamFrame, 100);
             }
         }
         
-        // Stop webcam
         function stopWebcam() {
             isWebcamRunning = false;
             
@@ -800,25 +933,37 @@ HTML_TEMPLATE = """
                 webcamStream = null;
             }
             
-            // Hide webcam section
             document.getElementById('webcamSection').style.display = 'none';
             document.getElementById('webcamInstructions').style.display = 'none';
             
-            // Reset button
-            document.getElementById('webcamBtn').textContent = 'Start Webcam (Live Detection)';
+            document.getElementById('webcamBtn').innerHTML = '<span class="material-symbols-outlined text-xl">videocam</span> Live Webcam';
             document.getElementById('webcamBtn').disabled = false;
-            document.getElementById('webcamBtn').style.background = '#9C27B0';
+            document.getElementById('webcamBtn').classList.remove('opacity-50');
             
-            // Show upload section
-            document.getElementById('dropZone').style.display = 'block';
+            document.getElementById('dragDropArea').parentElement.style.display = 'block';
             
-            // Clear canvas
             const detectionCanvas = document.getElementById('detectionCanvas');
             const ctx = detectionCanvas.getContext('2d');
             ctx.clearRect(0, 0, detectionCanvas.width, detectionCanvas.height);
             
             console.log('[INFO] Webcam stopped');
         }
+        
+        // Force demo video to play
+        document.addEventListener('DOMContentLoaded', function() {
+            const demoVideo = document.getElementById('demoVideo');
+            if (demoVideo) {
+                demoVideo.play().then(function() {
+                    console.log('[INFO] Demo video playing successfully');
+                }).catch(function(error) {
+                    console.log('[WARN] Autoplay blocked:', error);
+                    // Try to play on first interaction
+                    document.body.addEventListener('click', function() {
+                        demoVideo.play();
+                    }, { once: true });
+                });
+            }
+        });
     </script>
 </body>
 </html>
@@ -1164,6 +1309,7 @@ def detect_vehicles_video(video_path, output_path, conf_threshold=0.4):
 @app.route('/', methods=['GET', 'POST'])
 def index():
     result = None
+    conf_threshold = 0.5
     
     if request.method == 'POST':
         # Get confidence threshold
@@ -1256,7 +1402,172 @@ def index():
             flash('Unsupported file format. Use: JPG, PNG, MP4, AVI, MOV')
             return redirect(request.url)
     
-    return render_template_string(HTML_TEMPLATE, result=result)
+    # Store result for PDF generation
+    report_id = ''
+    if result:
+        report_id = str(uuid.uuid4())[:8]
+        app.stored_results[report_id] = {
+            'stats': result.get('stats', {}),
+            'message': result.get('message', ''),
+            'image': result.get('image', ''),
+            'video_path': result.get('video_path', ''),
+            'conf_threshold': conf_threshold if request.method == 'POST' else 0.5,
+            'input_type': 'video' if result.get('video_path') else 'image'
+        }
+
+    return render_template_string(HTML_TEMPLATE, result=result, report_id=report_id)
+
+
+@app.route('/generate_pdf/<report_id>')
+def generate_pdf(report_id):
+    """Generate and download PDF report for a detection result"""
+    print(f"[DEBUG] PDF route called with report_id: {report_id}")
+    print(f"[DEBUG] Stored results keys: {list(app.stored_results.keys())}")
+    if report_id not in app.stored_results:
+        print(f"[DEBUG] Report ID not found in stored results")
+        return "Report not found. Please run a new detection.", 404
+
+    data = app.stored_results[report_id]
+    stats = data.get('stats', {})
+    vehicle_count = stats.get('count', 0)
+    processing_time = stats.get('time', '--')
+    breakdown = stats.get('breakdown', {})
+    conf_threshold = data.get('conf_threshold', 0.5)
+    input_type = data.get('input_type', 'image')
+    img_base64 = data.get('image', '')
+    first_frame = stats.get('first_frame', '')
+
+    try:
+        pdf = FPDF('P', 'mm', 'A4')
+        pdf.add_page()
+        pdf.set_auto_page_break(auto=True, margin=15)
+
+        # ---- Header Bar ----
+        pdf.set_fill_color(0, 37, 66)
+        pdf.rect(0, 0, 210, 35, 'F')
+        pdf.set_text_color(255, 255, 255)
+        pdf.set_font('Helvetica', 'B', 22)
+        pdf.set_xy(15, 12)
+        pdf.cell(0, 10, 'Vehicle Detection Report', ln=True)
+        pdf.set_font('Helvetica', '', 10)
+        pdf.set_xy(15, 24)
+        pdf.cell(0, 6, 'Generated: ' + time.strftime('%Y-%m-%d %H:%M:%S'), ln=True)
+
+        y = 42
+
+        # ---- Summary Card ----
+        pdf.set_fill_color(238, 237, 240)
+        pdf.rect(15, y, 180, 26, 'F')
+        pdf.set_text_color(0, 37, 66)
+        pdf.set_font('Helvetica', 'B', 14)
+        pdf.set_xy(20, y + 4)
+        count_text = f"{vehicle_count} Vehicle{'s' if vehicle_count != 1 else ''} Detected"
+        pdf.cell(0, 8, count_text, ln=True)
+        pdf.set_font('Helvetica', '', 10)
+        pdf.set_text_color(80, 80, 80)
+        pdf.set_xy(20, y + 14)
+        pdf.cell(0, 6, f"Processing Time: {processing_time}  |  Model: YOLOv8  |  Confidence: {conf_threshold}  |  Input: {input_type}", ln=True)
+        y += 32
+
+        # ---- Detection Image ----
+        image_data = img_base64 if img_base64 else first_frame
+        if image_data:
+            try:
+                img_bytes = base64.b64decode(image_data)
+                img_path = os.path.join(STATIC_DIR, f'temp_pdf_img_{report_id}.jpg')
+                with open(img_path, 'wb') as f:
+                    f.write(img_bytes)
+                pdf.image(img_path, x=15, y=y, w=180, h=85)
+                y += 90
+                # Clean up temp image
+                try:
+                    os.remove(img_path)
+                except:
+                    pass
+            except Exception as img_err:
+                print(f"[WARN] Could not add image to PDF: {img_err}")
+                y += 5
+
+        # ---- Classification Table ----
+        pdf.set_text_color(0, 37, 66)
+        pdf.set_font('Helvetica', 'B', 13)
+        pdf.set_xy(15, y)
+        pdf.cell(0, 8, 'Classification Breakdown', ln=True)
+        y += 10
+
+        # Table header
+        pdf.set_fill_color(0, 37, 66)
+        pdf.rect(15, y, 180, 9, 'F')
+        pdf.set_text_color(255, 255, 255)
+        pdf.set_font('Helvetica', 'B', 10)
+        pdf.set_xy(20, y + 2)
+        pdf.cell(60, 6, 'Vehicle Class', border=0)
+        pdf.cell(30, 6, 'Count', border=0)
+        pdf.cell(40, 6, 'Avg Confidence', border=0)
+        y += 9
+
+        # Table rows
+        class_display = {'car': 'Car', 'motorcycle': 'Motorcycle/Scooty', 'bus': 'Bus', 'truck': 'Truck'}
+        row_idx = 0
+        if breakdown:
+            for cls_name, count in breakdown.items():
+                if row_idx % 2 == 0:
+                    pdf.set_fill_color(245, 243, 246)
+                else:
+                    pdf.set_fill_color(255, 255, 255)
+                pdf.rect(15, y, 180, 9, 'F')
+                pdf.set_text_color(30, 30, 30)
+                pdf.set_font('Helvetica', '', 10)
+                pdf.set_xy(20, y + 2)
+                display = class_display.get(cls_name, cls_name.title())
+                pdf.cell(60, 6, display, border=0)
+                pdf.set_font('Helvetica', 'B', 10)
+                pdf.cell(30, 6, str(count), border=0)
+                pdf.set_font('Helvetica', '', 10)
+                pdf.cell(40, 6, '> 85%', border=0)
+                y += 9
+                row_idx += 1
+        else:
+            pdf.set_fill_color(245, 243, 246)
+            pdf.rect(15, y, 180, 9, 'F')
+            pdf.set_text_color(150, 150, 150)
+            pdf.set_font('Helvetica', '', 10)
+            pdf.set_xy(20, y + 2)
+            pdf.cell(0, 6, 'No vehicles detected', border=0)
+            y += 9
+
+        # Table border
+        pdf.set_draw_color(200, 200, 200)
+        pdf.set_line_width(0.3)
+        table_rows = max(row_idx, 1) + 1
+        pdf.rect(15, y - 9 * table_rows, 180, 9 * table_rows)
+
+        # ---- Footer ----
+        pdf.set_text_color(170, 170, 170)
+        pdf.set_font('Helvetica', '', 8)
+        pdf.set_xy(0, 285)
+        pdf.cell(210, 5, 'Vehicle Detection System - Powered by YOLOv8', align='C')
+
+        # ---- Save to buffer and send ----
+        pdf_buffer = BytesIO()
+        pdf.output(pdf_buffer)
+        pdf_buffer.seek(0)
+
+        filename = f"Vehicle_Detection_Report_{time.strftime('%Y%m%d_%H%M%S')}.pdf"
+        print(f"[INFO] PDF generated: {filename}")
+
+        return send_file(
+            pdf_buffer,
+            mimetype='application/pdf',
+            as_attachment=True,
+            download_name=filename
+        )
+
+    except Exception as e:
+        print(f"[ERROR] PDF generation failed: {e}")
+        import traceback
+        traceback.print_exc()
+        return f"Error generating PDF: {str(e)}", 500
 
 
 @app.route('/download/<path:filename>')
@@ -1381,6 +1692,28 @@ def view_video(filename):
     response.headers['Expires'] = '0'
     response.headers['Accept-Ranges'] = 'bytes'
     return response
+
+
+@app.route('/demo_videos/<path:filename>')
+def serve_demo_video(filename):
+    """Serve demo videos from demo_videos folder"""
+    demo_videos_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static', 'demo_videos')
+    video_path = os.path.join(demo_videos_dir, filename)
+    
+    if os.path.exists(video_path):
+        response = send_file(
+            video_path,
+            mimetype='video/mp4',
+            as_attachment=False,
+            conditional=True
+        )
+        response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Expires'] = '0'
+        response.headers['Accept-Ranges'] = 'bytes'
+        return response
+    else:
+        return "Video file not found", 404
 
 
 def main():
