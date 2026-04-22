@@ -257,7 +257,7 @@ def login_required(f):
 load_dotenv()
 
 # SQLAlchemy setup
-DATABASE_URL = f"postgresql://{os.getenv('DB_USER', 'postgres')}:{os.getenv('DB_PASSWORD', 'admin')}@{os.getenv('DB_HOST', 'localhost')}:{os.getenv('DB_PORT', 5432)}/{os.getenv('DB_NAME', 'vehical_detections')}"
+DATABASE_URL = os.getenv('DATABASE_URL', 'sqlite:///vehical_detections.db')
 
 engine = None
 SessionLocal = None
@@ -266,28 +266,22 @@ def init_db():
     """Initialize database connection and create tables"""
     global engine, SessionLocal, DATABASE_URL
     try:
-        engine = create_engine(DATABASE_URL, pool_size=20, max_overflow=10)
+        # Use SQLite directly
+        if 'sqlite' in DATABASE_URL:
+            engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
+        else:
+            engine = create_engine(DATABASE_URL, pool_size=20, max_overflow=10)
         SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
         # Create all tables
         Base.metadata.create_all(bind=engine)
-        print("[INFO] PostgreSQL connection established and tables created successfully")
+        print(f"[INFO] Database connection established: {DATABASE_URL}")
+        print("[INFO] Tables created successfully")
     except Exception as e:
-        print(f"[WARN] PostgreSQL connection failed: {e}")
-        print("[INFO] Falling back to SQLite database...")
-        try:
-            # Use SQLite as fallback
-            DATABASE_URL = "sqlite:///vehicle_detection.db"
-            engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
-            SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-            # Create all tables
-            Base.metadata.create_all(bind=engine)
-            print("[INFO] SQLite connection established and tables created successfully")
-        except Exception as e2:
-            print(f"[ERROR] SQLite fallback also failed: {e2}")
-            import traceback
-            traceback.print_exc()
-            engine = None
-            SessionLocal = None
+        print(f"[ERROR] Database connection failed: {e}")
+        import traceback
+        traceback.print_exc()
+        engine = None
+        SessionLocal = None
 
 def get_db():
     """Get database session"""

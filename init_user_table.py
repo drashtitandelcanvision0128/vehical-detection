@@ -10,7 +10,7 @@ import os
 load_dotenv()
 
 # Database URL
-DATABASE_URL = f"postgresql://{os.getenv('DB_USER', 'postgres')}:{os.getenv('DB_PASSWORD', 'admin')}@{os.getenv('DB_HOST', 'localhost')}:{os.getenv('DB_PORT', 5432)}/{os.getenv('DB_NAME', 'vehical_detections')}"
+DATABASE_URL = os.getenv('DATABASE_URL', 'sqlite:///vehical_detections.db')
 
 print(f"[INFO] Connecting to database: {DATABASE_URL}")
 
