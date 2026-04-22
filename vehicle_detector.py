@@ -204,34 +204,59 @@ class VehicleDetector:
 
 def process_video(detector, source, output_path=None, display=True, save_frames=False):
     """
-    Process video stream (webcam or file)
+    Process video stream (webcam, Raspberry Pi camera, or file)
     
     Args:
         detector: VehicleDetector instance
-        source: Video source (0 for webcam, or path to video file)
+        source: Video source ('picam' for RPi camera, 0 for webcam, or path to video file)
         output_path: Path to save output video
         display: Whether to display live feed
         save_frames: Whether to save frames with detections
     """
-    # Open video capture
-    if source.isdigit():
-        source = int(source)
-        cap = cv2.VideoCapture(source)
-        # Optimize webcam settings for Raspberry Pi
-        cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
-        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
-        cap.set(cv2.CAP_PROP_FPS, 30)
+    # Check if using Raspberry Pi Camera Module
+    use_picam = (source == 'picam')
+    
+    if use_picam:
+        try:
+            from picamera2 import Picamera2
+            print("[INFO] Using Raspberry Pi Camera Module (picamera2)")
+            picam = Picamera2()
+            config = picam.create_video_configuration(
+                main={"size": (640, 480), "format": "RGB888"}
+            )
+            picam.configure(config)
+            picam.start()
+            time.sleep(2)  # Warm up camera
+            frame_width = 640
+            frame_height = 480
+            fps_input = 30
+        except ImportError:
+            print("[ERROR] picamera2 not installed. Install with: pip install picamera2")
+            print("[INFO] Or use --source 0 for USB webcam")
+            return
+        except Exception as e:
+            print(f"[ERROR] Failed to initialize Raspberry Pi camera: {e}")
+            return
     else:
-        cap = cv2.VideoCapture(source)
-    
-    if not cap.isOpened():
-        print(f"[ERROR] Cannot open video source: {source}")
-        return
-    
-    # Get video properties
-    frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-    frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    fps_input = cap.get(cv2.CAP_PROP_FPS)
+        # Open video capture
+        if source.isdigit():
+            source = int(source)
+            cap = cv2.VideoCapture(source)
+            # Optimize webcam settings for Raspberry Pi
+            cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+            cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+            cap.set(cv2.CAP_PROP_FPS, 30)
+        else:
+            cap = cv2.VideoCapture(source)
+        
+        if not cap.isOpened():
+            print(f"[ERROR] Cannot open video source: {source}")
+            return
+        
+        # Get video properties
+        frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        fps_input = cap.get(cv2.CAP_PROP_FPS)
     
     print(f"[INFO] Video resolution: {frame_width}x{frame_height}")
     print(f"[INFO] Input FPS: {fps_input}")
@@ -252,13 +277,14 @@ def process_video(detector, source, output_path=None, display=True, save_frames=
     
     try:
         while True:
-            ret, frame = cap.read()
-            if not ret:
-                print("[INFO] End of video stream")
-                break
-            
-            # Resize frame for faster processing (optional optimization)
-            # frame = cv2.resize(frame, (640, 480))
+            if use_picam:
+                frame_rgb = picam.capture_array()
+                frame = cv2.cvtColor(frame_rgb, cv2.COLOR_RGB2BGR)
+            else:
+                ret, frame = cap.read()
+                if not ret:
+                    print("[INFO] End of video stream")
+                    break
             
             # Run detection
             loop_start = time.time()
@@ -305,7 +331,11 @@ def process_video(detector, source, output_path=None, display=True, save_frames=
     
     finally:
         # Cleanup
-        cap.release()
+        if use_picam:
+            picam.stop()
+            picam.close()
+        else:
+            cap.release()
         if writer:
             writer.release()
         cv2.destroyAllWindows()
@@ -319,7 +349,7 @@ def main():
     parser.add_argument(
         '--source', '-s',
         default='0',
-        help='Video source: 0 for webcam, or path to video file (default: 0)'
+        help='Video source: picam for RPi camera, 0 for webcam, or path to video file (default: 0)'
     )
     parser.add_argument(
         '--model', '-m',
