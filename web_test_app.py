@@ -3,7 +3,7 @@ Vehicle Detection Web Testing App (Flask)
 Simple web interface for testing vehicle detection on images/videos
 """
 
-from flask import Flask, render_template_string, request, send_file, flash, redirect, session
+from flask import Flask, render_template_string, request, send_file, flash, redirect, session, url_for
 import cv2
 import numpy as np
 from ultralytics import YOLO
@@ -15,12 +15,637 @@ import base64
 from io import BytesIO
 from fpdf import FPDF
 import uuid
+from dotenv import load_dotenv
+import os
+from datetime import datetime
+from sqlalchemy import create_engine, inspect
+from sqlalchemy.orm import sessionmaker, Session
+from models import Base, ImageDetection, VideoDetection, LiveDetection, DetectionHistory, User
+from werkzeug.security import generate_password_hash, check_password_hash
+from functools import wraps
+
+# Import authentication templates
+try:
+    from auth_templates import LOGIN_TEMPLATE, REGISTER_TEMPLATE
+except ImportError:
+    # Fallback templates with full design
+    LOGIN_TEMPLATE = """
+<!DOCTYPE html>
+<html class="light" lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Login - Enterprise Vehicle Intelligence</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+    tailwind.config = {
+        darkMode: "class",
+        theme: {
+            extend: {
+                colors: {
+                    surface: "#faf9fc",
+                    "on-surface": "#1a1c1e",
+                    primary: "#002542",
+                    "primary-container": "#1b3b5a",
+                    "on-primary": "#ffffff",
+                    "on-primary-container": "#87a5ca",
+                    secondary: "#545f6e",
+                    "on-secondary": "#ffffff",
+                    "secondary-container": "#d3deef",
+                    "on-secondary-container": "#576270",
+                    "surface-container": "#eeedf0",
+                    "surface-container-low": "#f4f3f6",
+                    "surface-container-lowest": "#ffffff",
+                    "surface-variant": "#e3e2e5",
+                    "on-surface-variant": "#43474d",
+                    outline: "#73777e",
+                    "outline-variant": "#c3c6ce",
+                }
+            }
+        }
+    }
+</script>
+<style>
+    body { font-family: 'Inter', sans-serif; }
+    h1, h2, h3, .font-headline { font-family: 'Manrope', sans-serif; }
+    .material-symbols-outlined {
+        font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    }
+</style>
+</head>
+<body class="bg-surface text-on-surface min-h-screen flex items-center justify-center p-4">
+<div class="w-full max-w-md">
+    <div class="bg-surface-container-lowest rounded-xl p-8 shadow-[0px_8px_24px_rgba(0,37,66,0.06)] border border-outline-variant/10">
+        <div class="text-center mb-8">
+            <div class="flex items-center justify-center gap-3 mb-4">
+                <span class="material-symbols-outlined text-primary text-5xl">analytics</span>
+            </div>
+            <h1 class="text-2xl font-bold text-primary">Enterprise Vehicle Intelligence</h1>
+            <p class="text-secondary mt-2">Sign in to access vehicle detection</p>
+        </div>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="mb-4 p-4 rounded-lg {% if category == 'error' %}bg-red-50 text-red-800 border border-red-200{% elif category == 'success' %}bg-green-50 text-green-800 border border-green-200{% else %}bg-blue-50 text-blue-800 border border-blue-200{% endif %}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        <form method="POST" action="/login">
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-semibold text-primary mb-2">Username</label>
+                    <input type="text" name="username" required
+                        class="w-full px-4 py-3 rounded-lg border border-outline-variant/40 bg-surface-container-low focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
+                        placeholder="Enter your username">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-primary mb-2">Password</label>
+                    <input type="password" name="password" required
+                        class="w-full px-4 py-3 rounded-lg border border-outline-variant/40 bg-surface-container-low focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
+                        placeholder="Enter your password">
+                </div>
+                <button type="submit"
+                    class="w-full h-12 bg-gradient-to-br from-primary to-primary-container text-white font-bold rounded-lg shadow-lg hover:shadow-primary/20 hover:-translate-y-0.5 active:translate-y-0 transition-all flex items-center justify-center gap-2">
+                    <span class="material-symbols-outlined">login</span>
+                    Sign In
+                </button>
+            </div>
+        </form>
+        <div class="mt-6 text-center">
+            <p class="text-secondary text-sm">
+                Don't have an account? 
+                <a href="/register" class="text-primary font-semibold hover:underline">Register here</a>
+            </p>
+        </div>
+    </div>
+</div>
+</body>
+</html>
+"""
+    REGISTER_TEMPLATE = """
+<!DOCTYPE html>
+<html class="light" lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Register - Enterprise Vehicle Intelligence</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+    tailwind.config = {
+        darkMode: "class",
+        theme: {
+            extend: {
+                colors: {
+                    surface: "#faf9fc",
+                    "on-surface": "#1a1c1e",
+                    primary: "#002542",
+                    "primary-container": "#1b3b5a",
+                    "on-primary": "#ffffff",
+                    "on-primary-container": "#87a5ca",
+                    secondary: "#545f6e",
+                    "on-secondary": "#ffffff",
+                    "secondary-container": "#d3deef",
+                    "on-secondary-container": "#576270",
+                    "surface-container": "#eeedf0",
+                    "surface-container-low": "#f4f3f6",
+                    "surface-container-lowest": "#ffffff",
+                    "surface-variant": "#e3e2e5",
+                    "on-surface-variant": "#43474d",
+                    outline: "#73777e",
+                    "outline-variant": "#c3c6ce",
+                }
+            }
+        }
+    }
+</script>
+<style>
+    body { font-family: 'Inter', sans-serif; }
+    h1, h2, h3, .font-headline { font-family: 'Manrope', sans-serif; }
+    .material-symbols-outlined {
+        font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    }
+</style>
+</head>
+<body class="bg-surface text-on-surface min-h-screen flex items-center justify-center p-4">
+<div class="w-full max-w-md">
+    <div class="bg-surface-container-lowest rounded-xl p-8 shadow-[0px_8px_24px_rgba(0,37,66,0.06)] border border-outline-variant/10">
+        <div class="text-center mb-8">
+            <div class="flex items-center justify-center gap-3 mb-4">
+                <span class="material-symbols-outlined text-primary text-5xl">analytics</span>
+            </div>
+            <h1 class="text-2xl font-bold text-primary">Enterprise Vehicle Intelligence</h1>
+            <p class="text-secondary mt-2">Create your account</p>
+        </div>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="mb-4 p-4 rounded-lg {% if category == 'error' %}bg-red-50 text-red-800 border border-red-200{% elif category == 'success' %}bg-green-50 text-green-800 border border-green-200{% else %}bg-blue-50 text-blue-800 border border-blue-200{% endif %}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        <form method="POST" action="/register">
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-semibold text-primary mb-2">Username</label>
+                    <input type="text" name="username" required
+                        class="w-full px-4 py-3 rounded-lg border border-outline-variant/40 bg-surface-container-low focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
+                        placeholder="Choose a username">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-primary mb-2">Email</label>
+                    <input type="email" name="email" required
+                        class="w-full px-4 py-3 rounded-lg border border-outline-variant/40 bg-surface-container-low focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
+                        placeholder="Enter your email">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-primary mb-2">Password</label>
+                    <input type="password" name="password" required minlength="6"
+                        class="w-full px-4 py-3 rounded-lg border border-outline-variant/40 bg-surface-container-low focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
+                        placeholder="Create a password (min 6 characters)">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-primary mb-2">Confirm Password</label>
+                    <input type="password" name="confirm_password" required minlength="6"
+                        class="w-full px-4 py-3 rounded-lg border border-outline-variant/40 bg-surface-container-low focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
+                        placeholder="Confirm your password">
+                </div>
+                <button type="submit"
+                    class="w-full h-12 bg-gradient-to-br from-primary to-primary-container text-white font-bold rounded-lg shadow-lg hover:shadow-primary/20 hover:-translate-y-0.5 active:translate-y-0 transition-all flex items-center justify-center gap-2">
+                    <span class="material-symbols-outlined">person_add</span>
+                    Create Account
+                </button>
+            </div>
+        </form>
+        <div class="mt-6 text-center">
+            <p class="text-secondary text-sm">
+                Already have an account? 
+                <a href="/login" class="text-primary font-semibold hover:underline">Sign in here</a>
+            </p>
+        </div>
+    </div>
+</div>
+</body>
+</html>
+"""
 
 app = Flask(__name__)
 app.secret_key = 'vehicle-detection-secret-key'
 
+# Authentication decorator
+def login_required(f):
+    """Decorator to require login for protected routes"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            # Check if it's an AJAX request
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json:
+                return {'success': False, 'error': 'Not logged in'}, 401
+            flash('Please login to access this page.', 'warning')
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+# Load environment variables
+load_dotenv()
+
+# SQLAlchemy setup
+DATABASE_URL = f"postgresql://{os.getenv('DB_USER', 'postgres')}:{os.getenv('DB_PASSWORD', 'admin')}@{os.getenv('DB_HOST', 'localhost')}:{os.getenv('DB_PORT', 5432)}/{os.getenv('DB_NAME', 'vehical_detections')}"
+
+engine = None
+SessionLocal = None
+
+def init_db():
+    """Initialize database connection and create tables"""
+    global engine, SessionLocal, DATABASE_URL
+    try:
+        engine = create_engine(DATABASE_URL, pool_size=20, max_overflow=10)
+        SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+        # Create all tables
+        Base.metadata.create_all(bind=engine)
+        print("[INFO] PostgreSQL connection established and tables created successfully")
+    except Exception as e:
+        print(f"[WARN] PostgreSQL connection failed: {e}")
+        print("[INFO] Falling back to SQLite database...")
+        try:
+            # Use SQLite as fallback
+            DATABASE_URL = "sqlite:///vehicle_detection.db"
+            engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
+            SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+            # Create all tables
+            Base.metadata.create_all(bind=engine)
+            print("[INFO] SQLite connection established and tables created successfully")
+        except Exception as e2:
+            print(f"[ERROR] SQLite fallback also failed: {e2}")
+            import traceback
+            traceback.print_exc()
+            engine = None
+            SessionLocal = None
+
+def get_db():
+    """Get database session"""
+    if SessionLocal is None:
+        return None
+    return SessionLocal()
+
+# Authentication Routes (defined after get_db() is available)
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    """Login page"""
+    if 'user_id' in session:
+        return redirect(url_for('index'))
+        
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        
+        db = get_db()
+        if not db:
+            flash('Database connection error. Please try again.', 'error')
+            return render_template_string(LOGIN_TEMPLATE)
+        
+        try:
+            user = db.query(User).filter(User.username == username).first()
+            if user and check_password_hash(user.password_hash, password):
+                session['user_id'] = user.id
+                session['username'] = user.username
+                flash('Login successful!', 'success')
+                return redirect(url_for('index'))
+            else:
+                flash('Invalid username or password.', 'error')
+        except Exception as e:
+            print(f"[ERROR] Login error: {e}")
+            flash('Login failed. Please try again.', 'error')
+        finally:
+            db.close()
+    
+    return render_template_string(LOGIN_TEMPLATE)
+
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    """Registration page"""
+    if 'user_id' in session:
+        return redirect(url_for('index'))
+        
+    if request.method == 'POST':
+        username = request.form.get('username')
+        email = request.form.get('email')
+        password = request.form.get('password')
+        confirm_password = request.form.get('confirm_password')
+        
+        # Validation
+        if not username or not email or not password:
+            flash('All fields are required.', 'error')
+            return render_template_string(REGISTER_TEMPLATE)
+        
+        if password != confirm_password:
+            flash('Passwords do not match.', 'error')
+            return render_template_string(REGISTER_TEMPLATE)
+        
+        if len(password) < 6:
+            flash('Password must be at least 6 characters.', 'error')
+            return render_template_string(REGISTER_TEMPLATE)
+        
+        db = get_db()
+        if not db:
+            flash('Database connection error. Please try again.', 'error')
+            return render_template_string(REGISTER_TEMPLATE)
+        
+        try:
+            existing_user = db.query(User).filter(
+                (User.username == username) | (User.email == email)
+            ).first()
+            
+            if existing_user:
+                flash('Username or email already exists.', 'error')
+                return render_template_string(REGISTER_TEMPLATE)
+            
+            new_user = User(
+                username=username,
+                email=email,
+                password_hash=generate_password_hash(password),
+                is_active=1
+            )
+            db.add(new_user)
+            db.commit()
+            
+            flash('Registration successful! Please login.', 'success')
+            return redirect(url_for('login'))
+        except Exception as e:
+            print(f"[ERROR] Registration error: {e}")
+            db.rollback()
+            flash('Registration failed. Please try again.', 'error')
+        finally:
+            db.close()
+    
+    return render_template_string(REGISTER_TEMPLATE)
+
+
+@app.route('/logout')
+def logout():
+    """Logout user"""
+    session.clear()
+    flash('You have been logged out.', 'info')
+    return redirect(url_for('login'))
+
+def save_detection_to_db(report_id, timestamp, input_type, message, stats, image_data, video_path, conf_threshold):
+    """Save detection result to database using SQLAlchemy"""
+    print(f"[DEBUG] save_detection_to_db called: report_id={report_id}, input_type={input_type}")
+    print(f"[DEBUG] Stats received: {stats}, type: {type(stats)}")
+
+    db = get_db()
+    if not db:
+        print("[WARN] Could not get database session, using memory fallback")
+        return False
+
+    try:
+        user_id = session.get('user_id')
+        # Ensure stats is a dict
+        if isinstance(stats, str):
+            try:
+                import json
+                stats = json.loads(stats)
+                print(f"[DEBUG] Stats converted from string to dict")
+            except Exception as e:
+                print(f"[DEBUG] Failed to parse stats as JSON: {e}")
+                stats = {}
+        elif not isinstance(stats, dict):
+            stats = {}
+
+        vehicle_count = stats.get('count', 0) if stats else 0
+        processing_time = stats.get('time', '') if stats else ''
+        breakdown = stats.get('breakdown', '') if isinstance(stats, dict) else ''
+
+        # Convert breakdown dict to string for database storage
+        if isinstance(breakdown, dict):
+            breakdown_str = ', '.join([f"{k}: {v}" for k, v in breakdown.items()])
+        else:
+            breakdown_str = str(breakdown) if breakdown else ''
+
+        print(f"[DEBUG] Saving detection: count={vehicle_count}, type={input_type}")
+
+        # Save to specific table based on type (use merge to handle duplicates)
+        if input_type == 'video':
+            existing = db.query(VideoDetection).filter_by(report_id=report_id).first()
+            if existing:
+                existing.timestamp = datetime.strptime(timestamp, '%Y-%m-%d %H:%M:%S')
+                existing.message = message
+                existing.vehicle_count = vehicle_count
+                existing.processing_time = processing_time
+                existing.confidence_threshold = conf_threshold
+                existing.video_path = video_path
+                existing.stats = stats
+                existing.breakdown = breakdown_str
+                existing.user_id = user_id
+            else:
+                detection = VideoDetection(
+                    report_id=report_id,
+                    timestamp=datetime.strptime(timestamp, '%Y-%m-%d %H:%M:%S'),
+                    message=message,
+                    vehicle_count=vehicle_count,
+                    processing_time=processing_time,
+                    confidence_threshold=conf_threshold,
+                    video_path=video_path,
+                    stats=stats,
+                    breakdown=breakdown_str,
+                    user_id=user_id
+                )
+                db.add(detection)
+        else:
+            existing = db.query(ImageDetection).filter_by(report_id=report_id).first()
+            if existing:
+                existing.timestamp = datetime.strptime(timestamp, '%Y-%m-%d %H:%M:%S')
+                existing.message = message
+                existing.vehicle_count = vehicle_count
+                existing.processing_time = processing_time
+                existing.confidence_threshold = conf_threshold
+                existing.image_data = image_data
+                existing.stats = stats
+                existing.breakdown = breakdown_str
+                existing.user_id = user_id
+            else:
+                detection = ImageDetection(
+                    report_id=report_id,
+                    timestamp=datetime.strptime(timestamp, '%Y-%m-%d %H:%M:%S'),
+                    message=message,
+                    vehicle_count=vehicle_count,
+                    processing_time=processing_time,
+                    confidence_threshold=conf_threshold,
+                    image_data=image_data,
+                    stats=stats,
+                    breakdown=breakdown_str,
+                    user_id=user_id
+                )
+                db.add(detection)
+
+        # Also save to unified history table (simplified - only report data)
+        existing_history = db.query(DetectionHistory).filter_by(report_id=report_id).first()
+        if existing_history:
+            existing_history.detection_type = input_type
+            existing_history.timestamp = datetime.strptime(timestamp, '%Y-%m-%d %H:%M:%S')
+            existing_history.vehicle_count = vehicle_count
+            existing_history.processing_time = processing_time
+            existing_history.confidence_threshold = conf_threshold
+            existing_history.breakdown = breakdown_str
+            existing_history.image_data = image_data if input_type == 'image' else None
+            existing_history.video_path = video_path if input_type == 'video' else None
+            existing_history.user_id = user_id
+        else:
+            history_entry = DetectionHistory(
+                report_id=report_id,
+                detection_type=input_type,
+                timestamp=datetime.strptime(timestamp, '%Y-%m-%d %H:%M:%S'),
+                vehicle_count=vehicle_count,
+                processing_time=processing_time,
+                confidence_threshold=conf_threshold,
+                breakdown=breakdown_str,
+                image_data=image_data if input_type == 'image' else None,
+                video_path=video_path if input_type == 'video' else None,
+                user_id=user_id
+            )
+            db.add(history_entry)
+
+        db.commit()
+        print(f"[INFO] Detection saved to database: {report_id}, type={input_type}")
+        return True
+    except Exception as e:
+        print(f"[ERROR] Failed to save detection to database: {e}")
+        import traceback
+        traceback.print_exc()
+        db.rollback()
+        raise  # Re-raise so caller can report the actual error
+    finally:
+        db.close()
+
+def get_detection_history_from_db(limit=50):
+    """Fetch detection history from unified history table using SQLAlchemy"""
+    db = get_db()
+    if not db:
+        print("[WARN] Could not get database session, using memory fallback")
+        return app.detection_history[:limit]
+
+    try:
+        # Get user_id from session
+        user_id = session.get('user_id')
+        print(f"[DEBUG] Fetching history for user_id: {user_id}")
+        
+        # Get detections filtered by user_id from unified history table
+        query = db.query(DetectionHistory).order_by(DetectionHistory.timestamp.desc())
+        if user_id:
+            query = query.filter(DetectionHistory.user_id == user_id)
+        history_records = query.limit(limit).all()
+
+        # Convert to history format
+        history = []
+        for record in history_records:
+            history.append({
+                'id': record.report_id,
+                'timestamp': record.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
+                'input_type': record.detection_type,
+                'message': '',
+                'stats': {'count': record.vehicle_count, 'time': record.processing_time},
+                'image': record.image_data,
+                'video_path': record.video_path
+            })
+
+        print(f"[INFO] Fetched {len(history)} records from unified history table")
+        return history
+    except Exception as e:
+        print(f"[ERROR] Failed to fetch history from database: {e}")
+        return app.detection_history[:limit]
+    finally:
+        db.close()
+
+def save_live_detection_to_db(report_id, session_start, session_end, total_detections, conf_threshold, stats, breakdown):
+    """Save live detection session to database"""
+    db = get_db()
+    if not db:
+        print("[WARN] Could not get database session, using memory fallback")
+        return False
+
+    try:
+        user_id = session.get('user_id')
+        # Save to live_detections table (handle duplicates)
+        existing = db.query(LiveDetection).filter_by(report_id=report_id).first()
+        if existing:
+            existing.timestamp = datetime.utcnow()
+            existing.session_start = session_start
+            existing.session_end = session_end
+            existing.total_detections = total_detections
+            existing.confidence_threshold = conf_threshold
+            existing.stats = stats
+            existing.breakdown = breakdown
+            existing.user_id = user_id
+        else:
+            live_detection = LiveDetection(
+                report_id=report_id,
+                timestamp=datetime.utcnow(),
+                session_start=session_start,
+                session_end=session_end,
+                total_detections=total_detections,
+                confidence_threshold=conf_threshold,
+                stats=stats,
+                breakdown=breakdown,
+                user_id=user_id
+            )
+            db.add(live_detection)
+
+        # Also save to unified history table (no message/stats columns - simplified)
+        breakdown_str = ''
+        if isinstance(breakdown, dict):
+            breakdown_str = ', '.join([f"{k}: {v}" for k, v in breakdown.items()])
+        elif isinstance(breakdown, str):
+            breakdown_str = breakdown
+
+        existing_history = db.query(DetectionHistory).filter_by(report_id=report_id).first()
+        if existing_history:
+            existing_history.detection_type = 'live'
+            existing_history.timestamp = datetime.utcnow()
+            existing_history.vehicle_count = total_detections
+            existing_history.processing_time = ''
+            existing_history.confidence_threshold = conf_threshold
+            existing_history.breakdown = breakdown_str
+            existing_history.image_data = None
+            existing_history.video_path = None
+            existing_history.user_id = user_id
+        else:
+            history_entry = DetectionHistory(
+                report_id=report_id,
+                detection_type='live',
+                timestamp=datetime.utcnow(),
+                vehicle_count=total_detections,
+                processing_time='',
+                confidence_threshold=conf_threshold,
+                breakdown=breakdown_str,
+                image_data=None,
+                video_path=None,
+                user_id=user_id
+            )
+            db.add(history_entry)
+
+        db.commit()
+        print(f"[INFO] Live detection saved to database: {report_id}")
+        return True
+    except Exception as e:
+        print(f"[ERROR] Failed to save live detection to database: {e}")
+        db.rollback()
+        return False
+    finally:
+        db.close()
+
 # Store detection results for PDF generation (keyed by report_id)
 app.stored_results = {}
+
+# Store detection history (fallback if DB not available)
+app.detection_history = []
 
 # Increase max upload size to 500MB for large video uploads
 app.config['MAX_CONTENT_LENGTH'] = 500 * 1024 * 1024
@@ -189,12 +814,19 @@ HTML_TEMPLATE = """
 </div>
 <div class="flex items-center gap-6">
 <nav class="hidden md:flex gap-6">
-<a class="text-blue-900 font-semibold text-sm" href="#">Upload</a>
-<a class="text-slate-500 hover:bg-blue-50 transition-colors px-3 py-1 rounded-lg text-sm" href="#">Real-time</a>
-<a class="text-slate-500 hover:bg-blue-50 transition-colors px-3 py-1 rounded-lg text-sm" href="#">History</a>
+<a class="text-blue-900 font-semibold text-sm" href="/">Upload</a>
+<a class="text-slate-500 hover:bg-blue-50 transition-colors px-3 py-1 rounded-lg text-sm" href="/live">Real-time</a>
+<a class="text-slate-500 hover:bg-blue-50 transition-colors px-3 py-1 rounded-lg text-sm" href="/history">History</a>
 </nav>
-<div class="h-10 w-10 rounded-full overflow-hidden border border-outline-variant/30">
-<img class="w-full h-full object-cover" src="https://ui-avatars.com/api/?name=Admin&background=0D8ABC&color=fff"/>
+<div class="flex items-center gap-3 border-l border-outline-variant/20 pl-6">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-sm">account_circle</span>
+<span class="text-sm font-semibold text-primary">{{ session.get('username', 'User') }}</span>
+</div>
+<a href="/logout" class="flex items-center gap-1 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 transition-colors px-3 py-1.5 rounded-lg font-semibold">
+<span class="material-symbols-outlined text-sm">logout</span>
+Logout
+</a>
 </div>
 </div>
 </header>
@@ -239,7 +871,7 @@ HTML_TEMPLATE = """
 </section>
 </div>
 <!-- Right Column: Testing Interface -->
-<div class="lg:col-span-8 space-y-6">
+<div class="lg:col-span-8 space-y-6 text-center">
 <!-- Main Upload Area -->
 <div class="bg-surface-container-lowest rounded-xl p-8 shadow-[0px_8px_24px_rgba(0,37,66,0.06)] border border-outline-variant/10">
 <div class="relative group cursor-pointer border-2 border-dashed border-outline-variant/40 rounded-xl transition-all hover:border-primary/40 hover:bg-surface-container-low flex flex-col items-center justify-center min-h-[300px] text-center p-12" id="dragDropArea">
@@ -252,15 +884,16 @@ HTML_TEMPLATE = """
 <strong>Selected:</strong> <span id="fileName"></span>
 </div>
 </div>
-<form action="/" method="POST" enctype="multipart/form-data" id="uploadForm">
+</div>
+<form action="/" method="POST" enctype="multipart/form-data" id="uploadForm" class="text-center mt-6">
 <input type="file" name="file" id="fileInput" accept=".jpg,.jpeg,.png,.mp4,.avi,.mov" style="display: none;">
 <input type="hidden" name="pasted_image" id="pastedImageData">
-<div class="mt-6 flex flex-wrap justify-center gap-4">
+<div class="flex flex-wrap justify-center gap-4">
 <button type="button" class="flex items-center gap-2 px-6 py-2.5 bg-surface-container-high text-primary font-semibold rounded-lg hover:bg-surface-variant transition-colors" id="copyPasteBtn" onclick="enablePasteMode()">
 <span class="material-symbols-outlined text-xl">content_paste</span>
                             Paste Image
                         </button>
-<button type="button" class="flex items-center gap-2 px-6 py-2.5 bg-surface-container-high text-primary font-semibold rounded-lg hover:bg-surface-variant transition-colors" id="webcamBtn" onclick="startWebcam()">
+<button type="button" class="flex items-center gap-2 px-6 py-2.5 bg-surface-container-high text-primary font-semibold rounded-lg hover:bg-surface-variant transition-colors" id="webcamBtn" onclick="window.location.href='/live'">
 <span class="material-symbols-outlined text-xl">videocam</span>
                             Live Webcam
                         </button>
@@ -280,27 +913,15 @@ HTML_TEMPLATE = """
                 </button>
 </div>
 <!-- Controls Section -->
-<div class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-8 items-end">
-<div class="space-y-4">
-<div class="flex justify-between items-center">
-<label class="text-label-md font-bold text-primary uppercase tracking-widest">Confidence Threshold</label>
-<span class="text-sm font-mono font-bold text-primary" id="confValue">0.50</span>
-</div>
-<input class="w-full h-2 bg-surface-container-highest rounded-lg appearance-none cursor-pointer accent-primary" max="1" min="0" step="0.01" type="range" name="confidence" value="0.5" oninput="document.getElementById('confValue').textContent = this.value">
-<div class="flex justify-between text-[10px] font-bold text-slate-400 uppercase">
-<span>Precision</span>
-<span>Recall</span>
-</div>
-</div>
-<div>
-<button type="submit" class="w-full h-14 bg-gradient-to-br from-primary to-primary-container text-white font-bold rounded-lg shadow-lg hover:shadow-primary/20 hover:-translate-y-0.5 active:translate-y-0 transition-all flex items-center justify-center gap-3" id="detectBtn">
+<div class="mt-8 grid grid-cols-1 gap-8 items-end flex justify-center">
+<div class="flex justify-center">
+<button type="submit" class="h-14 bg-gradient-to-br from-primary to-primary-container text-white font-bold rounded-lg shadow-lg hover:shadow-primary/20 hover:-translate-y-0.5 active:translate-y-0 transition-all flex items-center justify-center gap-3 min-w-[240px] px-8" id="detectBtn">
 <span class="material-symbols-outlined">analytics</span>
                             Detect Vehicles
                         </button>
 </div>
 </div>
 </form>
-</div>
 <!-- Bento Preview Section -->
 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
 <div class="md:col-span-2 bg-surface-container-high rounded-xl overflow-hidden aspect-video relative">
@@ -317,10 +938,10 @@ Your browser does not support the video tag.
 </div>
 </div>
 <!-- Webcam Section -->
-<div id="webcamSection" style="display: none; margin: 20px 0; padding: 20px; border: 2px solid #9C27B0; border-radius: 5px; background: #f3e5f5;">
-<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+<div id="webcamSection" style="display: none; margin: 0; padding: 0; border: none; background: #000; width: 100%; min-height: 80vh; position: fixed; top: 64px; left: 0; right: 0; z-index: 100;">
+<div style="display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; background: rgba(156, 39, 176, 0.9); position: absolute; top: 0; left: 0; right: 0; z-index: 101;">
 <div style="display: flex; align-items: center; gap: 15px;">
-<h3 style="color: #9C27B0; margin: 0;">Live Webcam Detection</h3>
+<h3 style="color: white; margin: 0;">Live Webcam Detection</h3>
 <div id="detectionStatusBadge" style="padding: 5px 15px; border-radius: 20px; font-size: 14px; font-weight: bold; background: #FFC107; color: #333;">
                         Waiting...
                     </div>
@@ -329,14 +950,14 @@ Your browser does not support the video tag.
                     Stop Webcam
                 </button>
 </div>
-<div style="display: flex; gap: 20px; flex-wrap: wrap;">
-<div style="flex: 1; min-width: 300px;">
-<p style="color: #666; font-weight: bold; margin-bottom: 5px;">Original Feed:</p>
-<video id="webcamVideo" autoplay playsinline style="width: 100%; max-width: 640px; border-radius: 5px; background: #000;"></video>
+<div style="display: flex; gap: 20px; flex-wrap: wrap; width: 100%; height: 100%; padding-top: 50px;">
+<div style="flex: 1; min-width: 50%;">
+<p style="color: white; font-weight: bold; margin-bottom: 5px; padding-left: 20px;">Original Feed:</p>
+<video id="webcamVideo" autoplay playsinline style="width: 100%; height: calc(100vh - 150px); object-fit: contain; background: #000;"></video>
 </div>
-<div style="flex: 1; min-width: 300px;">
-<p style="color: #666; font-weight: bold; margin-bottom: 5px;">Detection Output:</p>
-<canvas id="detectionCanvas" style="width: 100%; max-width: 640px; border-radius: 5px; background: #000;"></canvas>
+<div style="flex: 1; min-width: 50%;">
+<p style="color: white; font-weight: bold; margin-bottom: 5px; padding-left: 20px;">Detection Output:</p>
+<canvas id="detectionCanvas" style="width: 100%; height: calc(100vh - 150px); object-fit: contain; background: #000;"></canvas>
 </div>
 </div>
 <div id="webcamStats" style="margin-top: 15px; padding: 15px; background: white; border-radius: 5px; border-left: 5px solid #9C27B0;">
@@ -358,13 +979,18 @@ Your browser does not support the video tag.
 {% if result %}
 <div class="fixed inset-0 bg-surface z-50 overflow-y-auto" style="display: none;" id="resultModal">
 <!-- TopAppBar -->
-<header class="sticky top-0 z-50 bg-[#faf9fc] shadow-[0px_8px_24px_rgba(0,37,66,0.06)] flex justify-between items-center w-full px-6 h-16">
-<div class="flex items-center gap-4">
-<button class="material-symbols-outlined text-[#002542] active:scale-95 duration-200 hover:bg-[#e3e2e5] p-2 rounded-full" onclick="closeResultModal()">arrow_back</button>
-<h1 class="font-['Manrope'] font-bold tracking-tight text-[#002542] text-xl">Detection Analysis</h1>
+<header class="sticky top-0 z-50 bg-slate-50/70 backdrop-blur-md shadow-[0px_8px_24px_rgba(0,37,66,0.06)] flex items-center justify-between px-6 h-16">
+<div class="flex items-center gap-3">
+<button class="material-symbols-outlined text-blue-900 active:scale-95 duration-200 hover:bg-blue-50 p-2 rounded-full" onclick="closeResultModal()">arrow_back</button>
+<span class="material-symbols-outlined text-blue-900">analytics</span>
+<span class="text-xl font-bold tracking-tight text-blue-900">Enterprise Vehicle Intelligence</span>
 </div>
-<div class="flex items-center gap-2">
-<button class="material-symbols-outlined text-[#002542] active:scale-95 duration-200 hover:bg-[#e3e2e5] p-2 rounded-full">more_vert</button>
+<div class="flex items-center gap-6">
+<nav class="hidden md:flex gap-6">
+<a class="text-slate-500 hover:bg-blue-50 transition-colors px-3 py-1 rounded-lg text-sm" href="/">Upload</a>
+<a class="text-slate-500 hover:bg-blue-50 transition-colors px-3 py-1 rounded-lg text-sm" href="/live">Real-time</a>
+<a class="text-slate-500 hover:bg-blue-50 transition-colors px-3 py-1 rounded-lg text-sm" href="/history">History</a>
+</nav>
 </div>
 </header>
 <main class="max-w-7xl mx-auto px-4 md:px-8 py-8">
@@ -421,8 +1047,9 @@ Your browser does not support the video tag.
 <p class="text-white font-bold mb-3">Full Video with Detection:</p>
 <video width="100%" height="auto" controls 
 class="max-h-96 rounded-lg"
-preload="metadata">
-<source src="/view/videos/{{ result.video_path }}?t={{ result.timestamp }}" type="video/mp4">
+preload="metadata"
+style="max-height: 400px;">
+<source src="/view/{{ result.video_path }}?t={{ result.timestamp }}" type="video/mp4">
 <p class="text-white py-8">
 Your browser does not support video playback.<br>
 Use the buttons below to view or download.
@@ -430,7 +1057,7 @@ Use the buttons below to view or download.
 </video>
 </div>
 <div class="mt-4 flex gap-3 flex-wrap justify-center">
-<a href="/view/videos/{{ result.video_path }}?t={{ result.timestamp }}" target="_blank" 
+<a href="/view/{{ result.video_path }}?t={{ result.timestamp }}" target="_blank" 
 class="px-6 py-3 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 transition-colors">
 Open in New Tab
 </a>
@@ -534,12 +1161,42 @@ Download Video
     });
     {% endif %}
 
-    function downloadPDF(reportId) {
+    async function downloadPDF(reportId) {
         console.log('[DEBUG] downloadPDF called with reportId:', reportId);
         if (!reportId || reportId === '') {
             alert('No report data found. Please run a new detection.');
             return;
         }
+        
+        // First save report to database
+        let saveSuccess = false;
+        try {
+            const response = await fetch('/save_report/' + reportId, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+            
+            const result = await response.json();
+            if (result.success) {
+                console.log('[DEBUG] Report saved to database');
+                saveSuccess = true;
+            } else {
+                console.warn('[WARN] Failed to save report:', result.error);
+                alert('Failed to save report: ' + (result.error || 'Unknown error'));
+            }
+        } catch (err) {
+            console.warn('[WARN] Error saving report:', err);
+            alert('Error saving report: ' + err.message);
+        }
+        
+        if (!saveSuccess) {
+            return;  // Don't download PDF if save failed
+        }
+        
+        // Then download PDF
         alert('Downloading PDF for report: ' + reportId);
         window.location.href = '/generate_pdf/' + reportId;
     }
@@ -1307,6 +1964,7 @@ def detect_vehicles_video(video_path, output_path, conf_threshold=0.4):
 
 
 @app.route('/', methods=['GET', 'POST'])
+@login_required
 def index():
     result = None
     conf_threshold = 0.5
@@ -1317,6 +1975,8 @@ def index():
         
         # Check for pasted image first
         pasted_image_data = request.form.get('pasted_image', '')
+        
+        pasted_image_processed = False
         
         if pasted_image_data and pasted_image_data.startswith('data:image'):
             # Handle pasted image from clipboard
@@ -1336,86 +1996,146 @@ def index():
                     'stats': stats
                 }
                 
-                return render_template_string(HTML_TEMPLATE, result=result)
+                # Set flag to skip regular file upload handling
+                pasted_image_processed = True
             except Exception as e:
                 flash(f'Error processing pasted image: {str(e)}')
                 return redirect(request.url)
         
-        # Handle regular file upload
-        if 'file' not in request.files:
-            flash('No file uploaded')
-            return redirect(request.url)
-        
-        file = request.files['file']
-        if file.filename == '':
-            flash('No file selected')
-            return redirect(request.url)
-        
-        # Read file data
-        file_data = file.read()
-        filename = file.filename.lower()
-        
-        if filename.endswith(('.jpg', '.jpeg', '.png')):
-            # Process image
-            img_base64, message, stats = detect_vehicles_image(file_data, conf_threshold)
+        # Handle regular file upload (only if not already processed)
+        if not pasted_image_processed:
+            if 'file' not in request.files:
+                flash('No file uploaded')
+                return redirect(request.url)
             
-            result = {
-                'success': stats['count'] > 0,
-                'message': message,
-                'image': img_base64,
-                'stats': stats
-            }
+            file = request.files['file']
+            if file.filename == '':
+                flash('No file selected')
+                return redirect(request.url)
             
-        elif filename.endswith(('.mp4', '.avi', '.mov')):
-            # Process video
-            # Save uploaded video temporarily
-            temp_input = tempfile.mktemp(suffix='.mp4')
-            with open(temp_input, 'wb') as f:
-                f.write(file_data)
+            # Read file data
+            file_data = file.read()
+            filename = file.filename.lower()
             
-            # Create output path in static directory for reliable serving
-            timestamp = int(time.time())
-            temp_output = os.path.join(STATIC_DIR, f'processed_{timestamp}.mp4')
-            
-            video_path, message, stats = detect_vehicles_video(temp_input, temp_output, conf_threshold)
-            
-            # Clean up input
-            os.remove(temp_input)
-            
-            # Use relative path from static folder
-            video_filename = os.path.basename(temp_output)
-            
-            result = {
-                'success': stats['count'] > 0,
-                'message': message,
-                'video_path': video_filename,
-                'timestamp': timestamp,
-                'stats': stats
-            }
-            
-            # Store output path for cleanup later
-            if not hasattr(app, 'temp_videos'):
-                app.temp_videos = {}
-            app.temp_videos[video_filename] = temp_output
-            
-        else:
-            flash('Unsupported file format. Use: JPG, PNG, MP4, AVI, MOV')
-            return redirect(request.url)
+            if filename.endswith(('.jpg', '.jpeg', '.png')):
+                # Process image
+                img_base64, message, stats = detect_vehicles_image(file_data, conf_threshold)
+                
+                result = {
+                    'success': stats['count'] > 0,
+                    'message': message,
+                    'image': img_base64,
+                    'stats': stats
+                }
+                
+            elif filename.endswith(('.mp4', '.avi', '.mov')):
+                # Process video
+                # Save uploaded video temporarily
+                temp_input = tempfile.mktemp(suffix='.mp4')
+                with open(temp_input, 'wb') as f:
+                    f.write(file_data)
+                
+                # Create output path in static directory for reliable serving
+                timestamp = int(time.time())
+                temp_output = os.path.join(STATIC_DIR, f'processed_{timestamp}.mp4')
+                
+                video_path, message, stats = detect_vehicles_video(temp_input, temp_output, conf_threshold)
+                
+                # Clean up input
+                os.remove(temp_input)
+                
+                # Use relative path from static folder
+                video_filename = os.path.basename(temp_output)
+                
+                result = {
+                    'success': stats['count'] > 0,
+                    'message': message,
+                    'video_path': video_filename,
+                    'timestamp': timestamp,
+                    'stats': stats
+                }
+                
+                # Store output path for cleanup later
+                if not hasattr(app, 'temp_videos'):
+                    app.temp_videos = {}
+                app.temp_videos[video_filename] = temp_output
+                
+            else:
+                flash('Unsupported file format. Use: JPG, PNG, MP4, AVI, MOV')
+                return redirect(request.url)
     
-    # Store result for PDF generation
+    # Store result for PDF generation and history
     report_id = ''
     if result:
         report_id = str(uuid.uuid4())[:8]
+
+        print(f"[DEBUG] Result stats: {result.get('stats')}, type: {type(result.get('stats'))}")
+
+        # Get user info from session and database
+        user_id = session.get('user_id')
+        username = session.get('username')
+        user_info_for_pdf = None
+        
+        if user_id:
+            try:
+                db = get_db()
+                if db:
+                    user = db.query(User).filter(User.id == user_id).first()
+                    if user:
+                        user_info_for_pdf = {
+                            'id': user.id,
+                            'username': user.username,
+                            'email': user.email
+                        }
+                    db.close()
+            except Exception as e:
+                print(f"[WARN] Could not fetch user info: {e}")
+        
+        print(f"[DEBUG] Storing result for user_id: {user_id}, username: {username}, user_info: {user_info_for_pdf}")
+
         app.stored_results[report_id] = {
             'stats': result.get('stats', {}),
             'message': result.get('message', ''),
             'image': result.get('image', ''),
             'video_path': result.get('video_path', ''),
             'conf_threshold': conf_threshold if request.method == 'POST' else 0.5,
-            'input_type': 'video' if result.get('video_path') else 'image'
+            'input_type': 'video' if result.get('video_path') else 'image',
+            'user_id': user_id,
+            'user_info': user_info_for_pdf  # Store full user info for PDF
         }
+        print(f"[DEBUG] Result stored with report_id: {report_id} for user_id: {user_id}")
+        # Note: Data is saved to database only when user clicks 'Save Report' button
 
     return render_template_string(HTML_TEMPLATE, result=result, report_id=report_id)
+
+
+@app.route('/debug')
+def debug_status():
+    """Debug route to check database and session status"""
+    user_id = session.get('user_id')
+    username = session.get('username')
+    
+    db_status = "Not connected"
+    table_count = 0
+    
+    db = get_db()
+    if db:
+        try:
+            inspector = inspect(engine)
+            tables = inspector.get_table_names()
+            db_status = f"Connected ({engine.url.drivername})"
+            table_count = len(tables)
+            db.close()
+        except Exception as e:
+            db_status = f"Error: {str(e)}"
+    
+    return {
+        'session_user_id': user_id,
+        'session_username': username,
+        'database_status': db_status,
+        'tables': table_count,
+        'stored_results_count': len(app.stored_results)
+    }
 
 
 @app.route('/generate_pdf/<report_id>')
@@ -1423,11 +2143,58 @@ def generate_pdf(report_id):
     """Generate and download PDF report for a detection result"""
     print(f"[DEBUG] PDF route called with report_id: {report_id}")
     print(f"[DEBUG] Stored results keys: {list(app.stored_results.keys())}")
-    if report_id not in app.stored_results:
-        print(f"[DEBUG] Report ID not found in stored results")
+    
+    # Get user_id from session first
+    user_id = session.get('user_id')
+    print(f"[DEBUG] PDF Generation - Session user_id: {user_id}")
+    
+    # Try to get data from stored results first
+    data = None
+    if report_id in app.stored_results:
+        data = app.stored_results[report_id]
+        print(f"[DEBUG] Data found in stored_results")
+    else:
+        # If not in stored results, fetch from database
+        print(f"[DEBUG] Report ID not in stored results, fetching from database")
+        db = get_db()
+        if db:
+            try:
+                # Fetch from detection_history table
+                record = db.query(DetectionHistory).filter(
+                    DetectionHistory.report_id == report_id
+                ).first()
+                
+                if record:
+                    # Verify user_id matches if user is logged in
+                    if user_id and record.user_id != user_id:
+                        print(f"[WARN] User {user_id} trying to access report belonging to user {record.user_id}")
+                        return "Access denied. This report belongs to another user.", 403
+                    
+                    data = {
+                        'stats': {'count': record.vehicle_count, 'time': record.processing_time},
+                        'conf_threshold': record.confidence_threshold or 0.5,
+                        'input_type': record.detection_type,
+                        'image': record.image_data or '',
+                        'breakdown': record.breakdown or '',
+                        'user_id': record.user_id
+                    }
+                    print(f"[DEBUG] Data fetched from database for report_id: {report_id}")
+                else:
+                    print(f"[DEBUG] Report ID not found in database")
+                    return "Report not found. Please run a new detection.", 404
+            except Exception as e:
+                print(f"[ERROR] Failed to fetch report from database: {e}")
+                import traceback
+                traceback.print_exc()
+                return "Error fetching report data.", 500
+            finally:
+                db.close()
+        else:
+            return "Report not found. Please run a new detection.", 404
+    
+    if not data:
         return "Report not found. Please run a new detection.", 404
-
-    data = app.stored_results[report_id]
+    
     stats = data.get('stats', {})
     vehicle_count = stats.get('count', 0)
     processing_time = stats.get('time', '--')
@@ -1435,7 +2202,35 @@ def generate_pdf(report_id):
     conf_threshold = data.get('conf_threshold', 0.5)
     input_type = data.get('input_type', 'image')
     img_base64 = data.get('image', '')
-    first_frame = stats.get('first_frame', '')
+    first_frame = stats.get('first_frame', '') if isinstance(stats, dict) else ''
+
+    # Get user information from stored data (saved at detection time)
+    user_info = data.get('user_info')
+    print(f"[DEBUG] user_info from stored_results: {user_info}")
+    print(f"[DEBUG] Full data keys: {list(data.keys())}")
+    
+    # If not in stored data, try to fetch using user_id from stored data
+    if not user_info:
+        stored_user_id = data.get('user_id')
+        print(f"[DEBUG] user_info not in stored data, trying stored_user_id: {stored_user_id}")
+        if stored_user_id:
+            try:
+                db = get_db()
+                if db:
+                    user = db.query(User).filter(User.id == stored_user_id).first()
+                    if user:
+                        user_info = {
+                            'id': user.id,
+                            'username': user.username,
+                            'email': user.email
+                        }
+                        print(f"[DEBUG] Fetched user from DB using stored_user_id: {user_info}")
+                    db.close()
+            except Exception as e:
+                print(f"[ERROR] DB query failed: {e}")
+    
+    if not user_info:
+        print(f"[WARN] No user info available, PDF will show Guest")
 
     try:
         pdf = FPDF('P', 'mm', 'A4')
@@ -1444,7 +2239,7 @@ def generate_pdf(report_id):
 
         # ---- Header Bar ----
         pdf.set_fill_color(0, 37, 66)
-        pdf.rect(0, 0, 210, 35, 'F')
+        pdf.rect(0, 0, 210, 40, 'F')  # Increased height to 40mm
         pdf.set_text_color(255, 255, 255)
         pdf.set_font('Helvetica', 'B', 22)
         pdf.set_xy(15, 12)
@@ -1452,6 +2247,21 @@ def generate_pdf(report_id):
         pdf.set_font('Helvetica', '', 10)
         pdf.set_xy(15, 24)
         pdf.cell(0, 6, 'Generated: ' + time.strftime('%Y-%m-%d %H:%M:%S'), ln=True)
+        
+        # ---- User Info (Right side of header) ----
+        pdf.set_font('Helvetica', 'B', 11)
+        pdf.set_xy(130, 12)
+        if user_info:
+            pdf.cell(0, 6, f"User: {user_info['username']}", ln=True)
+        else:
+            pdf.cell(0, 6, "User: Guest", ln=True)
+        
+        pdf.set_font('Helvetica', '', 10)
+        pdf.set_xy(130, 20)
+        if user_info:
+            pdf.cell(0, 6, f"ID: {user_info['id']}", ln=True)
+        else:
+            pdf.cell(0, 6, "ID: N/A", ln=True)
 
         y = 42
 
@@ -1553,7 +2363,11 @@ def generate_pdf(report_id):
         pdf.output(pdf_buffer)
         pdf_buffer.seek(0)
 
-        filename = f"Vehicle_Detection_Report_{time.strftime('%Y%m%d_%H%M%S')}.pdf"
+        # Include user_id in filename if available
+        user_id_for_filename = data.get('user_id', 'guest')
+        if user_info and user_info.get('id'):
+            user_id_for_filename = user_info['id']
+        filename = f"Vehicle_Detection_Report_User{user_id_for_filename}_{time.strftime('%Y%m%d_%H%M%S')}.pdf"
         print(f"[INFO] PDF generated: {filename}")
 
         return send_file(
@@ -1570,6 +2384,67 @@ def generate_pdf(report_id):
         return f"Error generating PDF: {str(e)}", 500
 
 
+@app.route('/save_report/<report_id>', methods=['POST'])
+@login_required
+def save_report(report_id):
+    """Save detection report to database when user clicks Save Report"""
+    print(f"[DEBUG] save_report called for report_id: {report_id}")
+    
+    if report_id not in app.stored_results:
+        return {'success': False, 'error': 'Report not found'}, 404
+    
+    data = app.stored_results[report_id]
+    stats = data.get('stats', {})
+    input_type = data.get('input_type', 'image')
+    
+    # Get user_id from session
+    user_id = session.get('user_id')
+    stored_user_id = data.get('user_id')
+    print(f"[DEBUG] Session user_id: {user_id}, Stored result user_id: {stored_user_id}, Session data: {dict(session)}")
+    
+    # Verify user owns this report
+    if stored_user_id and stored_user_id != user_id:
+        print(f"[WARN] User mismatch! Session: {user_id}, Report owner: {stored_user_id}")
+        return {'success': False, 'error': 'Access denied - report belongs to another user'}, 403
+    
+    timestamp = time.strftime('%Y-%m-%d %H:%M:%S')
+    message = data.get('message', '')
+    image_data = data.get('image', '')
+    video_path = data.get('video_path', '')
+    conf_threshold = data.get('conf_threshold', 0.5)
+    
+    # Save to database
+    try:
+        success = save_detection_to_db(
+            report_id=report_id,
+            timestamp=timestamp,
+            input_type=input_type,
+            message=message,
+            stats=stats,
+            image_data=image_data,
+            video_path=video_path,
+            conf_threshold=conf_threshold
+        )
+        
+        if success:
+            print(f"[INFO] Report {report_id} saved to database by user {user_id}")
+            return {'success': True, 'message': 'Report saved successfully'}
+        else:
+            print(f"[ERROR] save_detection_to_db returned False for report {report_id}")
+            return {'success': False, 'error': 'Failed to save to database'}, 500
+    except Exception as e:
+        print(f"[ERROR] Exception in save_report: {e}")
+        import traceback
+        traceback.print_exc()
+        error_msg = str(e)
+        # Check for common database errors
+        if 'foreign key' in error_msg.lower():
+            error_msg = "User authentication error - please log in again"
+        elif 'unique' in error_msg.lower():
+            error_msg = "Report already exists"
+        return {'success': False, 'error': f'Failed to save to database: {error_msg}'}, 500
+
+
 @app.route('/download/<path:filename>')
 def download(filename):
     if hasattr(app, 'temp_videos') and filename in app.temp_videos:
@@ -1584,14 +2459,14 @@ def webcam_detect():
         # Get image data from request
         image_data = request.get_data()
         conf_threshold = float(request.form.get('confidence', 0.4))
-        
+
         # Decode image
         nparr = np.frombuffer(image_data, np.uint8)
         image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-        
+
         if image is None:
             return {'error': 'Could not decode image'}, 400
-        
+
         # Run detection
         results = model.predict(
             image,
@@ -1600,32 +2475,32 @@ def webcam_detect():
             verbose=False,
             classes=list(VEHICLE_CLASSES.keys())
         )
-        
+
         # Process detections
         detections = []
         class_counts = {}
         annotated = image.copy()
-        
+
         for result in results:
             boxes = result.boxes
             if boxes is None:
                 continue
-            
+
             for box in boxes:
                 class_id = int(box.cls.item())
                 conf = float(box.conf.item())
-                
+
                 if class_id in VEHICLE_CLASSES:
                     x1, y1, x2, y2 = box.xyxy[0].cpu().numpy()
                     class_name = VEHICLE_CLASSES[class_id]
-                    
+
                     detections.append({'class': class_name, 'conf': conf})
                     class_counts[class_name] = class_counts.get(class_name, 0) + 1
-                    
+
                     # Draw box
                     color = CLASS_COLORS[class_name]
                     cv2.rectangle(annotated, (int(x1), int(y1)), (int(x2), int(y2)), color, 2)
-                    
+
                     # Draw label
                     display_name = DISPLAY_NAMES.get(class_name, class_name)
                     label = f"{display_name}: {conf:.2f}"
@@ -1634,32 +2509,68 @@ def webcam_detect():
                                 (int(x1) + label_w, int(y1)), color, -1)
                     cv2.putText(annotated, label, (int(x1), int(y1) - 5),
                                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2)
-        
+
         # Add stats overlay
         cv2.rectangle(annotated, (0, 0), (300, 80), (0, 0, 0), -1)
         cv2.putText(annotated, f"Vehicles: {len(detections)}", (10, 30),
                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
-        
+
         # Encode to JPEG
         _, buffer = cv2.imencode('.jpg', annotated)
         img_base64 = base64.b64encode(buffer).decode('utf-8')
-        
+
         # Prepare breakdown text
         breakdown_text = ""
         if class_counts:
             breakdown_text = ", ".join([f"{DISPLAY_NAMES.get(cls, cls)}: {count}" for cls, count in class_counts.items()])
-        
+
         return {
             'image': img_base64,
             'count': len(detections),
             'breakdown': breakdown_text
         }
-        
+
     except Exception as e:
         print(f"[ERROR] Webcam detection failed: {e}")
         import traceback
         traceback.print_exc()
         return {'error': str(e)}, 500
+
+
+@app.route('/save_live_session', methods=['POST'])
+def save_live_session():
+    """Save live detection session to database"""
+    try:
+        data = request.get_json()
+        report_id = data.get('report_id', str(uuid.uuid4())[:8])
+        session_start = data.get('session_start')
+        session_end = data.get('session_end')
+        total_detections = data.get('total_detections', 0)
+        conf_threshold = data.get('confidence_threshold', 0.4)
+        stats = data.get('stats', {})
+        breakdown = data.get('breakdown', '')
+
+        # Convert timestamps to datetime objects
+        if session_start:
+            session_start = datetime.strptime(session_start, '%Y-%m-%d %H:%M:%S')
+        else:
+            session_start = datetime.utcnow()
+
+        if session_end:
+            session_end = datetime.strptime(session_end, '%Y-%m-%d %H:%M:%S')
+        else:
+            session_end = datetime.utcnow()
+
+        # Save to database
+        save_live_detection_to_db(report_id, session_start, session_end, total_detections,
+                                  conf_threshold, stats, breakdown)
+
+        return {'success': True, 'report_id': report_id}
+    except Exception as e:
+        print(f"[ERROR] Failed to save live session: {e}")
+        import traceback
+        traceback.print_exc()
+        return {'success': False, 'error': str(e)}, 500
 
 
 @app.route('/view/<path:filename>')
@@ -1699,7 +2610,7 @@ def serve_demo_video(filename):
     """Serve demo videos from demo_videos folder"""
     demo_videos_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static', 'demo_videos')
     video_path = os.path.join(demo_videos_dir, filename)
-    
+
     if os.path.exists(video_path):
         response = send_file(
             video_path,
@@ -1716,7 +2627,772 @@ def serve_demo_video(filename):
         return "Video file not found", 404
 
 
+# Live Detection Page Template
+LIVE_DETECTION_TEMPLATE = """
+<!DOCTYPE html>
+<html class="light" lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Live Detection | Vehicle Intelligence</title>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Google Fonts: Manrope & Inter -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Manrope:wght@600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary-fixed-dim": "#ecbf83",
+                        "tertiary": "#341f00",
+                        "on-tertiary": "#ffffff",
+                        "surface-tint": "#436182",
+                        "surface-container-lowest": "#ffffff",
+                        "primary-fixed-dim": "#abc9ef",
+                        "on-secondary-fixed": "#121c28",
+                        "surface-container": "#eeedf0",
+                        "outline-variant": "#c3c6ce",
+                        "secondary-container": "#d3deef",
+                        "on-error": "#ffffff",
+                        "surface-container-low": "#f4f3f6",
+                        "on-tertiary-fixed-variant": "#5f4110",
+                        "tertiary-fixed": "#ffddb3",
+                        "surface-dim": "#dad9dd",
+                        "surface-bright": "#faf9fc",
+                        "tertiary-container": "#4f3303",
+                        "primary-container": "#1b3b5a",
+                        "surface-container-highest": "#e3e2e5",
+                        "on-secondary-container": "#576270",
+                        "on-tertiary-fixed": "#291800",
+                        "on-tertiary-container": "#c59c63",
+                        "error": "#ba1a1a",
+                        "outline": "#73777e",
+                        "secondary-fixed": "#d8e3f4",
+                        "primary": "#002542",
+                        "background": "#faf9fc",
+                        "surface-variant": "#e3e2e5",
+                        "secondary": "#545f6e",
+                        "on-error-container": "#93000a",
+                        "on-primary": "#ffffff",
+                        "inverse-surface": "#2f3033",
+                        "error-container": "#ffdad6",
+                        "secondary-fixed-dim": "#bcc7d8",
+                        "on-secondary-fixed-variant": "#3d4855",
+                        "surface": "#faf9fc",
+                        "on-surface-variant": "#43474d",
+                        "on-secondary": "#ffffff",
+                        "on-primary-fixed-variant": "#2a4968",
+                        "on-primary-fixed": "#001d35",
+                        "inverse-primary": "#abc9ef",
+                        "surface-container-high": "#e9e8eb",
+                        "on-background": "#1a1c1e",
+                        "inverse-on-surface": "#f1f0f3",
+                        "primary-fixed": "#d1e4ff",
+                        "on-primary-container": "#87a5ca",
+                        "on-surface": "#1a1c1e"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "fontFamily": {
+                        "headline": ["Manrope"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        body { font-family: 'Inter', sans-serif; }
+        h1, h2, h3 { font-family: 'Manrope', sans-serif; }
+        .glass-panel {
+            background: rgba(250, 249, 252, 0.7);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+        }
+        .hud-scanline {
+            background: linear-gradient(to bottom, transparent 50%, rgba(0, 37, 66, 0.05) 51%);
+            background-size: 100% 4px;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-surface text-on-surface selection:bg-primary-fixed selection:text-on-primary-fixed min-h-screen pb-24 md:pb-0">
+<!-- TopAppBar Execution -->
+<header class="fixed top-0 w-full z-50 bg-slate-50/70 backdrop-blur-md shadow-[0px_8px_24px_rgba(0,37,66,0.06)] flex items-center justify-between px-6 h-16 w-full">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-blue-900">analytics</span>
+<span class="text-xl font-bold tracking-tight text-blue-900">Enterprise Vehicle Intelligence</span>
+</div>
+<div class="flex items-center gap-6">
+<nav class="hidden md:flex gap-6">
+<a class="text-slate-500 hover:bg-blue-50 transition-colors px-3 py-1 rounded-lg text-sm" href="/">Upload</a>
+<a class="text-blue-900 font-semibold text-sm" href="/live">Real-time</a>
+<a class="text-slate-500 hover:bg-blue-50 transition-colors px-3 py-1 rounded-lg text-sm" href="/history">History</a>
+</nav>
+<div class="flex items-center gap-3 border-l border-outline-variant/20 pl-6">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-sm">account_circle</span>
+<span class="text-sm font-semibold text-primary">{{ session.get('username', 'User') }}</span>
+</div>
+<a href="/logout" class="flex items-center gap-1 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 transition-colors px-3 py-1.5 rounded-lg font-semibold">
+<span class="material-symbols-outlined text-sm">logout</span>
+Logout
+</a>
+</div>
+</div>
+</header>
+<main class="max-w-7xl mx-auto px-6 py-12 md:py-16">
+<div class="flex flex-col gap-10">
+<!-- Header Section -->
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-6">
+<div>
+<div class="flex items-center gap-2 mb-2">
+<span class="inline-block w-2 h-2 bg-error rounded-full animate-pulse"></span>
+<span class="text-label-md font-bold text-error uppercase tracking-widest text-[10px]">Live Session Active</span>
+</div>
+<h2 class="text-4xl md:text-5xl font-extrabold tracking-tight text-primary">Live Detection</h2>
+<p class="text-on-surface-variant mt-2 text-lg max-w-2xl font-medium opacity-80">Precision monitoring of incoming vehicle streams with millisecond latency.</p>
+</div>
+<div class="flex gap-4">
+<button onclick="stopWebcam()" class="group flex items-center gap-2 bg-surface-container-lowest text-primary px-6 py-3 rounded-md font-semibold text-sm border border-outline-variant/20 shadow-sm hover:shadow-md transition-all active:scale-95">
+<span class="material-symbols-outlined text-[20px]">videocam_off</span>
+                        Stop Webcam
+                    </button>
+<button onclick="captureFrame()" class="flex items-center gap-2 bg-gradient-to-br from-primary to-primary-container text-on-primary px-8 py-3 rounded-md font-bold text-sm shadow-lg hover:shadow-xl transition-all active:scale-95">
+<span class="material-symbols-outlined text-[20px]">screenshot</span>
+                        Capture Frame
+                    </button>
+</div>
+</div>
+<!-- Bento Grid Main Content -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+<!-- Primary Video Feed Area -->
+<div class="lg:col-span-8 flex flex-col gap-6">
+<div class="relative aspect-video bg-inverse-surface rounded-xl overflow-hidden shadow-2xl group border-4 border-surface-container-lowest">
+<!-- Video Feed -->
+<video id="webcamVideo" autoplay playsinline class="w-full h-full object-cover"></video>
+<!-- Canvas for Detection Overlay -->
+<canvas id="detectionCanvas" class="absolute inset-0 w-full h-full"></canvas>
+<!-- HUD Overlay Components -->
+<div class="absolute inset-0 pointer-events-none hud-scanline opacity-10"></div>
+<!-- Top HUD Info -->
+<div class="absolute top-6 left-6 right-6 flex justify-between items-start z-10">
+<div class="glass-panel px-4 py-2 rounded-lg border border-white/20 flex items-center gap-3">
+<span class="material-symbols-outlined text-primary">sensors</span>
+<div class="flex flex-col">
+<span class="text-[10px] font-bold text-primary/60 uppercase tracking-tighter">Signal Quality</span>
+<span class="text-xs font-bold text-primary">Ultra HD / 60 FPS</span>
+</div>
+</div>
+<div class="glass-panel px-4 py-2 rounded-lg border border-white/20 flex items-center gap-3">
+<span class="material-symbols-outlined text-primary">schedule</span>
+<span class="text-xs font-bold text-primary tabular-nums" id="timestamp">00:00:00.00</span>
+</div>
+</div>
+<!-- Detection Boxes (Mockup) -->
+<div id="detectionBoxes" class="absolute inset-0 pointer-events-none z-10"></div>
+<!-- Bottom HUD Controls -->
+<div class="absolute bottom-6 left-6 z-10 flex items-center gap-3">
+<div class="flex items-center gap-2 bg-primary px-3 py-1.5 rounded-full text-on-primary">
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">lens</span>
+<span class="text-[11px] font-bold uppercase tracking-widest" id="scanStatus">Starting...</span>
+</div>
+</div>
+</div>
+<!-- Detection Status Bar -->
+<div class="bg-surface-container-lowest rounded-xl p-8 shadow-sm border border-outline-variant/10">
+<div class="flex flex-col md:flex-row items-center justify-between gap-6">
+<div class="flex items-center gap-6">
+<div class="flex flex-col">
+<span class="text-label-md text-on-surface-variant mb-1 font-bold tracking-wider text-[11px]">Real-time Status</span>
+<h4 class="text-xl font-bold text-primary flex items-center gap-2">
+<span class="material-symbols-outlined">check_circle</span>
+                                        <span id="vehicleCount">0</span> Vehicles detected
+                                    </h4>
+</div>
+<div class="h-10 w-px bg-outline-variant/30 hidden md:block"></div>
+<div class="flex gap-4">
+<div class="text-center">
+<span class="block text-2xl font-extrabold text-primary" id="carCount">0</span>
+<span class="text-[10px] font-bold text-on-surface-variant uppercase">Passenger</span>
+</div>
+<div class="text-center">
+<span class="block text-2xl font-extrabold text-primary" id="truckCount">0</span>
+<span class="text-[10px] font-bold text-on-surface-variant uppercase">Commercial</span>
+</div>
+</div>
+</div>
+<div class="w-full md:w-64 bg-surface-container-low p-4 rounded-lg flex flex-col gap-2">
+<div class="flex justify-between items-center">
+<span class="text-[10px] font-bold text-on-surface-variant uppercase">Confidence Threshold</span>
+<span class="text-[10px] font-extrabold text-primary">85%</span>
+</div>
+<div class="w-full h-1.5 bg-surface-container-highest rounded-full overflow-hidden">
+<div class="h-full bg-primary w-[85%] rounded-full"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Side Technical Analysis Panel -->
+<div class="lg:col-span-4 flex flex-col gap-6">
+<!-- Metrics Card -->
+<div class="bg-surface-container-high rounded-xl p-6 shadow-sm">
+<h3 class="text-sm font-bold text-primary uppercase tracking-widest mb-6">Analytical Logs</h3>
+<div class="flex flex-col gap-4" id="detectionLogs">
+<div class="flex justify-between items-center p-3 bg-surface-container-lowest rounded-lg border border-outline-variant/10">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary-container">directions_car</span>
+<span class="text-sm font-semibold">Waiting for detection...</span>
+</div>
+</div>
+</div>
+</div>
+<!-- System Performance Card -->
+<div class="bg-primary text-on-primary rounded-xl p-6 shadow-xl relative overflow-hidden">
+<div class="relative z-10">
+<h3 class="text-[10px] font-bold uppercase tracking-[0.2em] mb-4 opacity-70">Engine Performance</h3>
+<div class="grid grid-cols-2 gap-4">
+<div>
+<span class="block text-2xl font-bold font-headline tabular-nums" id="inferenceTime">0ms</span>
+<span class="text-[10px] font-medium opacity-60 uppercase">Inference Time</span>
+</div>
+<div>
+<span class="block text-2xl font-bold font-headline tabular-nums">0%</span>
+<span class="text-[10px] font-medium opacity-60 uppercase">GPU Load</span>
+</div>
+</div>
+<div class="mt-6 pt-6 border-t border-white/10">
+<div class="flex items-center gap-2 mb-3">
+<span class="material-symbols-outlined text-sm">cloud_done</span>
+<span class="text-xs font-bold uppercase tracking-wider">Cloud Synchronized</span>
+</div>
+<p class="text-[11px] opacity-60 leading-relaxed font-medium">Model v4.2-L is currently processing live edge data with local redundancy enabled.</p>
+</div>
+</div>
+<!-- Background Accents -->
+<div class="absolute -bottom-10 -right-10 w-40 h-40 bg-primary-container rounded-full blur-3xl opacity-40"></div>
+</div>
+<!-- Configuration Shortcut -->
+<button class="w-full py-4 px-6 border-2 border-dashed border-outline-variant/30 rounded-xl text-on-surface-variant hover:border-primary-container/40 hover:text-primary transition-all flex items-center justify-between group">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined group-hover:rotate-45 transition-transform">tune</span>
+<span class="text-sm font-bold uppercase tracking-wide">Adjust Sensitivity</span>
+</div>
+<span class="material-symbols-outlined text-sm">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar Execution -->
+<nav class="fixed bottom-0 left-0 w-full h-20 bg-white dark:bg-slate-950 flex justify-around items-center px-4 pb-safe z-50 md:hidden shadow-[0px_-4px_20px_rgba(0,37,66,0.04)] rounded-t-xl">
+<a class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 px-6 py-2 transition-all active:scale-90 duration-200" href="/">
+<span class="material-symbols-outlined mb-1">upload_file</span>
+<span class="text-[11px] font-semibold tracking-wide Inter uppercase">Upload</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-[#d1e4ff] dark:bg-blue-900/40 text-[#002542] dark:text-blue-100 rounded-xl px-6 py-2 transition-all active:scale-90 duration-200" href="/live">
+<span class="material-symbols-outlined mb-1">videocam</span>
+<span class="text-[11px] font-semibold tracking-wide Inter uppercase">Real-time</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 px-6 py-2 transition-all active:scale-90 duration-200" href="/history">
+<span class="material-symbols-outlined mb-1">history</span>
+<span class="text-[11px] font-semibold tracking-wide Inter uppercase">History</span>
+</a>
+</nav>
+<script>
+    let stream = null;
+    let isRunning = false;
+    let detectionInterval = null;
+
+    async function startWebcam() {
+        try {
+            const video = document.getElementById('webcamVideo');
+            stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            video.srcObject = stream;
+            isRunning = true;
+            sessionStartTime = new Date().toLocaleString();
+            totalDetections = 0;
+            sessionStats = {};
+            document.getElementById('scanStatus').textContent = 'Scanning...';
+            startDetection();
+            updateTimestamp();
+        } catch (err) {
+            console.error('Error accessing webcam:', err);
+            alert('Could not access webcam. Please ensure camera permissions are granted.');
+        }
+    }
+
+    function stopWebcam() {
+        if (stream) {
+            stream.getTracks().forEach(track => track.stop());
+            stream = null;
+        }
+        isRunning = false;
+        if (detectionInterval) {
+            clearInterval(detectionInterval);
+            detectionInterval = null;
+        }
+        document.getElementById('scanStatus').textContent = 'Stopped';
+        const video = document.getElementById('webcamVideo');
+        video.srcObject = null;
+        document.getElementById('detectionBoxes').innerHTML = '';
+
+        // Save live session to database
+        saveLiveSession();
+    }
+
+    let sessionStartTime = null;
+    let totalDetections = 0;
+    let sessionStats = {};
+
+    function saveLiveSession() {
+        if (totalDetections === 0) return;
+
+        const sessionEndTime = new Date().toLocaleString();
+        const reportId = 'live_' + Math.random().toString(36).substr(2, 8);
+
+        fetch('/save_live_session', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                report_id: reportId,
+                session_start: sessionStartTime,
+                session_end: sessionEndTime,
+                total_detections: totalDetections,
+                confidence_threshold: 0.4,
+                stats: sessionStats,
+                breakdown: sessionStats.breakdown || ''
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                console.log('[INFO] Live session saved to database:', data.report_id);
+            } else {
+                console.error('[ERROR] Failed to save live session:', data.error);
+            }
+        })
+        .catch(error => {
+            console.error('[ERROR] Failed to save live session:', error);
+        });
+    }
+
+    function updateTimestamp() {
+        if (!isRunning) return;
+        const now = new Date();
+        const timeStr = now.toTimeString().split(' ')[0] + '.' + Math.floor(now.getMilliseconds() / 10).toString().padStart(2, '0');
+        document.getElementById('timestamp').textContent = timeStr;
+        requestAnimationFrame(updateTimestamp);
+    }
+
+    function startDetection() {
+        // Real detection using backend YOLO model
+        detectionInterval = setInterval(() => {
+            if (!isRunning) return;
+            processFrame();
+        }, 100);
+    }
+
+    async function processFrame() {
+        const video = document.getElementById('webcamVideo');
+        const canvas = document.getElementById('detectionCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Set canvas size to match video
+        canvas.width = video.videoWidth || 640;
+        canvas.height = video.videoHeight || 480;
+
+        // Draw video frame to canvas
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        // Get frame data
+        const frameData = canvas.toDataURL('image/jpeg', 0.8);
+
+        try {
+            const formData = new FormData();
+            formData.append('image', frameData);
+            formData.append('confidence', '0.4');
+
+            const response = await fetch('/webcam_detect', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+
+                if (result.image) {
+                    // Draw detection result
+                    const img = new Image();
+                    img.onload = function() {
+                        ctx.clearRect(0, 0, canvas.width, canvas.height);
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    };
+                    img.src = 'data:image/jpeg;base64,' + result.image;
+
+                    // Update stats
+                    document.getElementById('vehicleCount').textContent = result.count;
+                    document.getElementById('inferenceTime').textContent = '15ms';
+
+                    // Track session statistics
+                    totalDetections += result.count;
+                    sessionStats = {
+                        count: totalDetections,
+                        breakdown: result.breakdown,
+                        time: (Date.now() - new Date(sessionStartTime)) / 1000 + 's'
+                    };
+
+                    // Parse breakdown to update counts
+                    let carCount = 0;
+                    let truckCount = 0;
+                    const breakdown = result.breakdown || '';
+
+                    if (breakdown.includes('Car')) {
+                        const match = breakdown.match(/Car: *([0-9]+)/);
+                        if (match) carCount = parseInt(match[1]);
+                    }
+                    if (breakdown.includes('Truck')) {
+                        const match = breakdown.match(/Truck: *([0-9]+)/);
+                        if (match) truckCount = parseInt(match[1]);
+                    }
+                    if (breakdown.includes('Motorcycle')) {
+                        const match = breakdown.match(/Motorcycle: *([0-9]+)/);
+                        if (match) carCount += parseInt(match[1]); // Add to passenger count
+                    }
+                    if (breakdown.includes('Bus')) {
+                        const match = breakdown.match(/Bus: *([0-9]+)/);
+                        if (match) truckCount += parseInt(match[1]); // Add to commercial count
+                    }
+
+                    document.getElementById('carCount').textContent = carCount;
+                    document.getElementById('truckCount').textContent = truckCount;
+                    document.getElementById('scanStatus').textContent = result.count > 0 ? 'DETECTING' : 'Scanning...';
+
+                    // Update detection logs
+                    updateDetectionLogs(breakdown);
+                }
+            }
+        } catch (err) {
+            console.error('[ERROR] Frame processing error:', err);
+        }
+    }
+
+    function updateDetectionLogs(breakdown) {
+        const logs = document.getElementById('detectionLogs');
+        logs.innerHTML = '';
+
+        if (!breakdown || breakdown.trim() === '') {
+            logs.innerHTML = `
+                <div class="flex justify-between items-center p-3 bg-surface-container-lowest rounded-lg border border-outline-variant/10">
+                    <div class="flex items-center gap-3">
+                        <span class="material-symbols-outlined text-primary-container">visibility</span>
+                        <span class="text-sm font-semibold">Scanning for vehicles...</span>
+                    </div>
+                </div>
+            `;
+            return;
+        }
+
+        // Parse breakdown and create log entries
+        const items = breakdown.split(', ');
+        items.forEach(item => {
+            const [name, countStr] = item.split(': ');
+            const count = parseInt(countStr);
+            
+            let icon = 'directions_car';
+            if (name.includes('Motorcycle')) icon = 'two_wheeler';
+            else if (name.includes('Bus')) icon = 'directions_bus';
+            else if (name.includes('Truck')) icon = 'local_shipping';
+
+            const logItem = document.createElement('div');
+            logItem.className = 'flex justify-between items-center p-3 bg-surface-container-lowest rounded-lg border border-outline-variant/10';
+            logItem.innerHTML = `
+                <div class="flex items-center gap-3">
+                    <span class="material-symbols-outlined text-primary-container">${icon}</span>
+                    <span class="text-sm font-semibold">${name}</span>
+                </div>
+                <span class="text-xs font-bold text-primary px-2 py-1 bg-primary-fixed rounded">${count}</span>
+            `;
+            logs.appendChild(logItem);
+        });
+    }
+
+    function captureFrame() {
+        const video = document.getElementById('webcamVideo');
+        const canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        canvas.getContext('2d').drawImage(video, 0, 0);
+        
+        const link = document.createElement('a');
+        link.download = 'capture_' + Date.now() + '.png';
+        link.href = canvas.toDataURL();
+        link.click();
+    }
+
+    // Start webcam automatically when page loads
+    window.addEventListener('load', startWebcam);
+
+    // Stop webcam when page is unloaded
+    window.addEventListener('beforeunload', stopWebcam);
+</script>
+</body>
+</html>
+"""
+
+
+@app.route('/test')
+def test_route():
+    """Test route to verify routing works"""
+    return "Test route is working!"
+
+
+@app.route('/debug_session')
+def debug_session():
+    """Debug route to check session and user data"""
+    import json
+    user_id = session.get('user_id')
+    username = session.get('username')
+    
+    result = {
+        'session_user_id': user_id,
+        'session_username': username,
+        'session_keys': list(session.keys()),
+    }
+    
+    if user_id:
+        db = get_db()
+        if db:
+            try:
+                user = db.query(User).filter(User.id == user_id).first()
+                if user:
+                    result['db_user_found'] = True
+                    result['db_user_id'] = user.id
+                    result['db_username'] = user.username
+                    result['db_email'] = user.email
+                else:
+                    result['db_user_found'] = False
+                    result['db_error'] = f'No user with id {user_id}'
+                db.close()
+            except Exception as e:
+                result['db_error'] = str(e)
+        else:
+            result['db_error'] = 'No database session'
+    
+    return json.dumps(result, indent=2, default=str)
+
+
+@app.route('/live')
+@login_required
+def live_detection():
+    """Render the live detection page"""
+    print("[DEBUG] Live detection route accessed")
+    return render_template_string(LIVE_DETECTION_TEMPLATE)
+
+
+# History Page Template
+HISTORY_TEMPLATE = """
+<!DOCTYPE html>
+<html class="light" lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>History | Vehicle Intelligence</title>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Manrope:wght@600;700;800&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary": "#002542",
+                        "primary-container": "#1b3b5a",
+                        "surface": "#faf9fc",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-container-low": "#f4f3f6",
+                        "surface-container": "#eeedf0",
+                        "on-surface": "#1a1c1e",
+                        "on-surface-variant": "#43474d",
+                        "outline-variant": "#c3c6ce",
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "fontFamily": {
+                        "headline": ["Manrope"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body { font-family: 'Inter', sans-serif; }
+        h1, h2, h3 { font-family: 'Manrope', sans-serif; }
+    </style>
+</head>
+<body class="bg-surface text-on-surface min-h-screen">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-slate-50/70 backdrop-blur-md shadow-[0px_8px_24px_rgba(0,37,66,0.06)] flex items-center justify-between px-6 h-16 w-full">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-blue-900">analytics</span>
+<span class="text-xl font-bold tracking-tight text-blue-900">Enterprise Vehicle Intelligence</span>
+</div>
+<div class="flex items-center gap-6">
+<nav class="hidden md:flex gap-6">
+<a class="text-slate-500 hover:bg-blue-50 transition-colors px-3 py-1 rounded-lg text-sm" href="/">Upload</a>
+<a class="text-slate-500 hover:bg-blue-50 transition-colors px-3 py-1 rounded-lg text-sm" href="/live">Real-time</a>
+<a class="text-blue-900 font-semibold text-sm" href="/history">History</a>
+</nav>
+<div class="flex items-center gap-3 border-l border-slate-200 pl-6">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-slate-600 text-xl">person</span>
+<span class="text-sm font-medium text-slate-700">test</span>
+</div>
+<a href="/logout" class="flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-red-600 hover:bg-red-50 transition-colors px-3 py-1.5 rounded-lg">
+<span class="material-symbols-outlined text-lg">logout</span>
+Logout
+</a>
+</div>
+</div>
+</header>
+<main class="max-w-7xl mx-auto px-6 py-20">
+<div class="flex flex-col gap-8">
+<!-- Header -->
+<div class="flex justify-between items-center">
+<div>
+<h2 class="text-3xl font-extrabold text-primary">Past Detections</h2>
+<p class="text-on-surface-variant mt-2">View your vehicle detection history</p>
+</div>
+<div class="text-sm text-slate-500">
+<span id="totalCount">0</span> detections
+</div>
+</div>
+
+<!-- History List -->
+<div class="space-y-4" id="historyList">
+{% if history %}
+{% for item in history %}
+<div class="bg-surface-container-lowest rounded-xl p-6 shadow-sm border border-outline-variant/10 hover:border-primary/20 transition-all">
+<div class="flex flex-col md:flex-row gap-6">
+<!-- Thumbnail -->
+<div class="flex-shrink-0">
+{% if item.input_type == 'image' and item.image %}
+<img src="data:image/jpeg;base64,{{ item.image }}" class="w-32 h-24 object-cover rounded-lg" alt="Detection">
+{% elif item.input_type == 'video' and item.stats and item.stats.first_frame %}
+<img src="data:image/jpeg;base64,{{ item.stats.first_frame }}" class="w-32 h-24 object-cover rounded-lg" alt="Video Frame">
+{% else %}
+<div class="w-32 h-24 bg-surface-container rounded-lg flex items-center justify-center">
+<span class="material-symbols-outlined text-slate-400">image</span>
+</div>
+{% endif %}
+</div>
+
+<!-- Details -->
+<div class="flex-grow">
+<div class="flex items-start justify-between gap-4">
+<div>
+<div class="flex items-center gap-2 mb-2">
+<span class="text-xs font-bold uppercase tracking-wider px-2 py-1 rounded bg-primary/10 text-primary">
+{{ 'Video' if item.input_type == 'video' else 'Image' }}
+</span>
+<span class="text-xs text-slate-500">{{ item.timestamp }}</span>
+</div>
+<h3 class="text-lg font-bold text-primary">{{ item.message }}</h3>
+</div>
+<div class="text-right">
+<div class="text-2xl font-extrabold text-primary">{{ item.stats.count if item.stats else 0 }}</div>
+<div class="text-xs text-slate-500 uppercase">Vehicles</div>
+</div>
+</div>
+
+{% if item.stats and item.stats.breakdown %}
+<div class="mt-3 flex flex-wrap gap-2">
+{% for class_name, count in item.stats.breakdown.items() %}
+<span class="text-xs font-semibold px-2 py-1 bg-surface-container rounded text-on-surface-variant">
+{{ class_name|title }}: {{ count }}
+</span>
+{% endfor %}
+</div>
+{% endif %}
+
+<div class="mt-4 flex gap-3">
+<a href="/generate_pdf/{{ item.id }}" target="_blank" class="text-sm font-semibold text-primary hover:text-primary-container transition-colors">
+Download Report
+</a>
+{% if item.video_path %}
+<a href="/view/videos/{{ item.video_path }}" target="_blank" class="text-sm font-semibold text-primary hover:text-primary-container transition-colors">
+View Video
+</a>
+{% endif %}
+</div>
+</div>
+</div>
+</div>
+{% endfor %}
+{% else %}
+<div class="bg-surface-container-lowest rounded-xl p-12 text-center border border-outline-variant/10">
+<span class="material-symbols-outlined text-6xl text-slate-300">history</span>
+<h3 class="text-xl font-bold text-primary mt-4">No Detection History</h3>
+<p class="text-slate-500 mt-2">Upload images or videos to see your detection history here</p>
+<a href="/" class="inline-flex items-center gap-2 mt-6 px-6 py-3 bg-primary text-white font-semibold rounded-lg hover:bg-primary-container transition-colors">
+<span class="material-symbols-outlined">upload</span>
+Start Detection
+</a>
+</div>
+{% endif %}
+</div>
+</div>
+</main>
+</body>
+</html>
+"""
+
+
+@app.route('/history')
+@login_required
+def history_page():
+    """Render the history page with all past detections"""
+    print("[DEBUG] History route accessed")
+    history = get_detection_history_from_db(limit=50)
+    print(f"[DEBUG] History entries: {len(history)}")
+    return render_template_string(HISTORY_TEMPLATE, history=history)
+
+
 def main():
+    # Initialize database connection and tables
+    init_db()
+
     print("="*50)
     print("Vehicle Detection Web App")
     print("="*50)
