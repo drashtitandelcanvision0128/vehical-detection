@@ -9,6 +9,12 @@ from ultralytics import YOLO
 import argparse
 import time
 from collections import defaultdict
+import os
+from sqlalchemy import create_engine, Column, Integer, String, DateTime, Float, Text, JSON
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
+from datetime import datetime
+import uuid
 
 # Vehicle-only classes from COCO dataset
 VEHICLE_CLASSES = {
@@ -25,6 +31,82 @@ CLASS_COLORS = {
     'bus': (0, 255, 255),      # Yellow
     'truck': (0, 0, 255)       # Red
 }
+
+# Database setup
+Base = declarative_base()
+
+class DetectionHistory(Base):
+    """Unified history table for all detection types"""
+    __tablename__ = 'detection_history'
+
+    id = Column(Integer, primary_key=True)
+    report_id = Column(String(50), unique=True, nullable=False)
+    detection_type = Column(String(20), nullable=False)  # 'image', 'video', 'live'
+    user_id = Column(Integer, nullable=True)
+    timestamp = Column(DateTime, default=datetime.utcnow)
+    
+    # Essential report data
+    vehicle_count = Column(Integer, default=0)
+    processing_time = Column(String(50))
+    confidence_threshold = Column(Float)
+    breakdown = Column(Text)
+    
+    # Optional preview data
+    image_data = Column(Text, nullable=True)
+    video_path = Column(String(255), nullable=True)
+
+# Database connection
+DATABASE_URL = os.getenv('DATABASE_URL', 'sqlite:///vehical_detections.db')
+engine = None
+SessionLocal = None
+
+def init_db():
+    """Initialize database connection and create tables"""
+    global engine, SessionLocal
+    try:
+        if 'sqlite' in DATABASE_URL:
+            engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
+        else:
+            engine = create_engine(DATABASE_URL, pool_size=20, max_overflow=10)
+        SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+        Base.metadata.create_all(bind=engine)
+        print(f"[INFO] Database initialized: {DATABASE_URL}")
+    except Exception as e:
+        print(f"[ERROR] Database initialization failed: {e}")
+        engine = None
+        SessionLocal = None
+
+def save_detection_to_db(vehicle_counts, total_vehicles, conf_threshold, processing_time, detection_type='live'):
+    """Save detection results to database"""
+    if not SessionLocal:
+        return None
+    
+    try:
+        session = SessionLocal()
+        report_id = str(uuid.uuid4())[:8]
+        
+        breakdown_text = "\n".join([f"{k.capitalize()}: {v}" for k, v in vehicle_counts.items()])
+        
+        detection = DetectionHistory(
+            report_id=report_id,
+            detection_type=detection_type,
+            timestamp=datetime.utcnow(),
+            vehicle_count=total_vehicles,
+            processing_time=f"{processing_time:.2f}s",
+            confidence_threshold=conf_threshold,
+            breakdown=breakdown_text
+        )
+        
+        session.add(detection)
+        session.commit()
+        session.close()
+        print(f"[INFO] Detection saved to DB: report_id={report_id}, vehicles={total_vehicles}")
+        return report_id
+    except Exception as e:
+        print(f"[ERROR] Failed to save detection: {e}")
+        if session:
+            session.close()
+        return None
 
 
 class VehicleDetector:
@@ -261,6 +343,9 @@ def process_video(detector, source, output_path=None, display=True, save_frames=
     print(f"[INFO] Video resolution: {frame_width}x{frame_height}")
     print(f"[INFO] Input FPS: {fps_input}")
     
+    # Initialize database
+    init_db()
+    
     # Initialize video writer if output path specified
     writer = None
     if output_path:
@@ -272,6 +357,10 @@ def process_video(detector, source, output_path=None, display=True, save_frames=
     fps = 0
     frame_count = 0
     start_time = time.time()
+    
+    # Database save timer
+    last_db_save = time.time()
+    db_save_interval = 30  # Save to DB every 30 seconds
     
     print("[INFO] Starting detection... Press 'q' to quit")
     
@@ -302,6 +391,18 @@ def process_video(detector, source, output_path=None, display=True, save_frames=
             # Draw statistics
             annotated_frame = detector.draw_stats(annotated_frame, fps)
             
+            # Save detection to database periodically (every 30 seconds)
+            current_time = time.time()
+            if current_time - last_db_save >= db_save_interval:
+                save_detection_to_db(
+                    dict(detector.vehicle_counts),
+                    detector.total_vehicles,
+                    detector.conf_threshold,
+                    inference_time,
+                    detection_type='live'
+                )
+                last_db_save = current_time
+            
             # Save frame if requested and vehicles detected
             if save_frames and len(detections) > 0:
                 timestamp = int(time.time() * 1000)
@@ -330,6 +431,15 @@ def process_video(detector, source, output_path=None, display=True, save_frames=
         print("[INFO] Interrupted by user")
     
     finally:
+        # Save final detection to database
+        save_detection_to_db(
+            dict(detector.vehicle_counts),
+            detector.total_vehicles,
+            detector.conf_threshold,
+            0,
+            detection_type='live'
+        )
+        
         # Cleanup
         if use_picam:
             picam.stop()
