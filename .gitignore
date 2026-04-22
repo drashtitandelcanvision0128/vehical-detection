@@ -1,0 +1,9 @@
+# Large video files
+static/videos/*.mp4
+static/videos/*.avi
+static/videos/*.mov
+static/videos/*.mkv
+
+# Keep only small demo videos
+!static/videos/demo_video.mp4
+!static/videos/demo_video_converted.mp4
