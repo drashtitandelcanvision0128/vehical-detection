@@ -2495,6 +2495,52 @@ def generate_pdf(report_id):
         return "Error generating PDF", 500
 
 
+@app.route('/view_report/<report_id>')
+@login_required
+def view_report(report_id):
+    """View report in browser instead of downloading"""
+    print(f"[DEBUG] view_report called with report_id: {report_id}")
+    
+    user_id = session.get('user_id')
+    
+    # Fetch from database
+    db = get_db()
+    if not db:
+        return "Database connection error", 500
+    
+    try:
+        record = db.query(DetectionHistory).filter(
+            DetectionHistory.report_id == report_id
+        ).first()
+        
+        if not record:
+            return "Report not found", 404
+        
+        # Verify user ownership
+        if record.user_id != user_id:
+            return "Access denied", 403
+        
+        # Prepare data for view
+        report_data = {
+            'report_id': report_id,
+            'timestamp': record.timestamp,
+            'detection_type': record.detection_type,
+            'vehicle_count': record.vehicle_count,
+            'breakdown': record.breakdown,
+            'image_data': record.image_data,
+            'video_path': record.video_path,
+            'processing_time': record.processing_time,
+            'confidence_threshold': record.confidence_threshold
+        }
+        
+        return render_template_string(VIEW_REPORT_TEMPLATE, report=report_data)
+    except Exception as e:
+        print(f"[ERROR] Error in view_report: {e}")
+        return "Error loading report", 500
+    finally:
+        db.close()
+
+
 @app.route('/delete_detection/<report_id>', methods=['DELETE'])
 @login_required
 def delete_detection(report_id):
@@ -2689,9 +2735,9 @@ def webcam_detect():
                     })
                     class_counts[class_name] = class_counts.get(class_name, 0) + 1
 
-        # Update tracker with detections and counting line (with error handling)
+        # Update tracker with detections (without counting line)
         try:
-            tracked_vehicles = vehicle_tracker.update(detections, count_line_pixel, frame_height)
+            tracked_vehicles = vehicle_tracker.update(detections)
         except Exception as e:
             print(f"[ERROR] Tracker update failed: {e}")
             tracked_vehicles = {}
@@ -2702,11 +2748,6 @@ def webcam_detect():
                     'class': det['class_name'],
                     'center': ((det['box'][0] + det['box'][2]) // 2, (det['box'][1] + det['box'][3]) // 2)
                 }
-
-        # Draw counting line
-        cv2.line(annotated, (0, count_line_pixel), (image.shape[1], count_line_pixel), (0, 255, 255), 2)
-        cv2.putText(annotated, "Counting Line", (10, count_line_pixel - 10),
-                   cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 2)
 
         # Draw tracked vehicles
         for v_id, vehicle in tracked_vehicles.items():
@@ -3605,6 +3646,144 @@ def live_detection():
 
 
 # History Page Template
+VIEW_REPORT_TEMPLATE = """
+<!DOCTYPE html>
+<html class="light" lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>View Report | Vehicle Intelligence</title>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Manrope:wght@600;700;800&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary": "#002542",
+                        "primary-container": "#1b3b5a",
+                        "surface": "#faf9fc",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-container-low": "#f4f3f6",
+                        "surface-container": "#eeedf0",
+                        "on-surface": "#1a1c1e",
+                        "on-surface-variant": "#43474d",
+                        "outline-variant": "#c3c6ce",
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "fontFamily": {
+                        "headline": ["Manrope"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body { font-family: 'Inter', sans-serif; }
+        h1, h2, h3 { font-family: 'Manrope', sans-serif; }
+    </style>
+</head>
+<body class="bg-surface text-on-surface min-h-screen">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-slate-50/70 backdrop-blur-md shadow-[0px_8px_24px_rgba(0,37,66,0.06)] flex items-center justify-between px-6 h-16">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-blue-900">analytics</span>
+<span class="text-xl font-bold tracking-tight text-blue-900">Enterprise Vehicle Intelligence</span>
+</div>
+<div class="flex items-center gap-6">
+<a href="/history" class="flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-red-600 hover:bg-red-50 transition-colors px-3 py-1.5 rounded-lg">
+<span class="material-symbols-outlined text-lg">arrow_back</span>
+Back to History
+</a>
+</div>
+</header>
+
+<main class="max-w-7xl mx-auto px-6 py-20">
+<div class="flex flex-col gap-8">
+<!-- Header -->
+<div>
+<h2 class="text-3xl font-extrabold text-primary">Detection Report</h2>
+<p class="text-on-surface-variant mt-2">Report ID: {{ report.report_id }}</p>
+</div>
+
+<!-- Report Details -->
+<div class="bg-surface-container-lowest rounded-xl p-6 shadow-sm border border-outline-variant/10">
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+<div>
+<p class="text-sm text-on-surface-variant font-medium">Timestamp</p>
+<p class="text-lg font-semibold text-primary">{{ report.timestamp }}</p>
+</div>
+<div>
+<p class="text-sm text-on-surface-variant font-medium">Detection Type</p>
+<p class="text-lg font-semibold text-primary">{{ report.detection_type|title }}</p>
+</div>
+<div>
+<p class="text-sm text-on-surface-variant font-medium">Vehicle Count</p>
+<p class="text-lg font-semibold text-primary">{{ report.vehicle_count }}</p>
+</div>
+<div>
+<p class="text-sm text-on-surface-variant font-medium">Processing Time</p>
+<p class="text-lg font-semibold text-primary">{{ report.processing_time }}</p>
+</div>
+<div>
+<p class="text-sm text-on-surface-variant font-medium">Confidence Threshold</p>
+<p class="text-lg font-semibold text-primary">{{ report.confidence_threshold }}</p>
+</div>
+</div>
+</div>
+
+<!-- Detection Image/Video -->
+{% if report.video_path %}
+<div class="bg-surface-container-lowest rounded-xl p-6 shadow-sm border border-outline-variant/10">
+<h3 class="text-xl font-bold text-primary mb-4">Detection Video</h3>
+<video controls class="w-full rounded-lg" src="/view/videos/{{ report.video_path }}"></video>
+</div>
+{% elif report.image_data %}
+<div class="bg-surface-container-lowest rounded-xl p-6 shadow-sm border border-outline-variant/10">
+<h3 class="text-xl font-bold text-primary mb-4">Detection Image</h3>
+<img src="data:image/jpeg;base64,{{ report.image_data }}" class="w-full rounded-lg" alt="Detection Result">
+</div>
+{% endif %}
+
+<!-- Breakdown -->
+{% if report.breakdown %}
+<div class="bg-surface-container-lowest rounded-xl p-6 shadow-sm border border-outline-variant/10">
+<h3 class="text-xl font-bold text-primary mb-4">Vehicle Breakdown</h3>
+<div class="flex flex-wrap gap-3">
+{% for class_name, count in report.breakdown.items() %}
+<span class="px-4 py-2 bg-surface-container rounded-lg text-sm font-semibold text-primary">
+{{ class_name|title }}: {{ count }}
+</span>
+{% endfor %}
+</div>
+</div>
+{% endif %}
+
+<!-- Actions -->
+<div class="flex gap-4">
+<a href="/generate_pdf/{{ report.report_id }}" class="flex items-center gap-2 px-6 py-3 bg-primary text-white font-semibold rounded-lg hover:bg-primary-container transition-colors">
+<span class="material-symbols-outlined">download</span>
+Download PDF
+</a>
+</div>
+</div>
+</main>
+</body>
+</html>
+"""
+
 HISTORY_TEMPLATE = """
 <!DOCTYPE html>
 <html class="light" lang="en">
@@ -3744,6 +3923,9 @@ Logout
 <div class="mt-4 flex gap-3">
 <a href="/generate_pdf/{{ item.id }}" target="_blank" class="text-sm font-semibold text-primary hover:text-primary-container transition-colors">
 Download Report
+</a>
+<a href="/view_report/{{ item.id }}" target="_blank" class="text-sm font-semibold text-primary hover:text-primary-container transition-colors">
+View Report
 </a>
 {% if item.video_path %}
 <a href="/view/videos/{{ item.video_path }}" target="_blank" class="text-sm font-semibold text-primary hover:text-primary-container transition-colors">
