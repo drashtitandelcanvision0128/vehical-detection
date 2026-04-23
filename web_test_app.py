@@ -597,38 +597,29 @@ def save_live_detection_to_db(report_id, session_start, session_end, total_detec
             )
             db.add(live_detection)
 
-        # Also save to unified history table with image and video
-        breakdown_str = ''
-        if isinstance(breakdown, dict):
-            breakdown_str = ', '.join([f"{k}: {v}" for k, v in breakdown.items()])
-        elif isinstance(breakdown, str):
-            breakdown_str = breakdown
-
-        existing_history = db.query(DetectionHistory).filter_by(report_id=report_id).first()
-        if existing_history:
-            existing_history.detection_type = 'live'
-            existing_history.timestamp = datetime.utcnow()
-            existing_history.vehicle_count = total_detections
-            existing_history.processing_time = ''
-            existing_history.confidence_threshold = conf_threshold
-            existing_history.breakdown = breakdown_str
-            existing_history.image_data = image_data
-            existing_history.video_path = video_path
-            existing_history.user_id = user_id
+        # Also save to detection_history table with video_path
+        history_existing = db.query(DetectionHistory).filter_by(report_id=report_id).first()
+        if history_existing:
+            history_existing.timestamp = datetime.utcnow()
+            history_existing.vehicle_count = total_detections
+            history_existing.confidence_threshold = conf_threshold
+            history_existing.breakdown = breakdown
+            history_existing.image_data = image_data
+            history_existing.video_path = video_path
+            history_existing.user_id = user_id
         else:
-            history_entry = DetectionHistory(
+            history = DetectionHistory(
                 report_id=report_id,
                 detection_type='live',
                 timestamp=datetime.utcnow(),
                 vehicle_count=total_detections,
-                processing_time='',
                 confidence_threshold=conf_threshold,
-                breakdown=breakdown_str,
+                breakdown=breakdown,
                 image_data=image_data,
                 video_path=video_path,
                 user_id=user_id
             )
-            db.add(history_entry)
+            db.add(history)
 
         db.commit()
         print(f"[INFO] Live detection saved to database: {report_id}")
@@ -638,7 +629,8 @@ def save_live_detection_to_db(report_id, session_start, session_end, total_detec
         db.rollback()
         return False
     finally:
-        db.close()
+        if db:
+            db.close()
 
 # Store detection results for PDF generation (keyed by report_id)
 app.stored_results = {}
@@ -2836,6 +2828,7 @@ def save_live_session():
         breakdown = data.get('breakdown', '')
         image_data = data.get('image_data', '')
         video_path = data.get('video_path', None)
+        vehicle_counts = data.get('vehicle_counts', {})
 
         # Convert timestamps to datetime objects - handle multiple formats
         from datetime import datetime
@@ -2867,9 +2860,18 @@ def save_live_session():
         else:
             session_end = datetime.utcnow()
 
+        # Update breakdown with vehicle counts if available
+        if vehicle_counts:
+            breakdown_text = f"Car: {vehicle_counts.get('car', 0)}, Motorcycle: {vehicle_counts.get('motorcycle', 0)}, Bus: {vehicle_counts.get('bus', 0)}, Truck: {vehicle_counts.get('truck', 0)}"
+            if breakdown:
+                breakdown = breakdown_text
+        # Use total from video counts if available
+        if vehicle_counts:
+            total_detections = vehicle_counts.get('total', total_detections)
+
         # Save to database
         save_live_detection_to_db(report_id, session_start, session_end, total_detections,
-                                  conf_threshold, stats, breakdown, image_data)
+                                  conf_threshold, stats, breakdown, image_data, video_path)
 
         return {'success': True, 'report_id': report_id}
     except Exception as e:
@@ -2881,7 +2883,7 @@ def save_live_session():
 
 @app.route('/upload_live_video', methods=['POST'])
 def upload_live_video():
-    """Upload recorded video from live detection"""
+    """Upload recorded video from live detection and process with vehicle detection"""
     try:
         if 'video' not in request.files:
             return {'error': 'No video file provided'}, 400
@@ -2892,12 +2894,19 @@ def upload_live_video():
         if video_file.filename == '':
             return {'error': 'No file selected'}, 400
         
-        # Save video to static/videos directory
+        # Save original video to static/videos directory
         filename = f"live_{report_id}_{int(datetime.utcnow().timestamp())}.webm"
         video_path = os.path.join(STATIC_DIR, filename)
         video_file.save(video_path)
         
-        # Convert to mp4 for better browser compatibility
+        # Process video with YOLOv8 detection
+        processed_filename = f"processed_{report_id}_{int(datetime.utcnow().timestamp())}.mp4"
+        processed_path = os.path.join(STATIC_DIR, processed_filename)
+        
+        # Process video with detections
+        vehicle_counts = process_video_with_detections(video_path, processed_path)
+        
+        # Convert original to mp4 for backup (optional)
         try:
             mp4_filename = filename.replace('.webm', '.mp4')
             mp4_path = os.path.join(STATIC_DIR, mp4_filename)
@@ -2907,20 +2916,119 @@ def upload_live_video():
                 '-movflags', '+faststart',
                 mp4_path
             ], check=True, capture_output=True)
-            
-            # Remove webm file after conversion
             os.remove(video_path)
-            video_path = mp4_filename
+            original_path = mp4_filename
         except Exception as e:
             print(f"[WARN] FFmpeg conversion failed, using webm: {e}")
-            video_path = filename
+            original_path = filename
         
-        return {'success': True, 'video_path': video_path}
+        return {
+            'success': True, 
+            'video_path': processed_filename,
+            'original_path': original_path,
+            'vehicle_counts': vehicle_counts
+        }
     except Exception as e:
         print(f"[ERROR] Failed to upload video: {e}")
         import traceback
         traceback.print_exc()
         return {'error': str(e)}, 500
+
+
+def process_video_with_detections(input_path, output_path):
+    """Process video with YOLOv8 vehicle detection and draw bounding boxes"""
+    import cv2
+    from ultralytics import YOLO
+    
+    # Vehicle class names
+    VEHICLE_CLASSES = {
+        2: 'car',
+        3: 'motorcycle',
+        5: 'bus',
+        7: 'truck'
+    }
+    
+    CLASS_COLORS = {
+        'car': (0, 255, 0),
+        'motorcycle': (255, 0, 0),
+        'bus': (0, 0, 255),
+        'truck': (255, 255, 0)
+    }
+    
+    # Initialize video capture
+    cap = cv2.VideoCapture(input_path)
+    if not cap.isOpened():
+        print(f"[ERROR] Cannot open video: {input_path}")
+        return {}
+    
+    # Get video properties
+    fps = int(cap.get(cv2.CAP_PROP_FPS)) or 30
+    width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    
+    # Initialize video writer
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    out = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
+    
+    # Vehicle counts
+    vehicle_counts = {
+        'car': 0,
+        'motorcycle': 0,
+        'bus': 0,
+        'truck': 0,
+        'total': 0
+    }
+    
+    frame_count = 0
+    max_frames = 300  # Process max 300 frames for performance (10 seconds at 30fps)
+    
+    print(f"[INFO] Processing video: {input_path}")
+    print(f"[INFO] Video properties: {width}x{height} @ {fps}fps")
+    
+    while cap.isOpened() and frame_count < max_frames:
+        ret, frame = cap.read()
+        if not ret:
+            break
+        
+        # Run YOLO detection
+        results = model.predict(frame, imgsz=320, conf=0.4, verbose=False)
+        
+        # Draw detections on frame
+        for result in results:
+            for box in result.boxes:
+                class_id = int(box.cls[0].cpu().numpy())
+                if class_id in VEHICLE_CLASSES:
+                    class_name = VEHICLE_CLASSES[class_id]
+                    conf = float(box.conf[0].cpu().numpy())
+                    x1, y1, x2, y2 = box.xyxy[0].cpu().numpy().astype(int)
+                    
+                    # Draw bounding box
+                    color = CLASS_COLORS.get(class_name, (0, 255, 0))
+                    cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
+                    
+                    # Draw label
+                    label = f"{class_name} {conf:.2f}"
+                    cv2.putText(frame, label, (x1, y1 - 10),
+                               cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
+                    
+                    # Count vehicles
+                    vehicle_counts[class_name] += 1
+                    vehicle_counts['total'] += 1
+        
+        # Write processed frame
+        out.write(frame)
+        frame_count += 1
+        
+        if frame_count % 30 == 0:
+            print(f"[INFO] Processed {frame_count} frames...")
+    
+    cap.release()
+    out.release()
+    
+    print(f"[INFO] Video processing complete. Total vehicles: {vehicle_counts}")
+    print(f"[INFO] Processed video saved to: {output_path}")
+    
+    return vehicle_counts
 
 
 @app.route('/view/<path:filename>')
@@ -3358,7 +3466,7 @@ Logout
                         });
                         const result = await response.json();
                         console.log('[INFO] Video uploaded:', result);
-                        resolve(result.video_path);
+                        resolve(result);
                     } catch (error) {
                         console.error('[ERROR] Failed to upload video:', error);
                         resolve(null);
@@ -3372,8 +3480,8 @@ Logout
     async function stopWebcam() {
         document.getElementById('scanStatus').textContent = 'Stopping...';
         
-        // Stop video recording and get video path
-        const videoPath = await stopVideoRecording();
+        // Stop video recording and get video result
+        const videoResult = await stopVideoRecording();
         
         if (stream) {
             stream.getTracks().forEach(track => track.stop());
@@ -3391,8 +3499,8 @@ Logout
         document.getElementById('startWebcamBtn').classList.remove('hidden');
         document.getElementById('stopWebcamBtn').classList.add('hidden');
 
-        // Save live session to database with video path
-        saveLiveSession(videoPath);
+        // Save live session to database with processed video path and vehicle counts
+        saveLiveSession(videoResult);
     }
 
     let sessionStartTime = null;
@@ -3400,10 +3508,14 @@ Logout
     let sessionStats = {};
     let capturedFrame = null; // Store captured frame for saving
 
-    function saveLiveSession(videoPath = null) {
+    function saveLiveSession(videoResult = null) {
         // Save even if 0 detections - user should see all sessions
         const sessionEndTime = new Date().toLocaleString();
         const reportId = 'live_' + Math.random().toString(36).substr(2, 8);
+
+        // Use processed video path if available, else null
+        const processedVideoPath = videoResult && videoResult.success ? videoResult.video_path : null;
+        const vehicleCounts = videoResult && videoResult.success ? videoResult.vehicle_counts : {};
 
         fetch('/save_live_session', {
             method: 'POST',
@@ -3419,7 +3531,8 @@ Logout
                 stats: sessionStats,
                 breakdown: sessionStats.breakdown || '',
                 image_data: capturedFrame, // Send captured frame
-                video_path: videoPath // Send video path
+                video_path: processedVideoPath, // Send processed video path
+                vehicle_counts: vehicleCounts // Send vehicle counts by type
             })
         })
         .then(response => response.json())
