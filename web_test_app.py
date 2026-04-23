@@ -3653,6 +3653,10 @@ Download PDF
     }
 
     async function stopWebcam() {
+        const stopBtn = document.getElementById('stopWebcamBtn');
+        stopBtn.disabled = true;
+        stopBtn.textContent = 'Stopping...';
+        
         document.getElementById('scanStatus').textContent = 'Stopping...';
         
         // Stop video recording and get video result
@@ -3680,6 +3684,9 @@ Download PDF
 
         // Show result section AFTER save completes
         showResultSection(videoResult);
+        
+        stopBtn.disabled = false;
+        stopBtn.innerHTML = '<span class="material-symbols-outlined text-[20px]">videocam_off</span>Stop Webcam';
     }
 
     function showResultSection(videoResult) {
