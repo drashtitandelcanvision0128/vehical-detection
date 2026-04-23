@@ -2509,11 +2509,19 @@ def download(filename):
 def webcam_detect():
     """Process webcam frame for live detection"""
     try:
+        print(f"[DEBUG] webcam_detect called")
+        print(f"[DEBUG] Request form keys: {list(request.form.keys())}")
+        print(f"[DEBUG] Request files keys: {list(request.files.keys())}")
+        
         # Get image data from request (FormData)
         image_data = request.form.get('image')
         conf_threshold = float(request.form.get('confidence', 0.4))
+        
+        print(f"[DEBUG] Image data length: {len(image_data) if image_data else 0}")
+        print(f"[DEBUG] Confidence threshold: {conf_threshold}")
 
         if not image_data:
+            print(f"[ERROR] No image data provided")
             return {'error': 'No image data provided'}, 400
 
         # Decode base64 image
