@@ -3740,7 +3740,7 @@ Download PDF
             console.log('[INFO] Setting video source to:', videoUrl);
             resultVideo.src = videoUrl;
             resultVideo.load(); // Explicitly load the video
-            resultVideo.play().catch(e => console.log('[WARN] Auto-play prevented:', e));
+            // Don't auto-play - let user click play (browser policy)
         } else {
             console.log('[WARN] No video_path in videoResult');
         }
