@@ -2797,8 +2797,15 @@ def webcam_detect():
 
         # Update tracker with detections (without counting line)
         try:
-            # Convert detections to list of boxes for tracker
-            detection_boxes = [[d['box'][0], d['box'][1], d['box'][2], d['box'][3]] for d in detections]
+            # Convert detections to expected format for tracker
+            detection_boxes = [
+                {
+                    'bbox': [int(d['box'][0]), int(d['box'][1]), int(d['box'][2]), int(d['box'][3])],
+                    'class': d['class_name'],
+                    'confidence': d['conf']
+                }
+                for d in detections
+            ]
             tracked_vehicles = vehicle_tracker.update(detection_boxes)
         except Exception as e:
             print(f"[ERROR] Tracker update failed: {e}")
@@ -2972,7 +2979,7 @@ def upload_live_video():
         processed_filename = f"processed_{report_id}_{int(datetime.utcnow().timestamp())}.mp4"
         processed_path = os.path.join(STATIC_DIR, processed_filename)
         print(f"[INFO] Will process video to: {processed_path}")
-        
+
         # Process video with detections
         try:
             vehicle_counts = process_video_with_detections(video_path, processed_path)
@@ -2985,19 +2992,57 @@ def upload_live_video():
             processed_filename = filename
             processed_path = video_path
             vehicle_counts = {'total': 0, 'car': 0, 'motorcycle': 0, 'bus': 0, 'truck': 0}
-        
+
         # Check if processed video was created and is valid
         if not os.path.exists(processed_path):
             print(f"[ERROR] Processed video not created: {processed_path}")
             return {'error': 'Video processing failed - output file not created'}, 500
-        
+
         processed_size = os.path.getsize(processed_path)
         print(f"[INFO] Processed video size: {processed_size} bytes")
         if processed_size < 1000:
             print(f"[WARN] Processed video is too small ({processed_size} bytes), using original")
             processed_filename = filename
             processed_path = video_path
-        
+
+        # Convert to H.264 for browser compatibility using ffmpeg
+        # If conversion fails, use original webm which is browser-compatible
+        conversion_successful = False
+        if processed_filename.endswith('.mp4') and processed_filename != filename:
+            h264_filename = processed_filename.replace('.mp4', '_h264.mp4')
+            h264_path = os.path.join(STATIC_DIR, h264_filename)
+            print(f"[INFO] Converting to H.264 for browser compatibility: {h264_path}")
+            try:
+                result = subprocess.run([
+                    'ffmpeg', '-i', processed_path,
+                    '-c:v', 'libx264', '-c:a', 'aac',
+                    '-movflags', '+faststart',
+                    '-y', h264_path
+                ], capture_output=True, text=True, timeout=300)
+                if result.returncode != 0:
+                    print(f"[WARN] FFmpeg conversion failed with code {result.returncode}")
+                    print(f"[WARN] FFmpeg stderr: {result.stderr}")
+                else:
+                    # Use H.264 version if conversion successful
+                    if os.path.exists(h264_path) and os.path.getsize(h264_path) > 1000:
+                        os.remove(processed_path)
+                        processed_filename = h264_filename
+                        processed_path = h264_path
+                        conversion_successful = True
+                        print(f"[INFO] Using H.264 video: {processed_filename}")
+                    else:
+                        print(f"[WARN] H.264 video not created or too small")
+            except subprocess.TimeoutExpired:
+                print(f"[WARN] FFmpeg conversion timed out")
+            except Exception as e:
+                print(f"[WARN] FFmpeg conversion failed: {e}")
+
+        # If H.264 conversion failed, use original webm (browser-compatible)
+        if not conversion_successful and filename.endswith('.webm'):
+            print(f"[INFO] Using original webm file for browser compatibility")
+            processed_filename = filename
+            processed_path = video_path
+
         print(f"[INFO] Video processing complete. Final video: {processed_filename}")
         
         # Keep original video as backup (don't delete)
