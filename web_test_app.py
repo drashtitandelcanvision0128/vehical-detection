@@ -3381,6 +3381,10 @@ Logout
 <span class="material-symbols-outlined text-[20px]">screenshot</span>
                         Capture Frame
                     </button>
+<button onclick="showDetectionResult()" class="flex items-center gap-2 bg-primary text-white px-6 py-3 rounded-md font-semibold text-sm shadow-lg hover:shadow-xl transition-all active:scale-95">
+<span class="material-symbols-outlined text-[20px]">analytics</span>
+                        Show Detection Result
+                    </button>
 </div>
 </div>
 <!-- Bento Grid Main Content -->
@@ -3922,6 +3926,21 @@ Download PDF
         } catch (err) {
             console.error('[ERROR] Frame processing error:', err);
         }
+    }
+
+    function showDetectionResult() {
+        // Show current detection result
+        const resultText = `
+Current Detection Result:
+--------------------------
+Total Vehicles: ${totalDetections}
+Car Count: ${document.getElementById('carCount').textContent}
+Truck Count: ${document.getElementById('truckCount').textContent}
+Total Counted: ${document.getElementById('totalCounted').textContent || 0}
+Session Time: ${sessionStats.time || 'N/A'}
+Breakdown: ${sessionStats.breakdown || 'No detections yet'}
+        `;
+        alert(resultText);
     }
 
     function updateDetectionLogs(breakdown) {
