@@ -565,6 +565,7 @@ def get_detection_history_from_db(limit=50):
 
 def save_live_detection_to_db(report_id, session_start, session_end, total_detections, conf_threshold, stats, breakdown, image_data=None, video_path=None):
     """Save live detection session to database"""
+    print(f"[DEBUG] save_live_detection_to_db called: report_id={report_id}, video_path={video_path}")
     db = get_db()
     if not db:
         print("[WARN] Could not get database session, using memory fallback")
@@ -583,6 +584,7 @@ def save_live_detection_to_db(report_id, session_start, session_end, total_detec
             existing.stats = stats
             existing.breakdown = breakdown
             existing.user_id = user_id
+            print(f"[DEBUG] Updated existing live detection record: {report_id}")
         else:
             live_detection = LiveDetection(
                 report_id=report_id,
@@ -596,6 +598,7 @@ def save_live_detection_to_db(report_id, session_start, session_end, total_detec
                 user_id=user_id
             )
             db.add(live_detection)
+            print(f"[DEBUG] Created new live detection record: {report_id}")
 
         # Also save to detection_history table with video_path
         history_existing = db.query(DetectionHistory).filter_by(report_id=report_id).first()
@@ -607,6 +610,7 @@ def save_live_detection_to_db(report_id, session_start, session_end, total_detec
             history_existing.image_data = image_data
             history_existing.video_path = video_path
             history_existing.user_id = user_id
+            print(f"[DEBUG] Updated existing history record: {report_id}, video_path={video_path}")
         else:
             history = DetectionHistory(
                 report_id=report_id,
@@ -620,12 +624,15 @@ def save_live_detection_to_db(report_id, session_start, session_end, total_detec
                 user_id=user_id
             )
             db.add(history)
+            print(f"[DEBUG] Created new history record: {report_id}, video_path={video_path}")
 
         db.commit()
-        print(f"[INFO] Live detection saved to database: {report_id}")
+        print(f"[INFO] Live detection saved to database: {report_id}, video_path={video_path}")
         return True
     except Exception as e:
         print(f"[ERROR] Failed to save live detection to database: {e}")
+        import traceback
+        traceback.print_exc()
         db.rollback()
         return False
     finally:
@@ -2877,6 +2884,9 @@ def save_live_session():
         video_path = data.get('video_path', None)
         vehicle_counts = data.get('vehicle_counts', {})
 
+        print(f"[DEBUG] save_live_session called: report_id={report_id}, video_path={video_path}")
+        print(f"[DEBUG] vehicle_counts: {vehicle_counts}")
+
         # Convert timestamps to datetime objects - handle multiple formats
         from datetime import datetime
         if session_start:
@@ -2932,41 +2942,64 @@ def upload_live_video():
     """Upload recorded video from live detection and process with vehicle detection"""
     try:
         if 'video' not in request.files:
+            print("[ERROR] No video file provided in request")
             return {'error': 'No video file provided'}, 400
         
         video_file = request.files['video']
         report_id = request.form.get('report_id', str(uuid.uuid4())[:8])
         
         if video_file.filename == '':
+            print("[ERROR] Empty video filename")
             return {'error': 'No file selected'}, 400
         
         # Save original video to static/videos directory
         filename = f"live_{report_id}_{int(datetime.utcnow().timestamp())}.webm"
         video_path = os.path.join(STATIC_DIR, filename)
         video_file.save(video_path)
+        print(f"[INFO] Original video saved to: {video_path}")
+        
+        # Check if the video file is valid (not empty)
+        file_size = os.path.getsize(video_path)
+        print(f"[INFO] Original video file size: {file_size} bytes")
+        if file_size < 1000:  # Less than 1KB is likely corrupted
+            print(f"[ERROR] Video file is too small ({file_size} bytes), likely corrupted")
+            os.remove(video_path)
+            return {'error': 'Video file is corrupted or empty. Please try recording again.'}, 400
         
         # Process video with YOLOv8 detection
         processed_filename = f"processed_{report_id}_{int(datetime.utcnow().timestamp())}.mp4"
         processed_path = os.path.join(STATIC_DIR, processed_filename)
+        print(f"[INFO] Will process video to: {processed_path}")
         
         # Process video with detections
-        vehicle_counts = process_video_with_detections(video_path, processed_path)
-        
-        # Convert original to mp4 for backup (optional)
         try:
-            mp4_filename = filename.replace('.webm', '.mp4')
-            mp4_path = os.path.join(STATIC_DIR, mp4_filename)
-            subprocess.run([
-                'ffmpeg', '-i', video_path, 
-                '-c:v', 'libx264', '-c:a', 'aac',
-                '-movflags', '+faststart',
-                mp4_path
-            ], check=True, capture_output=True)
-            os.remove(video_path)
-            original_path = mp4_filename
+            vehicle_counts = process_video_with_detections(video_path, processed_path)
         except Exception as e:
-            print(f"[WARN] FFmpeg conversion failed, using webm: {e}")
-            original_path = filename
+            print(f"[ERROR] Video processing failed: {e}")
+            import traceback
+            traceback.print_exc()
+            # If processing fails, just use the original video
+            print(f"[INFO] Using original video as fallback")
+            processed_filename = filename
+            processed_path = video_path
+            vehicle_counts = {'total': 0, 'car': 0, 'motorcycle': 0, 'bus': 0, 'truck': 0}
+        
+        # Check if processed video was created and is valid
+        if not os.path.exists(processed_path):
+            print(f"[ERROR] Processed video not created: {processed_path}")
+            return {'error': 'Video processing failed - output file not created'}, 500
+        
+        processed_size = os.path.getsize(processed_path)
+        print(f"[INFO] Processed video size: {processed_size} bytes")
+        if processed_size < 1000:
+            print(f"[WARN] Processed video is too small ({processed_size} bytes), using original")
+            processed_filename = filename
+            processed_path = video_path
+        
+        print(f"[INFO] Video processing complete. Final video: {processed_filename}")
+        
+        # Keep original video as backup (don't delete)
+        original_path = filename
         
         return {
             'success': True, 
@@ -3044,8 +3077,8 @@ def process_video_with_detections(input_path, output_path):
     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     
-    # Initialize video writer
-    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    # Initialize video writer with H.264 codec for browser compatibility
+    fourcc = cv2.VideoWriter_fourcc(*'avc1')  # H.264 codec
     out = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
     
     # Vehicle counts
@@ -3058,12 +3091,12 @@ def process_video_with_detections(input_path, output_path):
     }
     
     frame_count = 0
-    max_frames = 300  # Process max 300 frames for performance (10 seconds at 30fps)
+    # Process all frames - no limit for live detection
     
     print(f"[INFO] Processing video: {input_path}")
     print(f"[INFO] Video properties: {width}x{height} @ {fps}fps")
     
-    while cap.isOpened() and frame_count < max_frames:
+    while cap.isOpened():
         ret, frame = cap.read()
         if not ret:
             break
@@ -3557,24 +3590,36 @@ Download PDF
 
     function startVideoRecording() {
         recordedChunks = [];
+        const canvas = document.getElementById('detectionCanvas');
+        const video = document.getElementById('webcamVideo');
+        
+        // Wait for video to be ready
+        video.onloadedmetadata = function() {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+        };
+        
+        // Capture canvas stream at 30 FPS
+        const canvasStream = canvas.captureStream(30);
         const options = { mimeType: 'video/webm;codecs=vp9' };
         
         try {
-            mediaRecorder = new MediaRecorder(stream, options);
+            mediaRecorder = new MediaRecorder(canvasStream, options);
         } catch (e) {
             console.warn('VP9 not supported, trying VP8');
-            mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp8' });
+            mediaRecorder = new MediaRecorder(canvasStream, { mimeType: 'video/webm;codecs=vp8' });
         }
         
         mediaRecorder.ondataavailable = function(event) {
             if (event.data.size > 0) {
                 recordedChunks.push(event.data);
+                console.log('[INFO] Chunk received, size:', event.data.size);
             }
         };
         
-        mediaRecorder.start();
+        mediaRecorder.start(100); // Collect data every 100ms
         isRecording = true;
-        console.log('[INFO] Video recording started');
+        console.log('[INFO] Video recording started from canvas with detections');
     }
 
     async function stopVideoRecording() {
@@ -3629,11 +3674,12 @@ Download PDF
         document.getElementById('startWebcamBtn').classList.remove('hidden');
         document.getElementById('stopWebcamBtn').classList.add('hidden');
 
-        // Show result section
-        showResultSection(videoResult);
-
         // Save live session to database with processed video path and vehicle counts
-        saveLiveSession(videoResult);
+        // This must complete before showing the result section
+        await saveLiveSession(videoResult);
+
+        // Show result section AFTER save completes
+        showResultSection(videoResult);
     }
 
     function showResultSection(videoResult) {
@@ -3642,24 +3688,31 @@ Download PDF
             return;
         }
 
+        console.log('[INFO] Showing result section with video:', videoResult);
         const resultSection = document.getElementById('resultSection');
         const resultVideo = document.getElementById('resultVideo');
-        
+
         // Show result section
         resultSection.classList.remove('hidden');
-        
+
         // Set video source
         if (videoResult.video_path) {
-            resultVideo.src = '/view/' + videoResult.video_path;
+            const videoUrl = '/view/' + videoResult.video_path;
+            console.log('[INFO] Setting video source to:', videoUrl);
+            resultVideo.src = videoUrl;
+            resultVideo.load(); // Explicitly load the video
+            resultVideo.play().catch(e => console.log('[WARN] Auto-play prevented:', e));
+        } else {
+            console.log('[WARN] No video_path in videoResult');
         }
-        
+
         // Update stats
         const vehicleCounts = videoResult.vehicle_counts || {};
         document.getElementById('resultVehicleCount').textContent = vehicleCounts.total || totalDetections || 0;
         document.getElementById('resultCarCount').textContent = vehicleCounts.car || 0;
         document.getElementById('resultMotorcycleCount').textContent = vehicleCounts.motorcycle || 0;
         document.getElementById('resultTruckCount').textContent = vehicleCounts.truck || 0;
-        
+
         // Update breakdown
         const breakdownText = document.getElementById('breakdownText');
         if (vehicleCounts) {
@@ -3667,7 +3720,7 @@ Download PDF
         } else {
             breakdownText.textContent = sessionStats.breakdown || 'No breakdown available';
         }
-        
+
         // Note: View Report and Download PDF links will be set after saveLiveSession completes
     }
 
@@ -3676,7 +3729,7 @@ Download PDF
     let sessionStats = {};
     let capturedFrame = null; // Store captured frame for saving
 
-    function saveLiveSession(videoResult = null) {
+    async function saveLiveSession(videoResult = null) {
         // Save even if 0 detections - user should see all sessions
         const sessionEndTime = new Date().toLocaleString();
         const reportId = 'live_' + Math.random().toString(36).substr(2, 8);
@@ -3685,38 +3738,40 @@ Download PDF
         const processedVideoPath = videoResult && videoResult.success ? videoResult.video_path : null;
         const vehicleCounts = videoResult && videoResult.success ? videoResult.vehicle_counts : {};
 
-        fetch('/save_live_session', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                report_id: reportId,
-                session_start: sessionStartTime,
-                session_end: sessionEndTime,
-                total_detections: totalDetections,
-                confidence_threshold: 0.4,
-                stats: sessionStats,
-                breakdown: sessionStats.breakdown || '',
-                image_data: null, // Don't save image for live detection
-                video_path: processedVideoPath, // Send processed video path
-                vehicle_counts: vehicleCounts // Send vehicle counts by type
-            })
-        })
-        .then(response => response.json())
-        .then(data => {
+        try {
+            const response = await fetch('/save_live_session', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    report_id: reportId,
+                    session_start: sessionStartTime,
+                    session_end: sessionEndTime,
+                    total_detections: totalDetections,
+                    confidence_threshold: 0.4,
+                    stats: sessionStats,
+                    breakdown: sessionStats.breakdown || '',
+                    image_data: null, // Don't save image for live detection
+                    video_path: processedVideoPath, // Send processed video path
+                    vehicle_counts: vehicleCounts // Send vehicle counts by type
+                })
+            });
+            const data = await response.json();
             if (data.success) {
                 console.log('[INFO] Live session saved to database:', data.report_id);
                 // Set view report and download PDF links
                 document.getElementById('viewReportLink').href = '/view_report/' + data.report_id;
                 document.getElementById('downloadPdfLink').href = '/generate_pdf/' + data.report_id;
+                return { ...videoResult, report_id: data.report_id };
             } else {
                 console.error('[ERROR] Failed to save live session:', data.error);
+                return videoResult;
             }
-        })
-        .catch(error => {
+        } catch (error) {
             console.error('[ERROR] Failed to save live session:', error);
-        });
+            return videoResult;
+        }
     }
 
     function updateTimestamp() {
@@ -4181,7 +4236,15 @@ Logout
 <div class="flex flex-col md:flex-row gap-6">
 <!-- Thumbnail -->
 <div class="flex-shrink-0">
+{% if item.detection_type == 'live' %}
 {% if item.video_path %}
+<video src="/view/{{ item.video_path }}" class="w-32 h-24 object-cover rounded-lg" controls></video>
+{% else %}
+<div class="w-32 h-24 bg-surface-container rounded-lg flex items-center justify-center text-xs text-slate-500 text-center p-2">
+No Video
+</div>
+{% endif %}
+{% elif item.video_path %}
 <video src="/view/{{ item.video_path }}" class="w-32 h-24 object-cover rounded-lg" controls></video>
 {% elif item.image_data %}
 <img src="{{ item.image_data }}" class="w-32 h-24 object-cover rounded-lg" loading="lazy" alt="Detection">
