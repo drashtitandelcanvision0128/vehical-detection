@@ -3929,18 +3929,70 @@ Download PDF
     }
 
     function showDetectionResult() {
-        // Show current detection result
-        const resultText = `
-Current Detection Result:
---------------------------
-Total Vehicles: ${totalDetections}
-Car Count: ${document.getElementById('carCount').textContent}
-Truck Count: ${document.getElementById('truckCount').textContent}
-Total Counted: ${document.getElementById('totalCounted').textContent || 0}
-Session Time: ${sessionStats.time || 'N/A'}
-Breakdown: ${sessionStats.breakdown || 'No detections yet'}
+        // Show current detection result in a modal
+        const modal = document.createElement('div');
+        modal.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
         `;
-        alert(resultText);
+
+        const content = document.createElement('div');
+        content.style.cssText = `
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        `;
+
+        content.innerHTML = `
+            <h3 style="font-size: 24px; font-weight: bold; margin-bottom: 20px; color: #002542;">Detection Result</h3>
+            <div style="margin-bottom: 15px;">
+                <strong>Total Vehicles:</strong> ${totalDetections}
+            </div>
+            <div style="margin-bottom: 15px;">
+                <strong>Car Count:</strong> ${document.getElementById('carCount').textContent}
+            </div>
+            <div style="margin-bottom: 15px;">
+                <strong>Truck Count:</strong> ${document.getElementById('truckCount').textContent}
+            </div>
+            <div style="margin-bottom: 15px;">
+                <strong>Total Counted:</strong> ${document.getElementById('totalCounted').textContent || 0}
+            </div>
+            <div style="margin-bottom: 15px;">
+                <strong>Session Time:</strong> ${sessionStats.time || 'N/A'}
+            </div>
+            <div style="margin-bottom: 20px;">
+                <strong>Breakdown:</strong> ${sessionStats.breakdown || 'No detections yet'}
+            </div>
+            <button onclick="this.closest('div[style*=fixed]').remove()" style="
+                background: #002542;
+                color: white;
+                padding: 10px 20px;
+                border: none;
+                border-radius: 6px;
+                cursor: pointer;
+                font-weight: bold;
+            ">Close</button>
+        `;
+
+        modal.appendChild(content);
+        document.body.appendChild(modal);
+
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.remove();
+            }
+        });
     }
 
     function updateDetectionLogs(breakdown) {
