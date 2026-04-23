@@ -2689,8 +2689,19 @@ def webcam_detect():
                     })
                     class_counts[class_name] = class_counts.get(class_name, 0) + 1
 
-        # Update tracker with detections and counting line
-        tracked_vehicles = vehicle_tracker.update(detections, count_line_pixel, frame_height)
+        # Update tracker with detections and counting line (with error handling)
+        try:
+            tracked_vehicles = vehicle_tracker.update(detections, count_line_pixel, frame_height)
+        except Exception as e:
+            print(f"[ERROR] Tracker update failed: {e}")
+            tracked_vehicles = {}
+            # Fallback to simple detections
+            for det in detections:
+                tracked_vehicles[len(tracked_vehicles)] = {
+                    'bbox': det['box'],
+                    'class': det['class_name'],
+                    'center': ((det['box'][0] + det['box'][2]) // 2, (det['box'][1] + det['box'][3]) // 2)
+                }
 
         # Draw counting line
         cv2.line(annotated, (0, count_line_pixel), (image.shape[1], count_line_pixel), (0, 255, 255), 2)
@@ -2704,20 +2715,20 @@ def webcam_detect():
             color = CLASS_COLORS.get(class_name, (0, 255, 0))
             
             # Draw bounding box
-            cv2.rectangle(annotated, (x1, y1), (x2, y2), color, 2)
+            cv2.rectangle(annotated, (int(x1), int(y1)), (int(x2), int(y2)), color, 2)
             
             # Draw ID and class
             display_name = DISPLAY_NAMES.get(class_name, class_name)
             label = f"ID:{v_id} {display_name}"
             (label_w, label_h), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 2)
-            cv2.rectangle(annotated, (x1, y1 - label_h - 10),
-                        (x1 + label_w, y1), color, -1)
-            cv2.putText(annotated, label, (x1, y1 - 5),
+            cv2.rectangle(annotated, (int(x1), int(y1) - label_h - 10),
+                        (int(x1) + label_w, int(y1)), color, -1)
+            cv2.putText(annotated, label, (int(x1), int(y1) - 5),
                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2)
             
             # Draw center point
             center = vehicle['center']
-            cv2.circle(annotated, center, 4, (255, 255, 255), -1)
+            cv2.circle(annotated, (int(center[0]), int(center[1])), 4, (255, 255, 255), -1)
 
         # Add stats overlay (fixed - no blinking)
         overlay = annotated.copy()
