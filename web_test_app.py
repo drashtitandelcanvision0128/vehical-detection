@@ -2873,7 +2873,7 @@ def save_live_session():
         conf_threshold = data.get('confidence_threshold', 0.4)
         stats = data.get('stats', {})
         breakdown = data.get('breakdown', '')
-        image_data = data.get('image_data', '')
+        image_data = None  # Don't save image for live detection
         video_path = data.get('video_path', None)
         vehicle_counts = data.get('vehicle_counts', {})
 
@@ -3609,7 +3609,7 @@ Logout
                 confidence_threshold: 0.4,
                 stats: sessionStats,
                 breakdown: sessionStats.breakdown || '',
-                image_data: capturedFrame, // Send captured frame
+                image_data: null, // Don't save image for live detection
                 video_path: processedVideoPath, // Send processed video path
                 vehicle_counts: vehicleCounts // Send vehicle counts by type
             })
@@ -4108,7 +4108,7 @@ Logout
 <div>
 <div class="flex items-center gap-2 mb-2">
 <span class="text-xs font-bold uppercase tracking-wider px-2 py-1 rounded bg-primary/10 text-primary">
-{{ 'Video' if item.input_type == 'video' else 'Image' }}
+{{ 'Live' if item.detection_type == 'live' else ('Video' if item.input_type == 'video' else 'Image') }}
 </span>
 <span class="text-xs text-slate-500">{{ item.timestamp }}</span>
 </div>
