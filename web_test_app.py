@@ -3892,11 +3892,28 @@ Download PDF
 
     function startDetection() {
         // Real detection using backend YOLO model
-        // Increased interval to reduce lag/rush (500ms instead of 100ms)
-        detectionInterval = setInterval(() => {
+        // Use requestAnimationFrame for smooth camera-like playback
+        let lastProcessTime = 0;
+        const targetFPS = 30;
+        const frameInterval = 1000 / targetFPS;
+        let isProcessing = false;
+
+        function detectionLoop(timestamp) {
             if (!isRunning) return;
-            processFrame();
-        }, 500);
+
+            const elapsed = timestamp - lastProcessTime;
+            if (elapsed >= frameInterval && !isProcessing) {
+                lastProcessTime = timestamp - (elapsed % frameInterval);
+                isProcessing = true;
+                processFrame().finally(() => {
+                    isProcessing = false;
+                });
+            }
+
+            requestAnimationFrame(detectionLoop);
+        }
+
+        requestAnimationFrame(detectionLoop);
     }
 
     async function processFrame() {
@@ -3914,8 +3931,13 @@ Download PDF
         // Capture frame for saving (use lower quality for performance)
         capturedFrame = canvas.toDataURL('image/jpeg', 0.5);
 
-        // Get frame data for detection
-        const frameData = capturedFrame;
+        // Create a smaller canvas for detection to speed up processing
+        const detectCanvas = document.createElement('canvas');
+        const detectCtx = detectCanvas.getContext('2d');
+        detectCanvas.width = 320;  // Reduced resolution for faster detection
+        detectCanvas.height = 240;
+        detectCtx.drawImage(canvas, 0, 0, detectCanvas.width, detectCanvas.height);
+        const frameData = detectCanvas.toDataURL('image/jpeg', 0.7);
 
         try {
             const formData = new FormData();
