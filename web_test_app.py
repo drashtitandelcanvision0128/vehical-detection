@@ -2953,10 +2953,11 @@ def upload_live_video():
         if 'video' not in request.files:
             print("[ERROR] No video file provided in request")
             return {'error': 'No video file provided'}, 400
-        
+
         video_file = request.files['video']
         report_id = request.form.get('report_id', str(uuid.uuid4())[:8])
-        
+        recording_duration = int(request.form.get('duration', 0))  # Get recording duration in seconds
+
         if video_file.filename == '':
             print("[ERROR] Empty video filename")
             return {'error': 'No file selected'}, 400
@@ -2982,7 +2983,7 @@ def upload_live_video():
 
         # Process video with detections
         try:
-            vehicle_counts = process_video_with_detections(video_path, processed_path)
+            vehicle_counts = process_video_with_detections(video_path, processed_path, recording_duration)
         except Exception as e:
             print(f"[ERROR] Video processing failed: {e}")
             import traceback
@@ -3093,11 +3094,11 @@ def extract_frames_from_video(video_path, max_frames=3):
     return frames
 
 
-def process_video_with_detections(input_path, output_path):
+def process_video_with_detections(input_path, output_path, recording_duration=0):
     """Process video with YOLOv8 vehicle detection and draw bounding boxes"""
     import cv2
     from ultralytics import YOLO
-    
+
     # Vehicle class names
     VEHICLE_CLASSES = {
         2: 'car',
@@ -3105,50 +3106,47 @@ def process_video_with_detections(input_path, output_path):
         5: 'bus',
         7: 'truck'
     }
-    
+
+    # Class colors
     CLASS_COLORS = {
         'car': (0, 255, 0),
-        'motorcycle': (255, 0, 0),
+        'motorcycle': (255, 0, 255),
         'bus': (0, 0, 255),
         'truck': (255, 255, 0)
     }
-    
+
     # Initialize video capture
     cap = cv2.VideoCapture(input_path)
     if not cap.isOpened():
         print(f"[ERROR] Cannot open video: {input_path}")
         return {}
-    
+
     # Get video properties
-    fps = int(cap.get(cv2.CAP_PROP_FPS)) or 30
     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
-    # Fix FPS to 30 for consistent playback speed (ignore original high FPS)
-    target_fps = 30
-    if fps > 60:
-        print(f"[INFO] Original FPS too high ({fps}), using {target_fps} for normal playback")
-        fps = target_fps
+    # Calculate FPS based on recording duration to preserve actual duration
+    if recording_duration > 0 and total_frames > 0:
+        fps = round(total_frames / recording_duration)
+        print(f"[INFO] Calculated FPS: {fps} (frames: {total_frames}, duration: {recording_duration}s)")
+        if fps < 1 or fps > 60:
+            fps = 30  # Fallback to 30fps if calculated FPS is invalid
+            print(f"[INFO] Using fallback FPS: 30")
+    else:
+        fps = 30
+        print(f"[INFO] Using default FPS: 30")
 
     # Initialize video writer with MP4 codec for Raspberry Pi compatibility
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # MP4 codec (works on Raspberry Pi)
     out = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
     
-    # Vehicle counts
-    vehicle_counts = {
-        'car': 0,
-        'motorcycle': 0,
-        'bus': 0,
-        'truck': 0,
-        'total': 0
-    }
-    
     frame_count = 0
-    # Process all frames - no limit for live detection
-    
+    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+
     print(f"[INFO] Processing video: {input_path}")
-    print(f"[INFO] Video properties: {width}x{height} @ {fps}fps")
-    
+    print(f"[INFO] Video properties: {width}x{height} @ {fps}fps, Total frames: {total_frames}")
+
     while cap.isOpened():
         ret, frame = cap.read()
         if not ret:
@@ -3653,16 +3651,16 @@ Download PDF
             stream = await navigator.mediaDevices.getUserMedia({ video: true });
             video.srcObject = stream;
             isRunning = true;
-            sessionStartTime = new Date().toLocaleString();
+            sessionStartTime = new Date(); // Store as Date object
             totalDetections = 0;
             sessionStats = {};
             document.getElementById('scanStatus').textContent = 'Scanning...';
             document.getElementById('startWebcamBtn').classList.add('hidden');
             document.getElementById('stopWebcamBtn').classList.remove('hidden');
-            
+
             // Start video recording
             startVideoRecording();
-            
+
             startDetection();
             updateTimestamp();
         } catch (err) {
@@ -3675,56 +3673,68 @@ Download PDF
         recordedChunks = [];
         const canvas = document.getElementById('detectionCanvas');
         const video = document.getElementById('webcamVideo');
-        
+
         // Wait for video to be ready
         video.onloadedmetadata = function() {
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
         };
-        
+
         // Capture canvas stream at 30 FPS
         const canvasStream = canvas.captureStream(30);
-        const options = { mimeType: 'video/webm;codecs=vp9' };
-        
+        const options = { mimeType: 'video/webm;codecs=vp9', videoBitsPerSecond: 2500000 };
+
         try {
             mediaRecorder = new MediaRecorder(canvasStream, options);
         } catch (e) {
             console.warn('VP9 not supported, trying VP8');
-            mediaRecorder = new MediaRecorder(canvasStream, { mimeType: 'video/webm;codecs=vp8' });
+            mediaRecorder = new MediaRecorder(canvasStream, { mimeType: 'video/webm;codecs=vp8', videoBitsPerSecond: 2500000 });
         }
-        
+
         mediaRecorder.ondataavailable = function(event) {
             if (event.data.size > 0) {
                 recordedChunks.push(event.data);
                 console.log('[INFO] Chunk received, size:', event.data.size);
             }
         };
-        
-        mediaRecorder.start(100); // Collect data every 100ms
+
+        // Collect data every 100ms to ensure smooth recording
+        mediaRecorder.start(100);
         isRecording = true;
-        console.log('[INFO] Video recording started from canvas with detections');
+        console.log('[INFO] Video recording started at 30fps from canvas with detections');
     }
 
     async function stopVideoRecording() {
         if (mediaRecorder && isRecording) {
             mediaRecorder.stop();
             isRecording = false;
-            
+
+            // Calculate recording duration in seconds
+            const recordingDuration = sessionEndTime && sessionStartTime ?
+                Math.round((sessionEndTime - sessionStartTime) / 1000) : 0;
+            console.log('[INFO] Recording duration:', recordingDuration, 'seconds');
+
             return new Promise((resolve) => {
                 mediaRecorder.onstop = async function() {
                     const blob = new Blob(recordedChunks, { type: 'video/webm' });
                     const formData = new FormData();
                     formData.append('video', blob, `live_${Date.now()}.webm`);
                     formData.append('report_id', 'live_' + Math.random().toString(36).substr(2, 8));
-                    
+                    formData.append('duration', recordingDuration);
+
                     try {
                         const response = await fetch('/upload_live_video', {
                             method: 'POST',
                             body: formData
                         });
                         const result = await response.json();
-                        console.log('[INFO] Video uploaded:', result);
-                        resolve(result);
+                        if (result.success) {
+                            console.log('[INFO] Video uploaded:', result.video_path);
+                            resolve(result);
+                        } else {
+                            console.error('[ERROR] Video upload failed:', result.error);
+                            resolve(null);
+                        }
                     } catch (error) {
                         console.error('[ERROR] Failed to upload video:', error);
                         resolve(null);
@@ -3739,7 +3749,10 @@ Download PDF
         const stopBtn = document.getElementById('stopWebcamBtn');
         stopBtn.disabled = true;
         stopBtn.innerHTML = '<span class="material-symbols-outlined text-[20px]">hourglass_empty</span>Stopping...';
-        
+
+        // Record the end time
+        sessionEndTime = new Date();
+
         // Stop webcam immediately
         if (stream) {
             stream.getTracks().forEach(track => track.stop());
@@ -3819,6 +3832,7 @@ Download PDF
     }
 
     let sessionStartTime = null;
+    let sessionEndTime = null;
     let totalDetections = 0;
     let sessionStats = {};
     let capturedFrame = null; // Store captured frame for saving
