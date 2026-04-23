@@ -2276,6 +2276,7 @@ def generate_pdf(report_id):
                         'input_type': record.detection_type,
                         'image': record.image_data or '',
                         'breakdown': record.breakdown or '',
+                        'video_path': record.video_path or '',
                         'user_id': record.user_id
                     }
                     print(f"[DEBUG] Data fetched from database for report_id: {report_id}")
@@ -2302,7 +2303,13 @@ def generate_pdf(report_id):
     conf_threshold = data.get('conf_threshold', 0.5)
     input_type = data.get('input_type', 'image')
     img_base64 = data.get('image', '')
+    video_path = data.get('video_path', '')
     first_frame = stats.get('first_frame', '') if isinstance(stats, dict) else ''
+
+    # Extract video frames if video exists
+    video_frames = []
+    if video_path:
+        video_frames = extract_frames_from_video(video_path)
 
     # Get user information from stored data (saved at detection time)
     user_info = data.get('user_info')
@@ -2400,6 +2407,46 @@ def generate_pdf(report_id):
             except Exception as img_err:
                 print(f"[WARN] Could not add image to PDF: {img_err}")
                 y += 5
+
+        # ---- Video Frames (if available) ----
+        if video_frames:
+            pdf.set_text_color(0, 37, 66)
+            pdf.set_font('Helvetica', 'B', 13)
+            pdf.set_xy(15, y)
+            pdf.cell(0, 8, 'Video Detection Frames', ln=True)
+            y += 10
+            
+            # Add up to 3 video frames
+            for i, frame_bytes in enumerate(video_frames[:3]):
+                try:
+                    frame_path = os.path.join(STATIC_DIR, f'temp_pdf_frame_{report_id}_{i}.jpg')
+                    with open(frame_path, 'wb') as f:
+                        f.write(frame_bytes)
+                    pdf.image(frame_path, x=15, y=y, w=85, h=60)
+                    # Clean up temp frame
+                    try:
+                        os.remove(frame_path)
+                    except:
+                        pass
+                    
+                    # Add second frame on same row if available
+                    if i + 1 < len(video_frames[:3]):
+                        next_frame_bytes = video_frames[i + 1]
+                        next_frame_path = os.path.join(STATIC_DIR, f'temp_pdf_frame_{report_id}_{i+1}.jpg')
+                        with open(next_frame_path, 'wb') as f:
+                            f.write(next_frame_bytes)
+                        pdf.image(next_frame_path, x=110, y=y, w=85, h=60)
+                        try:
+                            os.remove(next_frame_path)
+                        except:
+                            pass
+                        i += 1  # Skip next frame since we already added it
+                    
+                    y += 65
+                except Exception as frame_err:
+                    print(f"[WARN] Could not add video frame {i} to PDF: {frame_err}")
+            
+            y += 5
 
         # ---- Classification Table ----
         pdf.set_text_color(0, 37, 66)
@@ -2933,6 +2980,38 @@ def upload_live_video():
         import traceback
         traceback.print_exc()
         return {'error': str(e)}, 500
+
+
+def extract_frames_from_video(video_path, max_frames=3):
+    """Extract frames from video for PDF generation"""
+    import cv2
+    
+    if not video_path or not os.path.exists(os.path.join(STATIC_DIR, video_path)):
+        return []
+    
+    full_path = os.path.join(STATIC_DIR, video_path)
+    cap = cv2.VideoCapture(full_path)
+    
+    if not cap.isOpened():
+        print(f"[WARN] Cannot open video for frame extraction: {full_path}")
+        return []
+    
+    frames = []
+    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    
+    # Extract evenly spaced frames
+    frame_indices = [int(total_frames * i / max_frames) for i in range(max_frames)]
+    
+    for frame_idx in frame_indices:
+        cap.set(cv2.CAP_PROP_POS_FRAMES, frame_idx)
+        ret, frame = cap.read()
+        if ret:
+            _, buffer = cv2.imencode('.jpg', frame)
+            frames.append(buffer.tobytes())
+    
+    cap.release()
+    print(f"[INFO] Extracted {len(frames)} frames from video: {video_path}")
+    return frames
 
 
 def process_video_with_detections(input_path, output_path):
