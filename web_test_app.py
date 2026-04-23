@@ -3455,6 +3455,58 @@ Logout
 </div>
 </div>
 </div>
+
+<!-- Result Section (Hidden by default) -->
+<div id="resultSection" class="hidden mt-10 bg-surface-container-lowest rounded-xl p-8 shadow-sm border border-outline-variant/10">
+<div class="flex items-center justify-between mb-6">
+<h3 class="text-2xl font-bold text-primary">Detection Result</h3>
+<span class="text-xs font-bold uppercase tracking-wider px-3 py-1 rounded bg-primary/10 text-primary">Live Detection</span>
+</div>
+
+<!-- Video Result -->
+<div id="resultVideoContainer" class="mb-6">
+<video id="resultVideo" controls class="w-full rounded-lg shadow-md"></video>
+</div>
+
+<!-- Stats -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+<div class="bg-surface-container p-4 rounded-lg">
+<div class="text-3xl font-extrabold text-primary" id="resultVehicleCount">0</div>
+<div class="text-xs text-on-surface-variant uppercase">Total Vehicles</div>
+</div>
+<div class="bg-surface-container p-4 rounded-lg">
+<div class="text-3xl font-extrabold text-primary" id="resultCarCount">0</div>
+<div class="text-xs text-on-surface-variant uppercase">Cars</div>
+</div>
+<div class="bg-surface-container p-4 rounded-lg">
+<div class="text-3xl font-extrabold text-primary" id="resultMotorcycleCount">0</div>
+<div class="text-xs text-on-surface-variant uppercase">Motorcycles</div>
+</div>
+<div class="bg-surface-container p-4 rounded-lg">
+<div class="text-3xl font-extrabold text-primary" id="resultTruckCount">0</div>
+<div class="text-xs text-on-surface-variant uppercase">Trucks</div>
+</div>
+</div>
+
+<!-- Breakdown -->
+<div id="resultBreakdown" class="bg-surface-container p-4 rounded-lg">
+<h4 class="text-sm font-bold text-primary mb-2">Vehicle Breakdown</h4>
+<div id="breakdownText" class="text-sm text-on-surface-variant"></div>
+</div>
+
+<!-- Actions -->
+<div class="flex gap-4 mt-6">
+<a id="viewReportLink" href="#" target="_blank" class="flex items-center gap-2 px-6 py-3 bg-primary text-white font-semibold rounded-lg hover:bg-primary-container transition-colors">
+<span class="material-symbols-outlined">visibility</span>
+View Report
+</a>
+<a id="downloadPdfLink" href="#" target="_blank" class="flex items-center gap-2 px-6 py-3 bg-surface-container text-primary font-semibold rounded-lg border border-outline-variant/20 hover:bg-surface-container-low transition-colors">
+<span class="material-symbols-outlined">download</span>
+Download PDF
+</a>
+</div>
+</div>
+
 </main>
 <!-- BottomNavBar Execution -->
 <nav class="fixed bottom-0 left-0 w-full h-20 bg-white dark:bg-slate-950 flex justify-around items-center px-4 pb-safe z-50 md:hidden shadow-[0px_-4px_20px_rgba(0,37,66,0.04)] rounded-t-xl">
@@ -3577,8 +3629,46 @@ Logout
         document.getElementById('startWebcamBtn').classList.remove('hidden');
         document.getElementById('stopWebcamBtn').classList.add('hidden');
 
+        // Show result section
+        showResultSection(videoResult);
+
         // Save live session to database with processed video path and vehicle counts
         saveLiveSession(videoResult);
+    }
+
+    function showResultSection(videoResult) {
+        if (!videoResult || !videoResult.success) {
+            console.log('[WARN] No video result to show');
+            return;
+        }
+
+        const resultSection = document.getElementById('resultSection');
+        const resultVideo = document.getElementById('resultVideo');
+        
+        // Show result section
+        resultSection.classList.remove('hidden');
+        
+        // Set video source
+        if (videoResult.video_path) {
+            resultVideo.src = '/view/' + videoResult.video_path;
+        }
+        
+        // Update stats
+        const vehicleCounts = videoResult.vehicle_counts || {};
+        document.getElementById('resultVehicleCount').textContent = vehicleCounts.total || totalDetections || 0;
+        document.getElementById('resultCarCount').textContent = vehicleCounts.car || 0;
+        document.getElementById('resultMotorcycleCount').textContent = vehicleCounts.motorcycle || 0;
+        document.getElementById('resultTruckCount').textContent = vehicleCounts.truck || 0;
+        
+        // Update breakdown
+        const breakdownText = document.getElementById('breakdownText');
+        if (vehicleCounts) {
+            breakdownText.textContent = `Car: ${vehicleCounts.car || 0}, Motorcycle: ${vehicleCounts.motorcycle || 0}, Bus: ${vehicleCounts.bus || 0}, Truck: ${vehicleCounts.truck || 0}`;
+        } else {
+            breakdownText.textContent = sessionStats.breakdown || 'No breakdown available';
+        }
+        
+        // Note: View Report and Download PDF links will be set after saveLiveSession completes
     }
 
     let sessionStartTime = null;
@@ -3617,6 +3707,9 @@ Logout
         .then(data => {
             if (data.success) {
                 console.log('[INFO] Live session saved to database:', data.report_id);
+                // Set view report and download PDF links
+                document.getElementById('viewReportLink').href = '/view_report/' + data.report_id;
+                document.getElementById('downloadPdfLink').href = '/generate_pdf/' + data.report_id;
             } else {
                 console.error('[ERROR] Failed to save live session:', data.error);
             }
