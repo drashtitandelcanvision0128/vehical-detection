@@ -2520,22 +2520,36 @@ def view_report(report_id):
         if record.user_id != user_id:
             return "Access denied", 403
         
+        # Parse breakdown if it's a string
+        breakdown_dict = {}
+        if record.breakdown:
+            try:
+                if isinstance(record.breakdown, str):
+                    import ast
+                    breakdown_dict = ast.literal_eval(record.breakdown)
+                elif isinstance(record.breakdown, dict):
+                    breakdown_dict = record.breakdown
+            except:
+                breakdown_dict = {}
+        
         # Prepare data for view
         report_data = {
             'report_id': report_id,
             'timestamp': record.timestamp,
             'detection_type': record.detection_type,
             'vehicle_count': record.vehicle_count,
-            'breakdown': record.breakdown,
+            'breakdown': breakdown_dict,
             'image_data': record.image_data,
             'video_path': record.video_path,
-            'processing_time': record.processing_time,
-            'confidence_threshold': record.confidence_threshold
+            'processing_time': record.processing_time or '--',
+            'confidence_threshold': record.confidence_threshold or 0.5
         }
         
         return render_template_string(VIEW_REPORT_TEMPLATE, report=report_data)
     except Exception as e:
         print(f"[ERROR] Error in view_report: {e}")
+        import traceback
+        traceback.print_exc()
         return "Error loading report", 500
     finally:
         db.close()
