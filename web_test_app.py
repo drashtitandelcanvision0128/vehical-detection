@@ -23,6 +23,7 @@ from sqlalchemy.orm import sessionmaker, Session
 from models import Base, ImageDetection, VideoDetection, LiveDetection, DetectionHistory, User
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
+from collections import defaultdict, deque
 
 # Import authentication templates
 try:
@@ -676,6 +677,115 @@ DISPLAY_NAMES = {
     'bus': 'Bus',
     'truck': 'Truck'
 }
+
+# Vehicle Tracker for counting
+class VehicleTracker:
+    """Track vehicles across frames for line crossing counting"""
+    
+    def __init__(self, max_disappeared=30, max_distance=50):
+        self.next_id = 0
+        self.vehicles = {}
+        self.disappeared = {}
+        self.max_disappeared = max_disappeared
+        self.max_distance = max_distance
+        self.count_up = 0
+        self.count_down = 0
+        self.counted_ids = set()
+        
+    def calculate_center(self, bbox):
+        """Calculate center point of bounding box"""
+        x1, y1, x2, y2 = bbox
+        return ((x1 + x2) // 2, (y1 + y2) // 2)
+    
+    def calculate_distance(self, p1, p2):
+        """Calculate Euclidean distance between two points"""
+        return np.sqrt((p1[0] - p2[0])**2 + (p1[1] - p2[1])**2)
+    
+    def register(self, bbox, class_name):
+        """Register a new vehicle"""
+        self.vehicles[self.next_id] = {
+            'bbox': bbox,
+            'center': self.calculate_center(bbox),
+            'class': class_name,
+            'positions': deque(maxlen=10),
+            'first_seen': time.time()
+        }
+        self.vehicles[self.next_id]['positions'].append(self.calculate_center(bbox))
+        self.disappeared[self.next_id] = 0
+        self.next_id += 1
+        return self.next_id - 1
+    
+    def deregister(self, vehicle_id):
+        """Remove a vehicle from tracking"""
+        del self.vehicles[vehicle_id]
+        del self.disappeared[vehicle_id]
+    
+    def update(self, detections, count_line_y=None, frame_height=None):
+        """Update tracker with new detections"""
+        if len(detections) == 0:
+            for vehicle_id in list(self.disappeared.keys()):
+                self.disappeared[vehicle_id] += 1
+                if self.disappeared[vehicle_id] > self.max_disappeared:
+                    self.deregister(vehicle_id)
+            return self.vehicles
+        
+        input_centers = []
+        for det in detections:
+            center = self.calculate_center(det['box'])
+            input_centers.append((center, det))
+        
+        if len(self.vehicles) == 0:
+            for center, det in input_centers:
+                self.register(det['box'], det['class_name'])
+        else:
+            vehicle_ids = list(self.vehicles.keys())
+            vehicle_centers = [self.vehicles[v_id]['center'] for v_id in vehicle_ids]
+            
+            used = set()
+            for center, det in input_centers:
+                min_dist = float('inf')
+                closest_id = None
+                
+                for v_id in vehicle_centers:
+                    if v_id in used:
+                        continue
+                    dist = self.calculate_distance(center, vehicle_centers[v_id])
+                    if dist < min_dist and dist < self.max_distance:
+                        min_dist = dist
+                        closest_id = v_id
+                
+                if closest_id is not None:
+                    used.add(closest_id)
+                    self.vehicles[closest_id]['bbox'] = det['box']
+                    self.vehicles[closest_id]['center'] = center
+                    self.vehicles[closest_id]['positions'].append(center)
+                    self.disappeared[closest_id] = 0
+                    
+                    # Check line crossing
+                    if count_line_y and closest_id not in self.counted_ids:
+                        prev_center = self.vehicles[closest_id]['positions'][0] if len(self.vehicles[closest_id]['positions']) > 1 else center
+                        
+                        # Check if crossed the line
+                        if prev_center[1] < count_line_y and center[1] >= count_line_y:
+                            self.count_down += 1
+                            self.counted_ids.add(closest_id)
+                        elif prev_center[1] > count_line_y and center[1] <= count_line_y:
+                            self.count_up += 1
+                            self.counted_ids.add(closest_id)
+                else:
+                    self.register(det['box'], det['class_name'])
+            
+            # Mark unused vehicles as disappeared
+            for v_id in vehicle_ids:
+                if v_id not in used:
+                    self.disappeared[v_id] += 1
+                    if self.disappeared[v_id] > self.max_disappeared:
+                        self.deregister(v_id)
+        
+        return self.vehicles
+
+# Global tracker instance
+vehicle_tracker = VehicleTracker()
 
 # Check ffmpeg availability
 print("[INFO] Checking ffmpeg availability...")
@@ -2507,7 +2617,7 @@ def download(filename):
 
 @app.route('/webcam_detect', methods=['POST'])
 def webcam_detect():
-    """Process webcam frame for live detection"""
+    """Process webcam frame for live detection with vehicle counting"""
     try:
         print(f"[DEBUG] webcam_detect called")
         print(f"[DEBUG] Request form keys: {list(request.form.keys())}")
@@ -2517,8 +2627,12 @@ def webcam_detect():
         image_data = request.form.get('image')
         conf_threshold = float(request.form.get('confidence', 0.4))
         
+        # Get counting line position (default: middle of frame)
+        count_line_y = float(request.form.get('count_line_y', 0.5))
+        
         print(f"[DEBUG] Image data length: {len(image_data) if image_data else 0}")
         print(f"[DEBUG] Confidence threshold: {conf_threshold}")
+        print(f"[DEBUG] Count line Y: {count_line_y}")
 
         if not image_data:
             print(f"[ERROR] No image data provided")
@@ -2537,6 +2651,10 @@ def webcam_detect():
         if image is None:
             return {'error': 'Could not decode image'}, 400
 
+        # Calculate counting line Y position
+        frame_height = image.shape[0]
+        count_line_pixel = int(frame_height * count_line_y)
+
         # Run detection - smaller imgsz for faster inference on Pi
         results = model.predict(
             image,
@@ -2546,7 +2664,7 @@ def webcam_detect():
             classes=list(VEHICLE_CLASSES.keys())
         )
 
-        # Process detections
+        # Process detections for tracker
         detections = []
         class_counts = {}
         annotated = image.copy()
@@ -2564,26 +2682,54 @@ def webcam_detect():
                     x1, y1, x2, y2 = box.xyxy[0].cpu().numpy()
                     class_name = VEHICLE_CLASSES[class_id]
 
-                    detections.append({'class': class_name, 'conf': conf})
+                    detections.append({
+                        'class_name': class_name,
+                        'conf': conf,
+                        'box': [int(x1), int(y1), int(x2), int(y2)]
+                    })
                     class_counts[class_name] = class_counts.get(class_name, 0) + 1
 
-                    # Draw box
-                    color = CLASS_COLORS[class_name]
-                    cv2.rectangle(annotated, (int(x1), int(y1)), (int(x2), int(y2)), color, 2)
+        # Update tracker with detections and counting line
+        tracked_vehicles = vehicle_tracker.update(detections, count_line_pixel, frame_height)
 
-                    # Draw label
-                    display_name = DISPLAY_NAMES.get(class_name, class_name)
-                    label = f"{display_name}: {conf:.2f}"
-                    (label_w, label_h), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 2)
-                    cv2.rectangle(annotated, (int(x1), int(y1) - label_h - 10),
-                                (int(x1) + label_w, int(y1)), color, -1)
-                    cv2.putText(annotated, label, (int(x1), int(y1) - 5),
-                               cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2)
+        # Draw counting line
+        cv2.line(annotated, (0, count_line_pixel), (image.shape[1], count_line_pixel), (0, 255, 255), 2)
+        cv2.putText(annotated, "Counting Line", (10, count_line_pixel - 10),
+                   cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 2)
 
-        # Add stats overlay
-        cv2.rectangle(annotated, (0, 0), (300, 80), (0, 0, 0), -1)
-        cv2.putText(annotated, f"Vehicles: {len(detections)}", (10, 30),
+        # Draw tracked vehicles
+        for v_id, vehicle in tracked_vehicles.items():
+            x1, y1, x2, y2 = vehicle['bbox']
+            class_name = vehicle['class']
+            color = CLASS_COLORS.get(class_name, (0, 255, 0))
+            
+            # Draw bounding box
+            cv2.rectangle(annotated, (x1, y1), (x2, y2), color, 2)
+            
+            # Draw ID and class
+            display_name = DISPLAY_NAMES.get(class_name, class_name)
+            label = f"ID:{v_id} {display_name}"
+            (label_w, label_h), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 2)
+            cv2.rectangle(annotated, (x1, y1 - label_h - 10),
+                        (x1 + label_w, y1), color, -1)
+            cv2.putText(annotated, label, (x1, y1 - 5),
+                       cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2)
+            
+            # Draw center point
+            center = vehicle['center']
+            cv2.circle(annotated, center, 4, (255, 255, 255), -1)
+
+        # Add stats overlay (fixed - no blinking)
+        overlay = annotated.copy()
+        cv2.rectangle(overlay, (0, 0), (350, 100), (0, 0, 0), -1)
+        cv2.addWeighted(overlay, 0.7, annotated, 0.3, 0, annotated)
+        
+        cv2.putText(annotated, f"Vehicles: {len(tracked_vehicles)}", (10, 30),
                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+        cv2.putText(annotated, f"Count Up: {vehicle_tracker.count_up}", (10, 55),
+                   cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 0), 2)
+        cv2.putText(annotated, f"Count Down: {vehicle_tracker.count_down}", (10, 80),
+                   cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 255), 2)
 
         # Encode to JPEG
         _, buffer = cv2.imencode('.jpg', annotated)
@@ -2596,8 +2742,11 @@ def webcam_detect():
 
         return {
             'image': img_base64,
-            'count': len(detections),
-            'breakdown': breakdown_text
+            'count': len(tracked_vehicles),
+            'breakdown': breakdown_text,
+            'count_up': vehicle_tracker.count_up,
+            'count_down': vehicle_tracker.count_down,
+            'total_counted': vehicle_tracker.count_up + vehicle_tracker.count_down
         }
 
     except Exception as e:
@@ -2977,6 +3126,19 @@ Logout
 <span class="block text-2xl font-extrabold text-primary" id="truckCount">0</span>
 <span class="text-[10px] font-bold text-on-surface-variant uppercase">Commercial</span>
 </div>
+<div class="h-10 w-px bg-outline-variant/30 hidden md:block"></div>
+<div class="text-center">
+<span class="block text-2xl font-extrabold text-primary" id="countUp">0</span>
+<span class="text-[10px] font-bold text-on-surface-variant uppercase">Up</span>
+</div>
+<div class="text-center">
+<span class="block text-2xl font-extrabold text-primary" id="countDown">0</span>
+<span class="text-[10px] font-bold text-on-surface-variant uppercase">Down</span>
+</div>
+<div class="text-center">
+<span class="block text-2xl font-extrabold text-primary" id="totalCounted">0</span>
+<span class="text-[10px] font-bold text-on-surface-variant uppercase">Total</span>
+</div>
 </div>
 </div>
 <div class="w-full md:w-64 bg-surface-container-low p-4 rounded-lg flex flex-col gap-2">
@@ -3267,6 +3429,13 @@ Logout
                     // Update stats
                     document.getElementById('vehicleCount').textContent = result.count;
                     document.getElementById('inferenceTime').textContent = '15ms';
+
+                    // Update counting stats if available
+                    if (result.count_up !== undefined) {
+                        document.getElementById('countUp').textContent = result.count_up;
+                        document.getElementById('countDown').textContent = result.count_down;
+                        document.getElementById('totalCounted').textContent = result.total_counted;
+                    }
 
                     // Track session statistics
                     totalDetections += result.count;
