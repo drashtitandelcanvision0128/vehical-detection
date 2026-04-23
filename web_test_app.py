@@ -1647,7 +1647,7 @@ def detect_vehicles_image(image_data, conf_threshold=0.4):
     # Run detection
     results = model.predict(
         image,
-        imgsz=640,
+        imgsz=320,  # Reduced for faster Pi performance
         conf=conf_threshold,
         verbose=False,
         classes=list(VEHICLE_CLASSES.keys())
@@ -2537,10 +2537,10 @@ def webcam_detect():
         if image is None:
             return {'error': 'Could not decode image'}, 400
 
-        # Run detection
+        # Run detection - smaller imgsz for faster inference on Pi
         results = model.predict(
             image,
-            imgsz=640,
+            imgsz=320,  # Reduced from 640 for faster Pi performance
             conf=conf_threshold,
             verbose=False,
             classes=list(VEHICLE_CLASSES.keys())
