@@ -2797,7 +2797,9 @@ def webcam_detect():
 
         # Update tracker with detections (without counting line)
         try:
-            tracked_vehicles = vehicle_tracker.update(detections)
+            # Convert detections to list of boxes for tracker
+            detection_boxes = [[d['box'][0], d['box'][1], d['box'][2], d['box'][3]] for d in detections]
+            tracked_vehicles = vehicle_tracker.update(detection_boxes)
         except Exception as e:
             print(f"[ERROR] Tracker update failed: {e}")
             tracked_vehicles = {}
@@ -3077,8 +3079,8 @@ def process_video_with_detections(input_path, output_path):
     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     
-    # Initialize video writer with H.264 codec for browser compatibility
-    fourcc = cv2.VideoWriter_fourcc(*'avc1')  # H.264 codec
+    # Initialize video writer with MP4 codec for Raspberry Pi compatibility
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # MP4 codec (works on Raspberry Pi)
     out = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
     
     # Vehicle counts
@@ -3135,10 +3137,16 @@ def process_video_with_detections(input_path, output_path):
     
     cap.release()
     out.release()
-    
+
+    # Check if processed video was actually created
+    if not os.path.exists(output_path) or os.path.getsize(output_path) == 0:
+        print(f"[ERROR] Processed video not created: {output_path}")
+        # Return empty counts since video processing failed
+        return {}
+
     print(f"[INFO] Video processing complete. Total vehicles: {vehicle_counts}")
     print(f"[INFO] Processed video saved to: {output_path}")
-    
+
     return vehicle_counts
 
 
