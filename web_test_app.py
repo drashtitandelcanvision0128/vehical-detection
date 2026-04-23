@@ -3345,7 +3345,7 @@ Logout
 <span class="material-symbols-outlined text-[20px]">videocam</span>
                         Start Webcam
                     </button>
-<button onclick="stopWebcam()" id="stopWebcamBtn" class="group flex items-center gap-2 bg-surface-container-lowest text-primary px-6 py-3 rounded-md font-semibold text-sm border border-outline-variant/20 shadow-sm hover:shadow-md transition-all active:scale-95 hidden">
+<button onclick="stopWebcam()" id="stopWebcamBtn" class="group flex items-center gap-2 bg-surface-container-lowest text-primary px-6 py-3 rounded-md font-semibold text-sm border border-outline-variant/20 shadow-sm hover:shadow-md transition-all active:scale-95 hidden" ondblclick="return false;">
 <span class="material-symbols-outlined text-[20px]">videocam_off</span>
                         Stop Webcam
                     </button>
