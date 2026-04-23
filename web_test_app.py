@@ -3123,7 +3123,13 @@ def process_video_with_detections(input_path, output_path):
     fps = int(cap.get(cv2.CAP_PROP_FPS)) or 30
     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    
+
+    # Fix FPS to 30 for consistent playback speed (ignore original high FPS)
+    target_fps = 30
+    if fps > 60:
+        print(f"[INFO] Original FPS too high ({fps}), using {target_fps} for normal playback")
+        fps = target_fps
+
     # Initialize video writer with MP4 codec for Raspberry Pi compatibility
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # MP4 codec (works on Raspberry Pi)
     out = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
