@@ -3663,13 +3663,9 @@ Download PDF
     async function stopWebcam() {
         const stopBtn = document.getElementById('stopWebcamBtn');
         stopBtn.disabled = true;
-        stopBtn.textContent = 'Stopping...';
+        stopBtn.innerHTML = '<span class="material-symbols-outlined text-[20px]">hourglass_empty</span>Stopping...';
         
-        document.getElementById('scanStatus').textContent = 'Stopping...';
-        
-        // Stop video recording and get video result
-        const videoResult = await stopVideoRecording();
-        
+        // Stop webcam immediately
         if (stream) {
             stream.getTracks().forEach(track => track.stop());
             stream = null;
@@ -3686,15 +3682,22 @@ Download PDF
         document.getElementById('startWebcamBtn').classList.remove('hidden');
         document.getElementById('stopWebcamBtn').classList.add('hidden');
 
-        // Save live session to database with processed video path and vehicle counts
-        // This must complete before showing the result section
-        await saveLiveSession(videoResult);
-
-        // Show result section AFTER save completes
-        showResultSection(videoResult);
-        
-        stopBtn.disabled = false;
-        stopBtn.innerHTML = '<span class="material-symbols-outlined text-[20px]">videocam_off</span>Stop Webcam';
+        // Stop video recording and upload in background
+        stopVideoRecording().then(videoResult => {
+            console.log('[INFO] Video recording stopped:', videoResult);
+            // Save live session in background
+            saveLiveSession(videoResult);
+            // Show result section
+            showResultSection(videoResult);
+            stopBtn.disabled = false;
+            stopBtn.innerHTML = '<span class="material-symbols-outlined text-[20px]">videocam_off</span>Stop Webcam';
+        }).catch(error => {
+            console.error('[ERROR] Failed to stop video recording:', error);
+            // Still save session even if video failed
+            saveLiveSession(null);
+            stopBtn.disabled = false;
+            stopBtn.innerHTML = '<span class="material-symbols-outlined text-[20px]">videocam_off</span>Stop Webcam';
+        });
     }
 
     function showResultSection(videoResult) {
