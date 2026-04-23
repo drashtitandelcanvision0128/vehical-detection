@@ -544,10 +544,14 @@ def get_detection_history_from_db(limit=50):
                 'id': record.report_id,
                 'timestamp': record.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
                 'input_type': record.detection_type,
+                'detection_type': record.detection_type,
                 'message': '',
                 'stats': {'count': record.vehicle_count, 'time': record.processing_time},
                 'image': record.image_data,
-                'video_path': record.video_path
+                'image_data': record.image_data,  # Add both keys for compatibility
+                'video_path': record.video_path,
+                'vehicle_count': record.vehicle_count,
+                'breakdown': record.breakdown
             })
 
         print(f"[INFO] Fetched {len(history)} records from unified history table")
@@ -558,7 +562,7 @@ def get_detection_history_from_db(limit=50):
     finally:
         db.close()
 
-def save_live_detection_to_db(report_id, session_start, session_end, total_detections, conf_threshold, stats, breakdown):
+def save_live_detection_to_db(report_id, session_start, session_end, total_detections, conf_threshold, stats, breakdown, image_data=None, video_path=None):
     """Save live detection session to database"""
     db = get_db()
     if not db:
@@ -592,7 +596,7 @@ def save_live_detection_to_db(report_id, session_start, session_end, total_detec
             )
             db.add(live_detection)
 
-        # Also save to unified history table (no message/stats columns - simplified)
+        # Also save to unified history table with image and video
         breakdown_str = ''
         if isinstance(breakdown, dict):
             breakdown_str = ', '.join([f"{k}: {v}" for k, v in breakdown.items()])
@@ -607,8 +611,8 @@ def save_live_detection_to_db(report_id, session_start, session_end, total_detec
             existing_history.processing_time = ''
             existing_history.confidence_threshold = conf_threshold
             existing_history.breakdown = breakdown_str
-            existing_history.image_data = None
-            existing_history.video_path = None
+            existing_history.image_data = image_data
+            existing_history.video_path = video_path
             existing_history.user_id = user_id
         else:
             history_entry = DetectionHistory(
@@ -619,8 +623,8 @@ def save_live_detection_to_db(report_id, session_start, session_end, total_detec
                 processing_time='',
                 confidence_threshold=conf_threshold,
                 breakdown=breakdown_str,
-                image_data=None,
-                video_path=None,
+                image_data=image_data,
+                video_path=video_path,
                 user_id=user_id
             )
             db.add(history_entry)
@@ -2277,6 +2281,9 @@ def generate_pdf(report_id):
         image_data = img_base64 if img_base64 else first_frame
         if image_data:
             try:
+                # Strip data URL prefix if present
+                if image_data.startswith('data:image/'):
+                    image_data = image_data.split(',')[1]
                 img_bytes = base64.b64decode(image_data)
                 img_path = os.path.join(STATIC_DIR, f'temp_pdf_img_{report_id}.jpg')
                 with open(img_path, 'wb') as f:
@@ -2375,7 +2382,59 @@ def generate_pdf(report_id):
         print(f"[ERROR] PDF generation failed: {e}")
         import traceback
         traceback.print_exc()
-        return f"Error generating PDF: {str(e)}", 500
+        return "Error generating PDF", 500
+
+
+@app.route('/delete_detection/<report_id>', methods=['DELETE'])
+@login_required
+def delete_detection(report_id):
+    """Delete a detection record from the database"""
+    db = None
+    try:
+        user_id = session.get('user_id')
+        print(f"[DEBUG] Delete detection - report_id: {report_id}, user_id: {user_id}")
+        
+        db = get_db()
+        if not db:
+            return {'success': False, 'error': 'Database connection failed'}, 500
+        
+        # Find the record
+        record = db.query(DetectionHistory).filter(
+            DetectionHistory.report_id == report_id
+        ).first()
+        
+        if not record:
+            return {'success': False, 'error': 'Record not found'}, 404
+        
+        # Verify user ownership
+        if record.user_id != user_id:
+            print(f"[WARN] User {user_id} trying to delete record belonging to user {record.user_id}")
+            return {'success': False, 'error': 'Access denied'}, 403
+        
+        # Delete video file if exists
+        if record.video_path:
+            video_full_path = os.path.join(STATIC_DIR, record.video_path)
+            if os.path.exists(video_full_path):
+                try:
+                    os.remove(video_full_path)
+                    print(f"[INFO] Deleted video file: {video_full_path}")
+                except Exception as e:
+                    print(f"[WARN] Could not delete video file: {e}")
+        
+        # Delete the record
+        db.delete(record)
+        db.commit()
+        print(f"[INFO] Deleted detection record: {report_id}")
+        
+        return {'success': True}
+    except Exception as e:
+        print(f"[ERROR] Failed to delete detection: {e}")
+        import traceback
+        traceback.print_exc()
+        return {'success': False, 'error': str(e)}, 500
+    finally:
+        if db:
+            db.close()
 
 
 @app.route('/save_report/<report_id>', methods=['POST'])
@@ -2450,12 +2509,21 @@ def download(filename):
 def webcam_detect():
     """Process webcam frame for live detection"""
     try:
-        # Get image data from request
-        image_data = request.get_data()
+        # Get image data from request (FormData)
+        image_data = request.form.get('image')
         conf_threshold = float(request.form.get('confidence', 0.4))
 
-        # Decode image
-        nparr = np.frombuffer(image_data, np.uint8)
+        if not image_data:
+            return {'error': 'No image data provided'}, 400
+
+        # Decode base64 image
+        import base64
+        # Remove data URL prefix if present
+        if 'base64,' in image_data:
+            image_data = image_data.split('base64,')[1]
+        
+        image_bytes = base64.b64decode(image_data)
+        nparr = np.frombuffer(image_bytes, np.uint8)
         image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 
         if image is None:
@@ -2543,21 +2611,42 @@ def save_live_session():
         conf_threshold = data.get('confidence_threshold', 0.4)
         stats = data.get('stats', {})
         breakdown = data.get('breakdown', '')
+        image_data = data.get('image_data', '')
+        video_path = data.get('video_path', None)
 
-        # Convert timestamps to datetime objects
+        # Convert timestamps to datetime objects - handle multiple formats
+        from datetime import datetime
         if session_start:
-            session_start = datetime.strptime(session_start, '%Y-%m-%d %H:%M:%S')
+            try:
+                # Try standard format
+                session_start = datetime.strptime(session_start, '%Y-%m-%d %H:%M:%S')
+            except:
+                try:
+                    # Try browser locale format (e.g., '22/4/2026, 7:08:43 pm')
+                    session_start = datetime.strptime(session_start, '%d/%m/%Y, %I:%M:%S %p')
+                except:
+                    # Fallback to current time
+                    session_start = datetime.utcnow()
         else:
             session_start = datetime.utcnow()
 
         if session_end:
-            session_end = datetime.strptime(session_end, '%Y-%m-%d %H:%M:%S')
+            try:
+                # Try standard format
+                session_end = datetime.strptime(session_end, '%Y-%m-%d %H:%M:%S')
+            except:
+                try:
+                    # Try browser locale format
+                    session_end = datetime.strptime(session_end, '%d/%m/%Y, %I:%M:%S %p')
+                except:
+                    # Fallback to current time
+                    session_end = datetime.utcnow()
         else:
             session_end = datetime.utcnow()
 
         # Save to database
         save_live_detection_to_db(report_id, session_start, session_end, total_detections,
-                                  conf_threshold, stats, breakdown)
+                                  conf_threshold, stats, breakdown, image_data)
 
         return {'success': True, 'report_id': report_id}
     except Exception as e:
@@ -2565,6 +2654,50 @@ def save_live_session():
         import traceback
         traceback.print_exc()
         return {'success': False, 'error': str(e)}, 500
+
+
+@app.route('/upload_live_video', methods=['POST'])
+def upload_live_video():
+    """Upload recorded video from live detection"""
+    try:
+        if 'video' not in request.files:
+            return {'error': 'No video file provided'}, 400
+        
+        video_file = request.files['video']
+        report_id = request.form.get('report_id', str(uuid.uuid4())[:8])
+        
+        if video_file.filename == '':
+            return {'error': 'No file selected'}, 400
+        
+        # Save video to static/videos directory
+        filename = f"live_{report_id}_{int(datetime.utcnow().timestamp())}.webm"
+        video_path = os.path.join(STATIC_DIR, filename)
+        video_file.save(video_path)
+        
+        # Convert to mp4 for better browser compatibility
+        try:
+            mp4_filename = filename.replace('.webm', '.mp4')
+            mp4_path = os.path.join(STATIC_DIR, mp4_filename)
+            subprocess.run([
+                'ffmpeg', '-i', video_path, 
+                '-c:v', 'libx264', '-c:a', 'aac',
+                '-movflags', '+faststart',
+                mp4_path
+            ], check=True, capture_output=True)
+            
+            # Remove webm file after conversion
+            os.remove(video_path)
+            video_path = mp4_filename
+        except Exception as e:
+            print(f"[WARN] FFmpeg conversion failed, using webm: {e}")
+            video_path = filename
+        
+        return {'success': True, 'video_path': video_path}
+    except Exception as e:
+        print(f"[ERROR] Failed to upload video: {e}")
+        import traceback
+        traceback.print_exc()
+        return {'error': str(e)}, 500
 
 
 @app.route('/view/<path:filename>')
@@ -2766,11 +2899,15 @@ Logout
 <p class="text-on-surface-variant mt-2 text-lg max-w-2xl font-medium opacity-80">Precision monitoring of incoming vehicle streams with millisecond latency.</p>
 </div>
 <div class="flex gap-4">
-<button onclick="stopWebcam()" class="group flex items-center gap-2 bg-surface-container-lowest text-primary px-6 py-3 rounded-md font-semibold text-sm border border-outline-variant/20 shadow-sm hover:shadow-md transition-all active:scale-95">
+<button onclick="startWebcam()" id="startWebcamBtn" class="group flex items-center gap-2 bg-gradient-to-br from-primary to-primary-container text-on-primary px-8 py-3 rounded-md font-bold text-sm shadow-lg hover:shadow-xl transition-all active:scale-95">
+<span class="material-symbols-outlined text-[20px]">videocam</span>
+                        Start Webcam
+                    </button>
+<button onclick="stopWebcam()" id="stopWebcamBtn" class="group flex items-center gap-2 bg-surface-container-lowest text-primary px-6 py-3 rounded-md font-semibold text-sm border border-outline-variant/20 shadow-sm hover:shadow-md transition-all active:scale-95 hidden">
 <span class="material-symbols-outlined text-[20px]">videocam_off</span>
                         Stop Webcam
                     </button>
-<button onclick="captureFrame()" class="flex items-center gap-2 bg-gradient-to-br from-primary to-primary-container text-on-primary px-8 py-3 rounded-md font-bold text-sm shadow-lg hover:shadow-xl transition-all active:scale-95">
+<button onclick="captureFrame()" class="flex items-center gap-2 bg-surface-container-lowest text-primary px-6 py-3 rounded-md font-semibold text-sm border border-outline-variant/20 shadow-sm hover:shadow-md transition-all active:scale-95">
 <span class="material-symbols-outlined text-[20px]">screenshot</span>
                         Capture Frame
                     </button>
@@ -2916,6 +3053,9 @@ Logout
     let stream = null;
     let isRunning = false;
     let detectionInterval = null;
+    let mediaRecorder = null;
+    let recordedChunks = [];
+    let isRecording = false;
 
     async function startWebcam() {
         try {
@@ -2927,6 +3067,12 @@ Logout
             totalDetections = 0;
             sessionStats = {};
             document.getElementById('scanStatus').textContent = 'Scanning...';
+            document.getElementById('startWebcamBtn').classList.add('hidden');
+            document.getElementById('stopWebcamBtn').classList.remove('hidden');
+            
+            // Start video recording
+            startVideoRecording();
+            
             startDetection();
             updateTimestamp();
         } catch (err) {
@@ -2935,7 +3081,64 @@ Logout
         }
     }
 
-    function stopWebcam() {
+    function startVideoRecording() {
+        recordedChunks = [];
+        const options = { mimeType: 'video/webm;codecs=vp9' };
+        
+        try {
+            mediaRecorder = new MediaRecorder(stream, options);
+        } catch (e) {
+            console.warn('VP9 not supported, trying VP8');
+            mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp8' });
+        }
+        
+        mediaRecorder.ondataavailable = function(event) {
+            if (event.data.size > 0) {
+                recordedChunks.push(event.data);
+            }
+        };
+        
+        mediaRecorder.start();
+        isRecording = true;
+        console.log('[INFO] Video recording started');
+    }
+
+    async function stopVideoRecording() {
+        if (mediaRecorder && isRecording) {
+            mediaRecorder.stop();
+            isRecording = false;
+            
+            return new Promise((resolve) => {
+                mediaRecorder.onstop = async function() {
+                    const blob = new Blob(recordedChunks, { type: 'video/webm' });
+                    const formData = new FormData();
+                    formData.append('video', blob, `live_${Date.now()}.webm`);
+                    formData.append('report_id', 'live_' + Math.random().toString(36).substr(2, 8));
+                    
+                    try {
+                        const response = await fetch('/upload_live_video', {
+                            method: 'POST',
+                            body: formData
+                        });
+                        const result = await response.json();
+                        console.log('[INFO] Video uploaded:', result);
+                        resolve(result.video_path);
+                    } catch (error) {
+                        console.error('[ERROR] Failed to upload video:', error);
+                        resolve(null);
+                    }
+                };
+            });
+        }
+        return null;
+    }
+
+    async function stopWebcam() {
+        document.getElementById('scanStatus').textContent = 'Stopping...';
+        
+        // Stop video recording and get video path
+        const videoPath = await stopVideoRecording();
+        
         if (stream) {
             stream.getTracks().forEach(track => track.stop());
             stream = null;
@@ -2949,18 +3152,20 @@ Logout
         const video = document.getElementById('webcamVideo');
         video.srcObject = null;
         document.getElementById('detectionBoxes').innerHTML = '';
+        document.getElementById('startWebcamBtn').classList.remove('hidden');
+        document.getElementById('stopWebcamBtn').classList.add('hidden');
 
-        // Save live session to database
-        saveLiveSession();
+        // Save live session to database with video path
+        saveLiveSession(videoPath);
     }
 
     let sessionStartTime = null;
     let totalDetections = 0;
     let sessionStats = {};
+    let capturedFrame = null; // Store captured frame for saving
 
-    function saveLiveSession() {
-        if (totalDetections === 0) return;
-
+    function saveLiveSession(videoPath = null) {
+        // Save even if 0 detections - user should see all sessions
         const sessionEndTime = new Date().toLocaleString();
         const reportId = 'live_' + Math.random().toString(36).substr(2, 8);
 
@@ -2976,7 +3181,9 @@ Logout
                 total_detections: totalDetections,
                 confidence_threshold: 0.4,
                 stats: sessionStats,
-                breakdown: sessionStats.breakdown || ''
+                breakdown: sessionStats.breakdown || '',
+                image_data: capturedFrame, // Send captured frame
+                video_path: videoPath // Send video path
             })
         })
         .then(response => response.json())
@@ -3002,10 +3209,11 @@ Logout
 
     function startDetection() {
         // Real detection using backend YOLO model
+        // Increased interval to reduce lag/rush (500ms instead of 100ms)
         detectionInterval = setInterval(() => {
             if (!isRunning) return;
             processFrame();
-        }, 100);
+        }, 500);
     }
 
     async function processFrame() {
@@ -3020,8 +3228,11 @@ Logout
         // Draw video frame to canvas
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-        // Get frame data
-        const frameData = canvas.toDataURL('image/jpeg', 0.8);
+        // Capture frame for saving (use lower quality for performance)
+        capturedFrame = canvas.toDataURL('image/jpeg', 0.5);
+
+        // Get frame data for detection
+        const frameData = capturedFrame;
 
         try {
             const formData = new FormData();
@@ -3301,10 +3512,12 @@ Logout
 <div class="flex flex-col md:flex-row gap-6">
 <!-- Thumbnail -->
 <div class="flex-shrink-0">
-{% if item.input_type == 'image' and item.image %}
-<img src="data:image/jpeg;base64,{{ item.image }}" class="w-32 h-24 object-cover rounded-lg" alt="Detection">
-{% elif item.input_type == 'video' and item.stats and item.stats.first_frame %}
-<img src="data:image/jpeg;base64,{{ item.stats.first_frame }}" class="w-32 h-24 object-cover rounded-lg" alt="Video Frame">
+{% if item.video_path %}
+<video src="/view/{{ item.video_path }}" class="w-32 h-24 object-cover rounded-lg" controls></video>
+{% elif item.image_data %}
+<img src="{{ item.image_data }}" class="w-32 h-24 object-cover rounded-lg" loading="lazy" alt="Detection">
+{% elif item.stats and item.stats.first_frame %}
+<img src="{{ item.stats.first_frame }}" class="w-32 h-24 object-cover rounded-lg" loading="lazy" alt="Frame">
 {% else %}
 <div class="w-32 h-24 bg-surface-container rounded-lg flex items-center justify-center">
 <span class="material-symbols-outlined text-slate-400">image</span>
@@ -3349,6 +3562,9 @@ Download Report
 View Video
 </a>
 {% endif %}
+<button onclick="deleteDetection('{{ item.id }}')" class="text-sm font-semibold text-red-600 hover:text-red-700 transition-colors">
+Delete
+</button>
 </div>
 </div>
 </div>
@@ -3368,6 +3584,27 @@ Start Detection
 </div>
 </div>
 </main>
+
+<script>
+function deleteDetection(reportId) {
+    if (confirm('Are you sure you want to delete this detection?')) {
+        fetch(`/delete_detection/${reportId}`, {
+            method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Failed to delete: ' + data.error);
+            }
+        })
+        .catch(error => {
+            alert('Error: ' + error);
+        });
+    }
+}
+</script>
 </body>
 </html>
 """
@@ -3380,6 +3617,15 @@ def history_page():
     print("[DEBUG] History route accessed")
     history = get_detection_history_from_db(limit=50)
     print(f"[DEBUG] History entries: {len(history)}")
+    
+    # Debug: Check first entry data
+    if history:
+        print(f"[DEBUG] First entry keys: {history[0].keys()}")
+        print(f"[DEBUG] First entry has image_data: {'image_data' in history[0]}")
+        print(f"[DEBUG] First entry image_data length: {len(history[0].get('image_data', '')) if history[0].get('image_data') else 0}")
+        print(f"[DEBUG] First entry has video_path: {'video_path' in history[0]}")
+        print(f"[DEBUG] First entry video_path: {history[0].get('video_path')}")
+    
     return render_template_string(HISTORY_TEMPLATE, history=history)
 
 
