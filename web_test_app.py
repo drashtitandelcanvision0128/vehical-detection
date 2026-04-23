@@ -3767,7 +3767,11 @@ Back to History
 {% elif report.image_data %}
 <div class="bg-surface-container-lowest rounded-xl p-6 shadow-sm border border-outline-variant/10">
 <h3 class="text-xl font-bold text-primary mb-4">Detection Image</h3>
+{% if report.image_data.startswith('data:') %}
+<img src="{{ report.image_data }}" class="w-full rounded-lg" alt="Detection Result">
+{% else %}
 <img src="data:image/jpeg;base64,{{ report.image_data }}" class="w-full rounded-lg" alt="Detection Result">
+{% endif %}
 </div>
 {% endif %}
 
