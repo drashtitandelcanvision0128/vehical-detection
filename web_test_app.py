@@ -3715,7 +3715,8 @@ Download PDF
 
         // Set video source
         if (videoResult.video_path) {
-            const videoUrl = '/view/' + videoResult.video_path;
+            // Use static/videos/ prefix for video files
+            const videoUrl = '/static/videos/' + videoResult.video_path;
             console.log('[INFO] Setting video source to:', videoUrl);
             resultVideo.src = videoUrl;
             resultVideo.load(); // Explicitly load the video
