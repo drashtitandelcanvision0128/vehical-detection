@@ -2907,14 +2907,13 @@ def save_live_session():
         else:
             session_end = datetime.utcnow()
 
-        # Update breakdown with vehicle counts if available
-        if vehicle_counts:
-            breakdown_text = f"Car: {vehicle_counts.get('car', 0)}, Motorcycle: {vehicle_counts.get('motorcycle', 0)}, Bus: {vehicle_counts.get('bus', 0)}, Truck: {vehicle_counts.get('truck', 0)}"
-            if breakdown:
-                breakdown = breakdown_text
-        # Use total from video counts if available
-        if vehicle_counts:
-            total_detections = vehicle_counts.get('total', total_detections)
+        # Don't use video counts - use live real-time counts instead
+        # Video processing counts are duplicates, use sessionStats breakdown instead
+        if stats and isinstance(stats, dict) and 'breakdown' in stats:
+            breakdown = stats['breakdown']
+        
+        # Use total_detections from live session (real-time count), not from video
+        # Don't override with video counts to avoid duplicates
 
         # Save to database
         save_live_detection_to_db(report_id, session_start, session_end, total_detections,
