@@ -3156,7 +3156,7 @@ def view_video(filename):
     # Handle 'videos/' prefix in the URL
     if filename.startswith('videos/'):
         filename = filename[7:]  # Remove 'videos/' prefix
-    
+
     # First check static directory
     static_path = os.path.join(STATIC_DIR, filename)
     if os.path.exists(static_path) and os.path.getsize(static_path) > 0:
@@ -3167,11 +3167,11 @@ def view_video(filename):
             return "Video file not ready or empty", 404
     else:
         return "File not found", 404
-    
+
     # Add cache control headers to prevent caching issues
     response = send_file(
-        video_path, 
-        mimetype='video/mp4', 
+        video_path,
+        mimetype='video/mp4',
         as_attachment=False,
         conditional=True  # Support range requests for video seeking
     )
@@ -3180,6 +3180,26 @@ def view_video(filename):
     response.headers['Expires'] = '0'
     response.headers['Accept-Ranges'] = 'bytes'
     return response
+
+
+@app.route('/static/videos/<path:filename>')
+def serve_video(filename):
+    """Serve video files from static/videos directory"""
+    video_path = os.path.join(STATIC_DIR, filename)
+    if os.path.exists(video_path) and os.path.getsize(video_path) > 0:
+        response = send_file(
+            video_path,
+            mimetype='video/mp4',
+            as_attachment=False,
+            conditional=True
+        )
+        response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Expires'] = '0'
+        response.headers['Accept-Ranges'] = 'bytes'
+        return response
+    else:
+        return "Video file not found", 404
 
 
 @app.route('/demo_videos/<path:filename>')
