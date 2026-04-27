@@ -16,6 +16,9 @@ class User(Base):
     password_hash = Column(String(255), nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
     is_active = Column(Integer, default=1)
+    theme = Column(String(10), default='light')
+    reset_token = Column(String(255), nullable=True)
+    reset_token_expires = Column(DateTime, nullable=True)
 
     # Relationships
     image_detections = relationship("ImageDetection", back_populates="user")

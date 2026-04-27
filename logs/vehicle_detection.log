@@ -1,0 +1,112 @@
+2026-04-27 11:58:37 | INFO     | vehicle_detection | <module>:63 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-04-27 11:58:37 | INFO     | vehicle_detection | <module>:72 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-04-27 11:58:37 | INFO     | vehicle_detection | <module>:81 | Cache initialized with type: simple
+2026-04-27 11:58:37 | INFO     | vehicle_detection | <module>:95 | Flask-Mail initialized
+2026-04-27 11:58:38 | INFO     | vehicle_detection | init_db:407 | Database connection established: postgresql://postgres:admin@localhost:5432/vehical_detections
+2026-04-27 11:58:38 | INFO     | vehicle_detection | init_db:408 | Tables created successfully
+2026-04-27 11:59:00 | INFO     | vehicle_detection | <module>:63 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-04-27 11:59:00 | INFO     | vehicle_detection | <module>:72 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-04-27 11:59:00 | INFO     | vehicle_detection | <module>:81 | Cache initialized with type: simple
+2026-04-27 11:59:00 | INFO     | vehicle_detection | <module>:95 | Flask-Mail initialized
+2026-04-27 11:59:01 | INFO     | vehicle_detection | init_db:407 | Database connection established: postgresql://postgres:admin@localhost:5432/vehical_detections
+2026-04-27 11:59:01 | INFO     | vehicle_detection | init_db:408 | Tables created successfully
+2026-04-27 12:02:43 | INFO     | vehicle_detection | <module>:63 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-04-27 12:02:43 | INFO     | vehicle_detection | <module>:72 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-04-27 12:02:43 | INFO     | vehicle_detection | <module>:81 | Cache initialized with type: simple
+2026-04-27 12:02:43 | INFO     | vehicle_detection | <module>:95 | Flask-Mail initialized
+2026-04-27 12:02:43 | INFO     | vehicle_detection | init_db:407 | Database connection established: postgresql://postgres:admin@localhost:5432/vehical_detections
+2026-04-27 12:02:43 | INFO     | vehicle_detection | init_db:408 | Tables created successfully
+2026-04-27 12:03:09 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:test | SUCCESS | IP:127.0.0.1
+2026-04-27 12:03:09 | INFO     | vehicle_detection | login:472 | User test logged in successfully from 127.0.0.1
+2026-04-27 12:05:37 | INFO     | vehicle_detection | <module>:63 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-04-27 12:05:37 | INFO     | vehicle_detection | <module>:72 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-04-27 12:05:37 | INFO     | vehicle_detection | <module>:81 | Cache initialized with type: simple
+2026-04-27 12:05:37 | INFO     | vehicle_detection | <module>:95 | Flask-Mail initialized
+2026-04-27 12:05:37 | INFO     | vehicle_detection | init_db:407 | Database connection established: postgresql://postgres:admin@localhost:5432/vehical_detections
+2026-04-27 12:05:37 | INFO     | vehicle_detection | init_db:408 | Tables created successfully
+2026-04-27 12:06:07 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:test | SUCCESS | IP:127.0.0.1
+2026-04-27 12:06:07 | INFO     | vehicle_detection | login:472 | User test logged in successfully from 127.0.0.1
+2026-04-27 12:06:11 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGOUT | User:test | SUCCESS | IP:127.0.0.1
+2026-04-27 12:06:11 | INFO     | vehicle_detection | logout:606 | User test logged out from 127.0.0.1
+2026-04-27 12:06:13 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:test | SUCCESS | IP:127.0.0.1
+2026-04-27 12:06:13 | INFO     | vehicle_detection | login:472 | User test logged in successfully from 127.0.0.1
+2026-04-27 12:08:02 | INFO     | vehicle_detection | <module>:63 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-04-27 12:08:02 | INFO     | vehicle_detection | <module>:72 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-04-27 12:08:02 | INFO     | vehicle_detection | <module>:81 | Cache initialized with type: simple
+2026-04-27 12:08:02 | INFO     | vehicle_detection | <module>:95 | Flask-Mail initialized
+2026-04-27 12:08:02 | INFO     | vehicle_detection | init_db:407 | Database connection established: postgresql://postgres:admin@localhost:5432/vehical_detections
+2026-04-27 12:08:02 | INFO     | vehicle_detection | init_db:408 | Tables created successfully
+2026-04-27 12:10:04 | INFO     | vehicle_detection | <module>:63 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-04-27 12:10:04 | INFO     | vehicle_detection | <module>:72 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-04-27 12:10:04 | INFO     | vehicle_detection | <module>:81 | Cache initialized with type: simple
+2026-04-27 12:10:04 | INFO     | vehicle_detection | <module>:95 | Flask-Mail initialized
+2026-04-27 12:10:05 | INFO     | vehicle_detection | init_db:407 | Database connection established: postgresql://postgres:admin@localhost:5432/vehical_detections
+2026-04-27 12:10:05 | INFO     | vehicle_detection | init_db:408 | Tables created successfully
+2026-04-27 12:15:03 | INFO     | vehicle_detection | <module>:63 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-04-27 12:15:03 | INFO     | vehicle_detection | <module>:72 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-04-27 12:15:03 | INFO     | vehicle_detection | <module>:81 | Cache initialized with type: simple
+2026-04-27 12:15:03 | INFO     | vehicle_detection | <module>:95 | Flask-Mail initialized
+2026-04-27 12:15:03 | INFO     | vehicle_detection | init_db:407 | Database connection established: postgresql://postgres:admin@localhost:5432/vehical_detections
+2026-04-27 12:15:03 | INFO     | vehicle_detection | init_db:408 | Tables created successfully
+2026-04-27 12:15:19 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:hello | SUCCESS | IP:127.0.0.1
+2026-04-27 12:15:19 | INFO     | vehicle_detection | login:472 | User hello logged in successfully from 127.0.0.1
+2026-04-27 12:15:33 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGOUT | User:hello | SUCCESS | IP:127.0.0.1
+2026-04-27 12:15:33 | INFO     | vehicle_detection | logout:606 | User hello logged out from 127.0.0.1
+2026-04-27 12:18:04 | INFO     | vehicle_detection | <module>:63 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-04-27 12:18:04 | INFO     | vehicle_detection | <module>:72 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-04-27 12:18:04 | INFO     | vehicle_detection | <module>:81 | Cache initialized with type: simple
+2026-04-27 12:18:04 | INFO     | vehicle_detection | <module>:95 | Flask-Mail initialized
+2026-04-27 12:18:04 | INFO     | vehicle_detection | init_db:407 | Database connection established: postgresql://postgres:admin@localhost:5432/vehical_detections
+2026-04-27 12:18:04 | INFO     | vehicle_detection | init_db:408 | Tables created successfully
+2026-04-27 12:18:12 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:test | SUCCESS | IP:192.168.29.217
+2026-04-27 12:18:12 | INFO     | vehicle_detection | login:472 | User test logged in successfully from 192.168.29.217
+2026-04-27 12:18:23 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGOUT | User:test | SUCCESS | IP:192.168.29.217
+2026-04-27 12:18:23 | INFO     | vehicle_detection | logout:606 | User test logged out from 192.168.29.217
+2026-04-27 12:18:26 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:test | SUCCESS | IP:192.168.29.217
+2026-04-27 12:18:26 | INFO     | vehicle_detection | login:472 | User test logged in successfully from 192.168.29.217
+2026-04-27 12:20:10 | INFO     | vehicle_detection | <module>:63 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-04-27 12:20:10 | INFO     | vehicle_detection | <module>:72 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-04-27 12:20:10 | INFO     | vehicle_detection | <module>:81 | Cache initialized with type: simple
+2026-04-27 12:20:10 | INFO     | vehicle_detection | <module>:95 | Flask-Mail initialized
+2026-04-27 12:20:11 | INFO     | vehicle_detection | init_db:407 | Database connection established: postgresql://postgres:admin@localhost:5432/vehical_detections
+2026-04-27 12:20:11 | INFO     | vehicle_detection | init_db:408 | Tables created successfully
+2026-04-27 12:20:17 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:test | SUCCESS | IP:127.0.0.1
+2026-04-27 12:20:17 | INFO     | vehicle_detection | login:472 | User test logged in successfully from 127.0.0.1
+2026-04-27 12:22:57 | INFO     | vehicle_detection | <module>:63 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-04-27 12:22:57 | INFO     | vehicle_detection | <module>:72 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-04-27 12:22:57 | INFO     | vehicle_detection | <module>:81 | Cache initialized with type: simple
+2026-04-27 12:22:57 | INFO     | vehicle_detection | <module>:95 | Flask-Mail initialized
+2026-04-27 12:22:57 | INFO     | vehicle_detection | init_db:407 | Database connection established: postgresql://postgres:admin@localhost:5432/vehical_detections
+2026-04-27 12:22:57 | INFO     | vehicle_detection | init_db:408 | Tables created successfully
+2026-04-27 12:24:27 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:test | SUCCESS | IP:127.0.0.1
+2026-04-27 12:24:27 | INFO     | vehicle_detection | login:472 | User test logged in successfully from 127.0.0.1
+2026-04-27 12:25:28 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGOUT | User:test | SUCCESS | IP:127.0.0.1
+2026-04-27 12:25:28 | INFO     | vehicle_detection | logout:606 | User test logged out from 127.0.0.1
+2026-04-27 12:25:31 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:test | SUCCESS | IP:127.0.0.1
+2026-04-27 12:25:31 | INFO     | vehicle_detection | login:472 | User test logged in successfully from 127.0.0.1
+2026-04-27 12:25:57 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGOUT | User:test | SUCCESS | IP:127.0.0.1
+2026-04-27 12:25:57 | INFO     | vehicle_detection | logout:606 | User test logged out from 127.0.0.1
+2026-04-27 12:26:23 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | REGISTER | User:dcdsc | SUCCESS | IP:127.0.0.1
+2026-04-27 12:26:23 | INFO     | vehicle_detection | register:584 | New user registered: dcdsc (svdfv@gmail.com) from 127.0.0.1
+2026-04-27 12:26:28 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:dcdsc | SUCCESS | IP:127.0.0.1
+2026-04-27 12:26:28 | INFO     | vehicle_detection | login:472 | User dcdsc logged in successfully from 127.0.0.1
+2026-04-27 12:26:33 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGOUT | User:dcdsc | SUCCESS | IP:127.0.0.1
+2026-04-27 12:26:33 | INFO     | vehicle_detection | logout:606 | User dcdsc logged out from 127.0.0.1
+2026-04-27 12:26:40 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:dcdsc | SUCCESS | IP:127.0.0.1
+2026-04-27 12:26:40 | INFO     | vehicle_detection | login:472 | User dcdsc logged in successfully from 127.0.0.1
+2026-04-27 12:32:16 | INFO     | vehicle_detection | <module>:63 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-04-27 12:32:16 | INFO     | vehicle_detection | <module>:72 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-04-27 12:32:16 | INFO     | vehicle_detection | <module>:81 | Cache initialized with type: simple
+2026-04-27 12:32:16 | INFO     | vehicle_detection | <module>:95 | Flask-Mail initialized
+2026-04-27 12:32:17 | INFO     | vehicle_detection | init_db:410 | Database connection established: postgresql://postgres:admin@localhost:5432/vehical_detections
+2026-04-27 12:32:17 | INFO     | vehicle_detection | init_db:411 | Tables created successfully
+2026-04-27 12:32:31 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:test | SUCCESS | IP:127.0.0.1
+2026-04-27 12:32:31 | INFO     | vehicle_detection | login:472 | User test logged in successfully from 127.0.0.1
+2026-04-27 12:36:08 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGOUT | User:test | SUCCESS | IP:127.0.0.1
+2026-04-27 12:36:08 | INFO     | vehicle_detection | logout:606 | User test logged out from 127.0.0.1
+2026-04-27 12:36:12 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:test | FAILED | IP:127.0.0.1
+2026-04-27 12:36:12 | WARNING  | vehicle_detection | login:477 | Failed login attempt for username: test from 127.0.0.1
+2026-04-27 12:59:22 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:test | FAILED | IP:192.168.29.217
+2026-04-27 12:59:22 | WARNING  | vehicle_detection | login:477 | Failed login attempt for username: test from 192.168.29.217
+2026-04-27 12:59:27 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:test | FAILED | IP:192.168.29.217
+2026-04-27 12:59:27 | WARNING  | vehicle_detection | login:477 | Failed login attempt for username: test from 192.168.29.217

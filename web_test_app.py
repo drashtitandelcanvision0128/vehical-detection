@@ -3,7 +3,7 @@ Vehicle Detection Web Testing App (Flask)
 Simple web interface for testing vehicle detection on images/videos
 """
 
-from flask import Flask, render_template_string, request, send_file, flash, redirect, session, url_for
+from flask import Flask, render_template_string, request, send_file, flash, redirect, session, url_for, jsonify
 import cv2
 import numpy as np
 from ultralytics import YOLO
@@ -17,13 +17,146 @@ from fpdf import FPDF
 import uuid
 from dotenv import load_dotenv
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 from sqlalchemy import create_engine, inspect
 from sqlalchemy.orm import sessionmaker, Session
 from models import Base, ImageDetection, VideoDetection, LiveDetection, DetectionHistory, User
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
 from collections import defaultdict, deque
+
+# Import configuration management
+from config import get_config, Config
+from logger_config import (
+    setup_logger,
+    log_request,
+    log_detection,
+    log_error,
+    log_auth_event,
+    log_database_operation
+)
+from flasgger import Swagger
+import sentry_config
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+from flask_caching import Cache
+import backup_service
+from translations import get_translation, set_language
+from flask_mail import Mail, Message
+
+# Initialize logger
+logger = setup_logger("vehicle_detection", log_level="INFO")
+
+# Load configuration based on environment
+config_class = get_config()
+app = Flask(__name__)
+app.config['TEMPLATES_AUTO_RELOAD'] = True
+app.config.from_object(config_class)
+
+# Initialize app with configuration
+config_class.init_app(app)
+
+# Initialize Sentry for error monitoring
+sentry_enabled = sentry_config.init_sentry()
+if sentry_enabled:
+    logger.info("Sentry error monitoring initialized")
+else:
+    logger.info("Sentry error monitoring not enabled (no DSN or in testing mode)")
+
+# Initialize Rate Limiter
+limiter = Limiter(
+    app=app,
+    key_func=get_remote_address,
+    default_limits=["200 per day", "50 per hour"],
+    storage_uri="memory://"  # Use memory storage (can be changed to Redis)
+)
+logger.info("Rate limiting initialized with default limits: 200/day, 50/hour")
+
+# Initialize Cache
+cache_config = {
+    'CACHE_TYPE': app.config.get('CACHE_TYPE', 'simple'),
+    'CACHE_REDIS_URL': app.config.get('CACHE_REDIS_URL', 'redis://localhost:6379/0'),
+    'CACHE_DEFAULT_TIMEOUT': app.config.get('CACHE_DEFAULT_TIMEOUT', 300)
+}
+cache = Cache(app, config=cache_config)
+logger.info(f"Cache initialized with type: {cache_config['CACHE_TYPE']}")
+
+# Initialize Flask-Mail
+mail_config = {
+    'MAIL_SERVER': app.config.get('MAIL_SERVER', 'smtp.gmail.com'),
+    'MAIL_PORT': app.config.get('MAIL_PORT', 587),
+    'MAIL_USE_TLS': app.config.get('MAIL_USE_TLS', True),
+    'MAIL_USE_SSL': app.config.get('MAIL_USE_SSL', False),
+    'MAIL_USERNAME': app.config.get('MAIL_USERNAME', ''),
+    'MAIL_PASSWORD': app.config.get('MAIL_PASSWORD', ''),
+    'MAIL_DEFAULT_SENDER': app.config.get('MAIL_DEFAULT_SENDER', 'noreply@vehicledetection.com')
+}
+app.config.update(mail_config)
+mail = Mail(app)
+logger.info("Flask-Mail initialized")
+
+# Cache key generator for user-specific caching
+def make_cache_key(*args, **kwargs):
+    """Generate cache key including user ID"""
+    user_id = session.get('user_id', 'anonymous')
+    return f"{request.path}_{user_id}"
+
+# Initialize Swagger for API documentation
+swagger_config = {
+    "headers": [],
+    "specs": [
+        {
+            "endpoint": 'apispec',
+            "route": '/apispec.json',
+            "rule_filter": lambda rule: True,
+            "model_filter": lambda tag: True,
+        }
+    ],
+    "static_url_path": "/flasgger_static",
+    "swagger_ui": True,
+    "specs_route": "/api/docs"
+}
+
+swagger_template = {
+    "info": {
+        "title": "Vehicle Detection API",
+        "description": "API for Vehicle Detection System - Detects cars, motorcycles, buses, and trucks from images and videos",
+        "contact": {
+            "name": "API Support",
+            "email": "support@example.com"
+        },
+        "version": "1.0.0"
+    },
+    "host": "localhost:5000",
+    "basePath": "/",
+    "schemes": [
+        "http",
+        "https"
+    ],
+    "consumes": [
+        "application/json",
+        "multipart/form-data"
+    ],
+    "produces": [
+        "application/json"
+    ],
+    "securityDefinitions": {
+        "Bearer": {
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header",
+            "description": "JWT token authorization"
+        }
+    }
+}
+
+swagger = Swagger(app, config=swagger_config, template=swagger_template)
+
+# Override secret key if not set in config
+if not app.config.get('SECRET_KEY') or app.config['SECRET_KEY'] == 'dev-secret-key-change-in-production':
+    app.secret_key = 'vehicle-detection-secret-key'
+else:
+    app.secret_key = app.config['SECRET_KEY']
 
 # Import authentication templates
 try:
@@ -120,6 +253,9 @@ except ImportError:
             <p class="text-secondary text-sm">
                 Don't have an account? 
                 <a href="/register" class="text-primary font-semibold hover:underline">Register here</a>
+            </p>
+            <p class="mt-2">
+                <a href="/forgot-password" class="text-sm text-primary font-semibold hover:underline">Forgot Password?</a>
             </p>
         </div>
     </div>
@@ -237,9 +373,6 @@ except ImportError:
 </html>
 """
 
-app = Flask(__name__)
-app.secret_key = 'vehicle-detection-secret-key'
-
 # Authentication decorator
 def login_required(f):
     """Decorator to require login for protected routes"""
@@ -257,8 +390,8 @@ def login_required(f):
 # Load environment variables
 load_dotenv()
 
-# SQLAlchemy setup
-DATABASE_URL = os.getenv('DATABASE_URL', 'sqlite:///vehical_detections.db')
+# SQLAlchemy setup - use config
+DATABASE_URL = app.config.get('DATABASE_URL', 'sqlite:///vehical_detections.db')
 
 engine = None
 SessionLocal = None
@@ -275,10 +408,11 @@ def init_db():
         SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
         # Create all tables
         Base.metadata.create_all(bind=engine)
-        print(f"[INFO] Database connection established: {DATABASE_URL}")
-        print("[INFO] Tables created successfully")
+        logger.info(f"Database connection established: {DATABASE_URL}")
+        logger.info("Tables created successfully")
     except Exception as e:
-        print(f"[ERROR] Database connection failed: {e}")
+        log_error(logger, 'Database', f'Database connection failed: {str(e)}')
+        logger.error(f"[ERROR] Database connection failed: {e}")
         import traceback
         traceback.print_exc()
         engine = None
@@ -292,17 +426,44 @@ def get_db():
 
 # Authentication Routes (defined after get_db() is available)
 @app.route('/login', methods=['GET', 'POST'])
+@limiter.limit("10 per minute")  # Stricter limit for login
 def login():
-    """Login page"""
+    """
+    User Login
+    ---
+    tags:
+      - Authentication
+    consumes:
+      - application/x-www-form-urlencoded
+    parameters:
+      - name: username
+        in: formData
+        type: string
+        required: true
+        description: Username
+      - name: password
+        in: formData
+        type: string
+        required: true
+        description: Password
+    responses:
+      200:
+        description: Login successful
+      401:
+        description: Invalid credentials
+    """
     if 'user_id' in session:
         return redirect(url_for('index'))
         
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
+        ip_address = request.remote_addr
         
         db = get_db()
         if not db:
+            log_auth_event(logger, 'login', username, False, ip_address)
+            log_error(logger, 'Database', 'Database connection failed during login', {'username': username})
             flash('Database connection error. Please try again.', 'error')
             return render_template_string(LOGIN_TEMPLATE)
         
@@ -311,12 +472,18 @@ def login():
             if user and check_password_hash(user.password_hash, password):
                 session['user_id'] = user.id
                 session['username'] = user.username
+                log_auth_event(logger, 'login', username, True, ip_address)
+                logger.info(f"User {username} logged in successfully from {ip_address}")
                 flash('Login successful!', 'success')
                 return redirect(url_for('index'))
             else:
+                log_auth_event(logger, 'login', username, False, ip_address)
+                logger.warning(f"Failed login attempt for username: {username} from {ip_address}")
                 flash('Invalid username or password.', 'error')
         except Exception as e:
-            print(f"[ERROR] Login error: {e}")
+            log_auth_event(logger, 'login', username, False, ip_address)
+            log_error(logger, 'Authentication', f'Login error: {str(e)}', {'username': username})
+            logger.error(f"[ERROR] Login error: {e}")
             flash('Login failed. Please try again.', 'error')
         finally:
             db.close()
@@ -325,8 +492,42 @@ def login():
 
 
 @app.route('/register', methods=['GET', 'POST'])
+@limiter.limit("5 per minute")  # Even stricter for registration
 def register():
-    """Registration page"""
+    """
+    User Registration
+    ---
+    tags:
+      - Authentication
+    consumes:
+      - application/x-www-form-urlencoded
+    parameters:
+      - name: username
+        in: formData
+        type: string
+        required: true
+        description: Username (unique)
+      - name: email
+        in: formData
+        type: string
+        required: true
+        description: Email address (unique)
+      - name: password
+        in: formData
+        type: string
+        required: true
+        description: Password (min 6 characters)
+      - name: confirm_password
+        in: formData
+        type: string
+        required: true
+        description: Confirm password
+    responses:
+      200:
+        description: Registration successful
+      400:
+        description: Invalid input or user already exists
+    """
     if 'user_id' in session:
         return redirect(url_for('index'))
         
@@ -335,22 +536,31 @@ def register():
         email = request.form.get('email')
         password = request.form.get('password')
         confirm_password = request.form.get('confirm_password')
+        ip_address = request.remote_addr
         
         # Validation
         if not username or not email or not password:
+            log_auth_event(logger, 'register', username, False, ip_address)
+            logger.warning(f"Registration attempt with missing fields from {ip_address}")
             flash('All fields are required.', 'error')
             return render_template_string(REGISTER_TEMPLATE)
         
         if password != confirm_password:
+            log_auth_event(logger, 'register', username, False, ip_address)
+            logger.warning(f"Password mismatch during registration for {username} from {ip_address}")
             flash('Passwords do not match.', 'error')
             return render_template_string(REGISTER_TEMPLATE)
         
         if len(password) < 6:
+            log_auth_event(logger, 'register', username, False, ip_address)
+            logger.warning(f"Password too short for {username} from {ip_address}")
             flash('Password must be at least 6 characters.', 'error')
             return render_template_string(REGISTER_TEMPLATE)
         
         db = get_db()
         if not db:
+            log_auth_event(logger, 'register', username, False, ip_address)
+            log_error(logger, 'Database', 'Database connection failed during registration', {'username': username, 'email': email})
             flash('Database connection error. Please try again.', 'error')
             return render_template_string(REGISTER_TEMPLATE)
         
@@ -360,6 +570,8 @@ def register():
             ).first()
             
             if existing_user:
+                log_auth_event(logger, 'register', username, False, ip_address)
+                logger.warning(f"Registration failed - user already exists: {username} from {ip_address}")
                 flash('Username or email already exists.', 'error')
                 return render_template_string(REGISTER_TEMPLATE)
             
@@ -371,11 +583,16 @@ def register():
             )
             db.add(new_user)
             db.commit()
+            log_database_operation(logger, 'INSERT', 'users', new_user.id, True)
+            log_auth_event(logger, 'register', username, True, ip_address)
+            logger.info(f"New user registered: {username} ({email}) from {ip_address}")
             
             flash('Registration successful! Please login.', 'success')
             return redirect(url_for('login'))
         except Exception as e:
-            print(f"[ERROR] Registration error: {e}")
+            log_auth_event(logger, 'register', username, False, ip_address)
+            log_error(logger, 'Database', f'Registration error: {str(e)}', {'username': username, 'email': email})
+            logger.error(f"[ERROR] Registration error: {e}")
             db.rollback()
             flash('Registration failed. Please try again.', 'error')
         finally:
@@ -387,18 +604,109 @@ def register():
 @app.route('/logout')
 def logout():
     """Logout user"""
+    username = session.get('username', 'Unknown')
+    ip_address = request.remote_addr
+    log_auth_event(logger, 'logout', username, True, ip_address)
+    logger.info(f"User {username} logged out from {ip_address}")
     session.clear()
     flash('You have been logged out.', 'info')
     return redirect(url_for('login'))
 
+
+@app.route('/forgot-password', methods=['GET', 'POST'])
+def forgot_password():
+    """Forgot password - send reset link"""
+    if request.method == 'POST':
+        email = request.form.get('email')
+        
+        db = get_db()
+        if not db:
+            flash('Database connection error. Please try again.', 'error')
+            return render_template_string(FORGOT_PASSWORD_TEMPLATE)
+        
+        try:
+            user = db.query(User).filter(User.email == email).first()
+            if user:
+                # Generate reset token
+                import secrets
+                reset_token = secrets.token_urlsafe(32)
+                reset_token_expires = datetime.utcnow() + timedelta(hours=1)
+                
+                user.reset_token = reset_token
+                user.reset_token_expires = reset_token_expires
+                db.commit()
+                
+                # For now, show the reset link in the message (in production, send via email)
+                reset_link = url_for('reset_password', token=reset_token, _external=True)
+                logger.info(f"Password reset link for {email}: {reset_link}")
+                flash(f'Password reset link generated. In production, this would be sent to your email. Reset link: {reset_link}', 'success')
+            else:
+                flash('If an account with that email exists, a reset link has been sent.', 'info')
+        except Exception as e:
+            logger.error(f"Forgot password error: {e}")
+            flash('An error occurred. Please try again.', 'error')
+        finally:
+            db.close()
+    
+    return render_template_string(FORGOT_PASSWORD_TEMPLATE)
+
+
+@app.route('/reset-password/<token>', methods=['GET', 'POST'])
+def reset_password(token):
+    """Reset password with token"""
+    db = get_db()
+    if not db:
+        flash('Database connection error. Please try again.', 'error')
+        return redirect(url_for('login'))
+    
+    try:
+        user = db.query(User).filter(User.reset_token == token).first()
+        
+        if not user:
+            flash('Invalid or expired reset link.', 'error')
+            return redirect(url_for('login'))
+        
+        if user.reset_token_expires < datetime.utcnow():
+            flash('Reset link has expired. Please request a new one.', 'error')
+            return redirect(url_for('login'))
+        
+        if request.method == 'POST':
+            new_password = request.form.get('new_password')
+            confirm_password = request.form.get('confirm_password')
+            
+            if new_password != confirm_password:
+                flash('Passwords do not match.', 'error')
+                return render_template_string(RESET_PASSWORD_TEMPLATE, token=token)
+            
+            if len(new_password) < 6:
+                flash('Password must be at least 6 characters.', 'error')
+                return render_template_string(RESET_PASSWORD_TEMPLATE, token=token)
+            
+            # Update password
+            user.password_hash = generate_password_hash(new_password)
+            user.reset_token = None
+            user.reset_token_expires = None
+            db.commit()
+            
+            flash('Password reset successfully! Please login with your new password.', 'success')
+            return redirect(url_for('login'))
+        
+        return render_template_string(RESET_PASSWORD_TEMPLATE, token=token)
+    except Exception as e:
+        logger.error(f"Reset password error: {e}")
+        flash('An error occurred. Please try again.', 'error')
+        return redirect(url_for('login'))
+    finally:
+        db.close()
+
 def save_detection_to_db(report_id, timestamp, input_type, message, stats, image_data, video_path, conf_threshold):
     """Save detection result to database using SQLAlchemy"""
-    print(f"[DEBUG] save_detection_to_db called: report_id={report_id}, input_type={input_type}")
-    print(f"[DEBUG] Stats received: {stats}, type: {type(stats)}")
+    logger.debug(f"save_detection_to_db called: report_id={report_id}, input_type={input_type}")
 
     db = get_db()
     if not db:
-        print("[WARN] Could not get database session, using memory fallback")
+        log_error(logger, 'Database', 'Could not get database session', {'report_id': report_id})
+        logger.warning("Could not get database session, using memory fallback")
         return False
 
     try:
@@ -509,10 +817,12 @@ def save_detection_to_db(report_id, timestamp, input_type, message, stats, image
             db.add(history_entry)
 
         db.commit()
-        print(f"[INFO] Detection saved to database: {report_id}, type={input_type}")
+        log_database_operation(logger, 'INSERT' if not existing else 'UPDATE', 'detection_history', report_id, True)
+        logger.info(f"Detection saved to database: {report_id}, type={input_type}, count={vehicle_count}")
         return True
     except Exception as e:
-        print(f"[ERROR] Failed to save detection to database: {e}")
+        log_error(logger, 'Database', f'Failed to save detection: {str(e)}', {'report_id': report_id, 'type': input_type})
+        logger.error(f"[ERROR] Failed to save detection to database: {e}")
         import traceback
         traceback.print_exc()
         db.rollback()
@@ -926,14 +1236,28 @@ HTML_TEMPLATE = """
 <a class="text-slate-500 hover:bg-blue-50 transition-colors px-3 py-1 rounded-lg text-sm" href="/history">History</a>
 </nav>
 <div class="flex items-center gap-3 border-l border-outline-variant/20 pl-6">
-<div class="flex items-center gap-2">
-<span class="material-symbols-outlined text-primary text-sm">account_circle</span>
-<span class="text-sm font-semibold text-primary">{{ session.get('username', 'User') }}</span>
-</div>
-<a href="/logout" class="flex items-center gap-1 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 transition-colors px-3 py-1.5 rounded-lg font-semibold">
-<span class="material-symbols-outlined text-sm">logout</span>
+<div class="relative">
+<button type="button" onclick="toggleDropdown()" class="flex items-center gap-2 text-sm font-semibold text-primary hover:bg-slate-100 px-3 py-1.5 rounded-lg transition-colors">
+<span class="material-symbols-outlined text-sm">account_circle</span>
+<span>{{ session.get('username', 'User') }}</span>
+<span class="material-symbols-outlined text-sm">expand_more</span>
+</button>
+<div id="userDropdown" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-[9999]">
+<a href="#" onclick="openProfileModal(); return false;" class="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-blue-600">
+<span class="material-symbols-outlined text-lg">account_circle</span>
+Profile
+</a>
+<a href="/toggle_theme" class="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-blue-600">
+<span class="material-symbols-outlined text-lg">dark_mode</span>
+Toggle Theme
+</a>
+<a href="/logout" class="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-red-600">
+<span class="material-symbols-outlined text-lg">logout</span>
 Logout
 </a>
+</div>
+</div>
+</div>
 </div>
 </div>
 </header>
@@ -1260,7 +1584,125 @@ Download Video
 </div>
 </main>
 </div>
+
+<!-- Profile Modal -->
+<div id="profileModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden items-center justify-center z-50">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
+        <div class="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
+            <h3 class="text-xl font-bold text-white">Edit Profile</h3>
+        </div>
+        <form id="profileForm" class="p-6 space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Username</label>
+                <input type="text" id="profileUsername" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Email</label>
+                <input type="email" id="profileEmail" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">New Password (leave blank to keep current)</label>
+                <input type="password" id="profilePassword" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Enter new password">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Theme</label>
+                <select id="profileTheme" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <option value="light">Light</option>
+                    <option value="dark">Dark</option>
+                </select>
+            </div>
+            <div class="flex gap-3 pt-4">
+                <button type="button" onclick="closeProfileModal()" class="flex-1 px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 font-medium">Cancel</button>
+                <button type="submit" class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
+    // Toggle dropdown menu
+    function toggleDropdown() {
+        console.log('toggleDropdown called');
+        const dropdown = document.getElementById('userDropdown');
+        console.log('Dropdown element:', dropdown);
+        if (dropdown) {
+            dropdown.classList.toggle('hidden');
+            console.log('Dropdown classes after toggle:', dropdown.className);
+        } else {
+            console.error('Dropdown element not found!');
+        }
+    }
+    
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function(event) {
+        const dropdown = document.getElementById('userDropdown');
+        const button = event.target.closest('button');
+        if (!button || !button.onclick) {
+            if (!event.target.closest('#userDropdown')) {
+                dropdown.classList.add('hidden');
+            }
+        }
+    });
+
+    // Open profile modal
+    function openProfileModal() {
+        const modal = document.getElementById('profileModal');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        toggleDropdown();
+        
+        fetch('/api/user/profile')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('profileUsername').value = data.user.username;
+                    document.getElementById('profileEmail').value = data.user.email;
+                    document.getElementById('profileTheme').value = data.user.theme || 'light';
+                }
+            })
+            .catch(error => console.error('Error loading profile:', error));
+    }
+
+    // Close profile modal
+    function closeProfileModal() {
+        const modal = document.getElementById('profileModal');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
+
+    // Handle profile form submission
+    document.getElementById('profileForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = {
+            username: document.getElementById('profileUsername').value,
+            email: document.getElementById('profileEmail').value,
+            password: document.getElementById('profilePassword').value,
+            theme: document.getElementById('profileTheme').value
+        };
+        
+        fetch('/api/user/profile', {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(formData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Profile updated successfully!');
+                closeProfileModal();
+                location.reload();
+            } else {
+                alert('Error updating profile: ' + data.error);
+            }
+        })
+        .catch(error => {
+            alert('Error: ' + error);
+        });
+    });
+
     // Show result modal when result is available
     {% if result %}
     document.addEventListener('DOMContentLoaded', function() {
@@ -1743,15 +2185,11 @@ def detect_vehicles_image(image_data, conf_threshold=0.4):
     image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
     
     if image is None:
+        log_error(logger, 'ImageProcessing', 'Could not decode image', {'conf_threshold': conf_threshold})
         return None, "Error: Could not decode image"
     
     height, width = image.shape[:2]
-    print(f"\n{'='*60}")
-    print("IMAGE PROCESSING STARTED")
-    print(f"{'='*60}")
-    print(f"Resolution: {width}x{height}")
-    print(f"Confidence Threshold: {conf_threshold}")
-    print(f"{'='*60}\n")
+    logger.info(f"Image detection started | Resolution: {width}x{height} | Confidence: {conf_threshold}")
     
     # Run detection
     results = model.predict(
@@ -1805,18 +2243,10 @@ def detect_vehicles_image(image_data, conf_threshold=0.4):
     cv2.putText(annotated, f"Time: {processing_time:.3f}s", (10, 60),
                cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
     
-    # Print summary to terminal
-    print(f"\n{'='*60}")
-    print("IMAGE PROCESSING COMPLETE")
-    print(f"{'='*60}")
-    print(f"Total Vehicles Detected: {len(detections)}")
-    print(f"Processing Time: {processing_time:.3f}s")
-    if class_counts:
-        print(f"Breakdown:")
-        for cls, count in class_counts.items():
-            display_name = DISPLAY_NAMES.get(cls, cls)
-            print(f"  - {display_name}: {count}")
-    print(f"{'='*60}\n")
+    # Log detection summary
+    breakdown_str = ", ".join([f"{DISPLAY_NAMES.get(cls, cls)}: {count}" for cls, count in class_counts.items()])
+    log_detection(logger, 'image', len(detections), processing_time, conf_threshold, session.get('user_id'))
+    logger.info(f"Image detection complete | Vehicles: {len(detections)} | Time: {processing_time:.3f}s | Breakdown: {breakdown_str}")
     
     # Encode to base64
     _, buffer = cv2.imencode('.jpg', annotated)
@@ -1866,7 +2296,7 @@ def detect_vehicles_video(video_path, output_path, conf_threshold=0.4):
     
     cap = cv2.VideoCapture(video_path)
     if not cap.isOpened():
-        print("[ERROR] Could not open video file")
+        log_error(logger, 'VideoProcessing', 'Could not open video file', {'video_path': video_path})
         return None, "Error: Could not open video", None
     
     frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
@@ -1874,14 +2304,7 @@ def detect_vehicles_video(video_path, output_path, conf_threshold=0.4):
     fps = cap.get(cv2.CAP_PROP_FPS)
     total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
     
-    print(f"\n{'='*60}")
-    print("VIDEO PROCESSING STARTED")
-    print(f"{'='*60}")
-    print(f"Resolution: {frame_width}x{frame_height}")
-    print(f"FPS: {fps:.1f}")
-    print(f"Total Frames: {total_frames}")
-    print(f"Confidence Threshold: {conf_threshold}")
-    print(f"{'='*60}\n")
+    logger.info(f"Video detection started | Resolution: {frame_width}x{frame_height} | FPS: {fps:.1f} | Frames: {total_frames} | Confidence: {conf_threshold}")
     
     # Try multiple codecs in order of browser compatibility
     # H264 is required for browser playback, mp4v only works in desktop players
@@ -2035,20 +2458,10 @@ def detect_vehicles_video(video_path, output_path, conf_threshold=0.4):
     processing_time = time.time() - start_time
     avg_fps = frame_count / processing_time if processing_time > 0 else 0
     
-    # Print final summary
-    print(f"\n{'='*60}")
-    print("VIDEO PROCESSING COMPLETE")
-    print(f"{'='*60}")
-    print(f"Total Frames Processed: {frame_count}")
-    print(f"Total Vehicles Detected: {total_detections}")
-    print(f"Processing Time: {processing_time:.1f}s")
-    print(f"Average FPS: {avg_fps:.1f}")
-    if class_counts:
-        print(f"Breakdown:")
-        for cls, count in class_counts.items():
-            display_name = DISPLAY_NAMES.get(cls, cls)
-            print(f"  - {display_name}: {count}")
-    print(f"{'='*60}\n")
+    # Log final summary
+    breakdown_str = ", ".join([f"{DISPLAY_NAMES.get(cls, cls)}: {count}" for cls, count in class_counts.items()])
+    log_detection(logger, 'video', total_detections, processing_time, conf_threshold, session.get('user_id'))
+    logger.info(f"Video detection complete | Frames: {frame_count} | Vehicles: {total_detections} | Time: {processing_time:.1f}s | FPS: {avg_fps:.1f} | Breakdown: {breakdown_str}")
     
     # Add codec info to message
     codec_info = f" (Codec: {used_codec})" if used_codec else " (Codec: unknown)"
@@ -2722,6 +3135,7 @@ def download(filename):
 
 
 @app.route('/webcam_detect', methods=['POST'])
+@limiter.limit("30 per minute")  # Limit for detection requests
 def webcam_detect():
     """Process webcam frame for live detection with vehicle counting"""
     try:
@@ -2897,7 +3311,7 @@ def save_live_session():
         print(f"[DEBUG] vehicle_counts: {vehicle_counts}")
 
         # Convert timestamps to datetime objects - handle multiple formats
-        from datetime import datetime
+        from datetime import datetime, timedelta
         if session_start:
             try:
                 # Try standard format
@@ -3394,14 +3808,27 @@ LIVE_DETECTION_TEMPLATE = """
 <a class="text-slate-500 hover:bg-blue-50 transition-colors px-3 py-1 rounded-lg text-sm" href="/history">History</a>
 </nav>
 <div class="flex items-center gap-3 border-l border-outline-variant/20 pl-6">
-<div class="flex items-center gap-2">
-<span class="material-symbols-outlined text-primary text-sm">account_circle</span>
-<span class="text-sm font-semibold text-primary">{{ session.get('username', 'User') }}</span>
-</div>
-<a href="/logout" class="flex items-center gap-1 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 transition-colors px-3 py-1.5 rounded-lg font-semibold">
-<span class="material-symbols-outlined text-sm">logout</span>
+<div class="relative">
+<button type="button" onclick="toggleDropdown()" class="flex items-center gap-2 text-sm font-semibold text-primary hover:bg-slate-100 px-3 py-1.5 rounded-lg transition-colors">
+<span class="material-symbols-outlined text-sm">account_circle</span>
+<span>{{ session.get('username', 'User') }}</span>
+<span class="material-symbols-outlined text-sm">expand_more</span>
+</button>
+<div id="userDropdown" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-[9999]">
+<a href="#" onclick="openProfileModal(); return false;" class="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-blue-600">
+<span class="material-symbols-outlined text-lg">account_circle</span>
+Profile
+</a>
+<a href="/toggle_theme" class="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-blue-600">
+<span class="material-symbols-outlined text-lg">dark_mode</span>
+Toggle Theme
+</a>
+<a href="/logout" class="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-red-600">
+<span class="material-symbols-outlined text-lg">logout</span>
 Logout
 </a>
+</div>
+</div>
 </div>
 </div>
 </header>
@@ -3894,7 +4321,8 @@ Download PDF
         // Real detection using backend YOLO model
         // Use requestAnimationFrame for smooth camera-like playback
         let lastProcessTime = 0;
-        const targetFPS = 30;
+
+        const targetFPS = 10;  // Reduced to 10fps for detection to prevent stuttering
         const frameInterval = 1000 / targetFPS;
         let isProcessing = false;
 
@@ -3921,7 +4349,7 @@ Download PDF
         const canvas = document.getElementById('detectionCanvas');
         const ctx = canvas.getContext('2d');
 
-        // Set canvas size to match video
+        // Set canvas size to match video (full quality)
         canvas.width = video.videoWidth || 640;
         canvas.height = video.videoHeight || 480;
 
@@ -3931,13 +4359,8 @@ Download PDF
         // Capture frame for saving (use lower quality for performance)
         capturedFrame = canvas.toDataURL('image/jpeg', 0.5);
 
-        // Create a smaller canvas for detection to speed up processing
-        const detectCanvas = document.createElement('canvas');
-        const detectCtx = detectCanvas.getContext('2d');
-        detectCanvas.width = 320;  // Reduced resolution for faster detection
-        detectCanvas.height = 240;
-        detectCtx.drawImage(canvas, 0, 0, detectCanvas.width, detectCanvas.height);
-        const frameData = detectCanvas.toDataURL('image/jpeg', 0.7);
+        // Use full resolution for detection (good quality)
+        const frameData = capturedFrame;
 
         try {
             const formData = new FormData();
@@ -4140,15 +4563,144 @@ Download PDF
 
     // Stop webcam when page is unloaded
     window.addEventListener('beforeunload', stopWebcam);
+
+    // Toggle dropdown menu
+    function toggleDropdown() {
+        console.log('toggleDropdown called');
+        const dropdown = document.getElementById('userDropdown');
+        console.log('Dropdown element:', dropdown);
+        if (dropdown) {
+            dropdown.classList.toggle('hidden');
+            console.log('Dropdown classes after toggle:', dropdown.className);
+        } else {
+            console.error('Dropdown element not found!');
+        }
+    }
+    
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function(event) {
+        const dropdown = document.getElementById('userDropdown');
+        const button = event.target.closest('button');
+        if (!button || !button.onclick) {
+            if (!event.target.closest('#userDropdown')) {
+                dropdown.classList.add('hidden');
+            }
+        }
+    });
+
+    // Open profile modal
+    function openProfileModal() {
+        const modal = document.getElementById('profileModal');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        toggleDropdown();
+        
+        fetch('/api/user/profile')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('profileUsername').value = data.user.username;
+                    document.getElementById('profileEmail').value = data.user.email;
+                    document.getElementById('profileTheme').value = data.user.theme || 'light';
+                }
+            })
+            .catch(error => console.error('Error loading profile:', error));
+    }
+
+    // Close profile modal
+    function closeProfileModal() {
+        const modal = document.getElementById('profileModal');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
+
+    // Handle profile form submission
+    document.getElementById('profileForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = {
+            username: document.getElementById('profileUsername').value,
+            email: document.getElementById('profileEmail').value,
+            password: document.getElementById('profilePassword').value,
+            theme: document.getElementById('profileTheme').value
+        };
+        
+        fetch('/api/user/profile', {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(formData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Profile updated successfully!');
+                closeProfileModal();
+                location.reload();
+            } else {
+                alert('Error updating profile: ' + data.error);
+            }
+        })
+        .catch(error => {
+            alert('Error: ' + error);
+        });
+    });
 </script>
+
+<!-- Profile Modal -->
+<div id="profileModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden items-center justify-center z-50">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
+        <div class="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
+            <h3 class="text-xl font-bold text-white">Edit Profile</h3>
+        </div>
+        <form id="profileForm" class="p-6 space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Username</label>
+                <input type="text" id="profileUsername" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Email</label>
+                <input type="email" id="profileEmail" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">New Password (leave blank to keep current)</label>
+                <input type="password" id="profilePassword" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Enter new password">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Theme</label>
+                <select id="profileTheme" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <option value="light">Light</option>
+                    <option value="dark">Dark</option>
+                </select>
+            </div>
+            <div class="flex gap-3 pt-4">
+                <button type="button" onclick="closeProfileModal()" class="flex-1 px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 font-medium">Cancel</button>
+                <button type="submit" class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
 </body>
 </html>
 """
 
 
 @app.route('/test')
+@cache.cached(timeout=60, key_prefix='health_check')
 def test_route():
-    """Test route to verify routing works"""
+    """
+    Health Check Endpoint
+    ---
+    tags:
+      - Health
+    responses:
+      200:
+        description: Server is running
+        schema:
+          type: string
+          example: "Test route is working!"
+    """
     return "Test route is working!"
 
 
@@ -4257,6 +4809,25 @@ VIEW_REPORT_TEMPLATE = """
 <span class="material-symbols-outlined text-lg">arrow_back</span>
 Back to History
 </a>
+<div class="flex items-center gap-3 border-l border-slate-200 pl-6">
+<div class="relative">
+<button onclick="toggleDropdown()" class="flex items-center gap-2 text-sm font-medium text-slate-700 hover:bg-slate-100 transition-colors px-3 py-1.5 rounded-lg">
+<span class="material-symbols-outlined text-slate-600 text-xl">person</span>
+<span>{{ session.get('username', 'User') }}</span>
+<span class="material-symbols-outlined text-slate-600 text-sm">expand_more</span>
+</button>
+<div id="userDropdown" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-[9999]">
+<a href="#" onclick="openProfileModal(); return false;" class="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-blue-600">
+<span class="material-symbols-outlined text-lg">account_circle</span>
+Profile
+</a>
+<a href="/logout" class="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-red-600">
+<span class="material-symbols-outlined text-lg">logout</span>
+Logout
+</a>
+</div>
+</div>
+</div>
 </div>
 </header>
 
@@ -4334,6 +4905,125 @@ Download PDF
 </div>
 </div>
 </main>
+
+<!-- Profile Modal -->
+<div id="profileModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden items-center justify-center z-50">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
+        <div class="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
+            <h3 class="text-xl font-bold text-white">Edit Profile</h3>
+        </div>
+        <form id="profileForm" class="p-6 space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Username</label>
+                <input type="text" id="profileUsername" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Email</label>
+                <input type="email" id="profileEmail" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">New Password (leave blank to keep current)</label>
+                <input type="password" id="profilePassword" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Enter new password">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Theme</label>
+                <select id="profileTheme" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <option value="light">Light</option>
+                    <option value="dark">Dark</option>
+                </select>
+            </div>
+            <div class="flex gap-3 pt-4">
+                <button type="button" onclick="closeProfileModal()" class="flex-1 px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 font-medium">Cancel</button>
+                <button type="submit" class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    // Toggle dropdown menu
+    function toggleDropdown() {
+        console.log('toggleDropdown called');
+        const dropdown = document.getElementById('userDropdown');
+        console.log('Dropdown element:', dropdown);
+        if (dropdown) {
+            dropdown.classList.toggle('hidden');
+            console.log('Dropdown classes after toggle:', dropdown.className);
+        } else {
+            console.error('Dropdown element not found!');
+        }
+    }
+    
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function(event) {
+        const dropdown = document.getElementById('userDropdown');
+        const button = event.target.closest('button');
+        if (!button || !button.onclick) {
+            if (!event.target.closest('#userDropdown')) {
+                dropdown.classList.add('hidden');
+            }
+        }
+    });
+
+    // Open profile modal
+    function openProfileModal() {
+        const modal = document.getElementById('profileModal');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        toggleDropdown();
+        
+        fetch('/api/user/profile')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('profileUsername').value = data.user.username;
+                    document.getElementById('profileEmail').value = data.user.email;
+                    document.getElementById('profileTheme').value = data.user.theme || 'light';
+                }
+            })
+            .catch(error => console.error('Error loading profile:', error));
+    }
+
+    // Close profile modal
+    function closeProfileModal() {
+        const modal = document.getElementById('profileModal');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
+
+    // Handle profile form submission
+    document.getElementById('profileForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = {
+            username: document.getElementById('profileUsername').value,
+            email: document.getElementById('profileEmail').value,
+            password: document.getElementById('profilePassword').value,
+            theme: document.getElementById('profileTheme').value
+        };
+        
+        fetch('/api/user/profile', {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(formData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Profile updated successfully!');
+                closeProfileModal();
+                location.reload();
+            } else {
+                alert('Error updating profile: ' + data.error);
+            }
+        })
+        .catch(error => {
+            alert('Error: ' + error);
+        });
+    });
+</script>
 </body>
 </html>
 """
@@ -4401,14 +5091,23 @@ HISTORY_TEMPLATE = """
 <a class="text-blue-900 font-semibold text-sm" href="/history">History</a>
 </nav>
 <div class="flex items-center gap-3 border-l border-slate-200 pl-6">
-<div class="flex items-center gap-2">
+<div class="relative">
+<button onclick="toggleDropdown()" class="flex items-center gap-2 text-sm font-medium text-slate-700 hover:bg-slate-100 transition-colors px-3 py-1.5 rounded-lg">
 <span class="material-symbols-outlined text-slate-600 text-xl">person</span>
-<span class="text-sm font-medium text-slate-700">test</span>
-</div>
-<a href="/logout" class="flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-red-600 hover:bg-red-50 transition-colors px-3 py-1.5 rounded-lg">
+<span>{{ username }}</span>
+<span class="material-symbols-outlined text-slate-600 text-sm">expand_more</span>
+</button>
+<div id="userDropdown" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-[9999]">
+<a href="#" onclick="openProfileModal(); return false;" class="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-blue-600">
+<span class="material-symbols-outlined text-lg">account_circle</span>
+Profile
+</a>
+<a href="/logout" class="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-red-600">
 <span class="material-symbols-outlined text-lg">logout</span>
 Logout
 </a>
+</div>
+</div>
 </div>
 </div>
 </header>
@@ -4517,7 +5216,118 @@ Start Detection
 </div>
 </main>
 
+<!-- Profile Modal -->
+<div id="profileModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden items-center justify-center z-50">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
+        <div class="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
+            <h3 class="text-xl font-bold text-white">Edit Profile</h3>
+        </div>
+        <form id="profileForm" class="p-6 space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Username</label>
+                <input type="text" id="profileUsername" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Email</label>
+                <input type="email" id="profileEmail" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">New Password (leave blank to keep current)</label>
+                <input type="password" id="profilePassword" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Enter new password">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Theme</label>
+                <select id="profileTheme" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <option value="light">Light</option>
+                    <option value="dark">Dark</option>
+                </select>
+            </div>
+            <div class="flex gap-3 pt-4">
+                <button type="button" onclick="closeProfileModal()" class="flex-1 px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 font-medium">Cancel</button>
+                <button type="submit" class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
+// Toggle dropdown menu
+function toggleDropdown() {
+    const dropdown = document.getElementById('userDropdown');
+    dropdown.classList.toggle('hidden');
+}
+
+// Close dropdown when clicking outside
+document.addEventListener('click', function(event) {
+    const dropdown = document.getElementById('userDropdown');
+    const button = event.target.closest('button');
+    if (!button || !button.onclick) {
+        if (!event.target.closest('#userDropdown')) {
+            dropdown.classList.add('hidden');
+        }
+    }
+});
+
+// Open profile modal
+function openProfileModal() {
+    const modal = document.getElementById('profileModal');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    toggleDropdown(); // Close dropdown
+    
+    // Load current user data
+    fetch('/api/user/profile')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('profileUsername').value = data.user.username;
+                document.getElementById('profileEmail').value = data.user.email;
+                document.getElementById('profileTheme').value = data.user.theme || 'light';
+            }
+        })
+        .catch(error => console.error('Error loading profile:', error));
+}
+
+// Close profile modal
+function closeProfileModal() {
+    const modal = document.getElementById('profileModal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+}
+
+// Handle profile form submission
+document.getElementById('profileForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = {
+        username: document.getElementById('profileUsername').value,
+        email: document.getElementById('profileEmail').value,
+        password: document.getElementById('profilePassword').value,
+        theme: document.getElementById('profileTheme').value
+    };
+    
+    fetch('/api/user/profile', {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(formData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Profile updated successfully!');
+            closeProfileModal();
+            location.reload();
+        } else {
+            alert('Error updating profile: ' + data.error);
+        }
+    })
+    .catch(error => {
+        alert('Error: ' + error);
+    });
+});
+
 function deleteDetection(reportId) {
     if (confirm('Are you sure you want to delete this detection?')) {
         fetch(`/delete_detection/${reportId}`, {
@@ -4539,12 +5349,529 @@ function deleteDetection(reportId) {
 </script>
 </body>
 </html>
+
+"""
+DASHBOARD_TEMPLATE = """
+<!DOCTYPE html>
+<html class="light" lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Analytics Dashboard | Vehicle Intelligence</title>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Manrope:wght@600;700;800&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+        darkMode: "class",
+        theme: {
+            extend: {
+                "colors": {
+                    "primary": "#002542",
+                    "primary-container": "#1b3b5a",
+                    "surface": "#faf9fc",
+                    "surface-container-lowest": "#ffffff",
+                    "surface-container-low": "#f4f3f6",
+                    "surface-container": "#eeedf0",
+                    "on-surface": "#1a1c1e",
+                    "on-surface-variant": "#43474d",
+                    "outline-variant": "#c3c6ce",
+                },
+                "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+                },
+                "fontFamily": {
+                    "headline": ["Manrope"],
+                    "body": ["Inter"],
+                    "label": ["Inter"]
+                }
+            }
+        }
+    }
+</script>
+<style>
+    .material-symbols-outlined {
+        font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    }
+    body { font-family: 'Inter', sans-serif; }
+    h1, h2, h3 { font-family: 'Manrope', sans-serif; }
+    .chart-container { position: relative; height: 300px; }
+</style>
+</head>
+<body class="bg-surface text-on-surface min-h-screen">
+<div class="flex min-h-screen">
+    <!-- Sidebar -->
+    <div class="w-64 bg-surface-container-lowest border-r border-outline-variant/10 p-6">
+        <div class="mb-8">
+            <div class="flex items-center gap-3 mb-2">
+                <span class="material-symbols-outlined text-primary text-4xl">analytics</span>
+                <h1 class="text-xl font-bold text-primary">Analytics</h1>
+            </div>
+            <p class="text-sm text-on-surface-variant">Vehicle Detection Insights</p>
+        </div>
+        
+        <nav class="space-y-2">
+            <a href="/" class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:bg-surface-container-low transition">
+                <span class="material-symbols-outlined">home</span>
+                <span>Home</span>
+            </a>
+            <a href="/dashboard" class="flex items-center gap-3 px-4 py-3 rounded-lg bg-primary text-on-primary font-semibold">
+                <span class="material-symbols-outlined">dashboard</span>
+                <span>Dashboard</span>
+            </a>
+            <a href="/history" class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:bg-surface-container-low transition">
+                <span class="material-symbols-outlined">history</span>
+                <span>History</span>
+            </a>
+            <a href="/live" class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:bg-surface-container-low transition">
+                <span class="material-symbols-outlined">videocam</span>
+                <span>Live Detection</span>
+            </a>
+        </nav>
+    </div>
+    
+    <!-- Main Content -->
+    <div class="flex-1 p-8">
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold text-primary mb-2">Analytics Dashboard</h1>
+            <p class="text-on-surface-variant">Overview of detection statistics and trends</p>
+        </div>
+        
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div class="bg-surface-container-lowest rounded-xl p-6 border border-outline-variant/10">
+                <div class="flex items-center justify-between mb-4">
+                    <span class="material-symbols-outlined text-primary-container text-3xl">directions_car</span>
+                    <span class="text-xs font-semibold text-on-surface-variant bg-surface-container-low px-2 py-1 rounded">30 Days</span>
+                </div>
+                <h3 class="text-2xl font-bold text-primary">{{ overall_stats.total_detections }}</h3>
+                <p class="text-sm text-on-surface-variant">Total Detections</p>
+            </div>
+            
+            <div class="bg-surface-container-lowest rounded-xl p-6 border border-outline-variant/10">
+                <div class="flex items-center justify-between mb-4">
+                    <span class="material-symbols-outlined text-primary-container text-3xl">local_shipping</span>
+                    <span class="text-xs font-semibold text-on-surface-variant bg-surface-container-low px-2 py-1 rounded">Total</span>
+                </div>
+                <h3 class="text-2xl font-bold text-primary">{{ overall_stats.total_vehicles }}</h3>
+                <p class="text-sm text-on-surface-variant">Vehicles Detected</p>
+            </div>
+            
+            <div class="bg-surface-container-lowest rounded-xl p-6 border border-outline-variant/10">
+                <div class="flex items-center justify-between mb-4">
+                    <span class="material-symbols-outlined text-primary-container text-3xl">timer</span>
+                    <span class="text-xs font-semibold text-on-surface-variant bg-surface-container-low px-2 py-1 rounded">Average</span>
+                </div>
+                <h3 class="text-2xl font-bold text-primary">{{ overall_stats.avg_processing_time }}s</h3>
+                <p class="text-sm text-on-surface-variant">Processing Time</p>
+            </div>
+            
+            <div class="bg-surface-container-lowest rounded-xl p-6 border border-outline-variant/10">
+                <div class="flex items-center justify-between mb-4">
+                    <span class="material-symbols-outlined text-primary-container text-3xl">trending_up</span>
+                    <span class="text-xs font-semibold text-on-surface-variant bg-surface-container-low px-2 py-1 rounded">Per Detection</span>
+                </div>
+                <h3 class="text-2xl font-bold text-primary">{{ overall_stats.avg_vehicles_per_detection }}</h3>
+                <p class="text-sm text-on-surface-variant">Avg Vehicles</p>
+            </div>
+        </div>
+        
+        <!-- Charts Row 1 -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <!-- Detection by Type -->
+            <div class="bg-surface-container-lowest rounded-xl p-6 border border-outline-variant/10">
+                <h3 class="text-lg font-bold text-primary mb-4">Detection by Type</h3>
+                <div class="chart-container">
+                    <canvas id="typeChart"></canvas>
+                </div>
+            </div>
+            
+            <!-- Vehicle Breakdown -->
+            <div class="bg-surface-container-lowest rounded-xl p-6 border border-outline-variant/10">
+                <h3 class="text-lg font-bold text-primary mb-4">Vehicle Breakdown</h3>
+                <div class="chart-container">
+                    <canvas id="vehicleChart"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Charts Row 2 -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <!-- Daily Trends -->
+            <div class="bg-surface-container-lowest rounded-xl p-6 border border-outline-variant/10">
+                <h3 class="text-lg font-bold text-primary mb-4">Daily Trends (30 Days)</h3>
+                <div class="chart-container">
+                    <canvas id="trendChart"></canvas>
+                </div>
+            </div>
+            
+            <!-- Hourly Distribution -->
+            <div class="bg-surface-container-lowest rounded-xl p-6 border border-outline-variant/10">
+                <h3 class="text-lg font-bold text-primary mb-4">Hourly Distribution (7 Days)</h3>
+                <div class="chart-container">
+                    <canvas id="hourlyChart"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <!-- User Activity Table -->
+        <div class="bg-surface-container-lowest rounded-xl p-6 border border-outline-variant/10 mb-8">
+            <h3 class="text-lg font-bold text-primary mb-4">Top Users by Activity</h3>
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead>
+                        <tr class="border-b border-outline-variant/10">
+                            <th class="text-left py-3 px-4 text-sm font-semibold text-on-surface-variant">User</th>
+                            <th class="text-left py-3 px-4 text-sm font-semibold text-on-surface-variant">Detections</th>
+                            <th class="text-left py-3 px-4 text-sm font-semibold text-on-surface-variant">Vehicles</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in user_activity %}
+                        <tr class="border-b border-outline-variant/10">
+                            <td class="py-3 px-4 text-sm">{{ user.username }}</td>
+                            <td class="py-3 px-4 text-sm font-semibold text-primary">{{ user.detections }}</td>
+                            <td class="py-3 px-4 text-sm">{{ user.vehicles }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Performance Metrics -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="bg-surface-container-lowest rounded-xl p-6 border border-outline-variant/10">
+                <h3 class="text-sm font-semibold text-on-surface-variant mb-2">Avg Processing Time</h3>
+                <p class="text-2xl font-bold text-primary">{{ performance_metrics.avg_processing_time }}s</p>
+            </div>
+            <div class="bg-surface-container-lowest rounded-xl p-6 border border-outline-variant/10">
+                <h3 class="text-sm font-semibold text-on-surface-variant mb-2">Max Processing Time</h3>
+                <p class="text-2xl font-bold text-primary">{{ performance_metrics.max_processing_time }}s</p>
+            </div>
+            <div class="bg-surface-container-lowest rounded-xl p-6 border border-outline-variant/10">
+                <h3 class="text-sm font-semibold text-on-surface-variant mb-2">Avg Confidence</h3>
+                <p class="text-2xl font-bold text-primary">{{ performance_metrics.avg_confidence }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Detection by Type Chart
+const typeCtx = document.getElementById('typeChart').getContext('2d');
+new Chart(typeCtx, {
+    type: 'doughnut',
+    data: {
+        labels: ['Image', 'Video', 'Live'],
+        datasets: [{
+            data: [{{ detection_by_type.image }}, {{ detection_by_type.video }}, {{ detection_by_type.live }}],
+            backgroundColor: ['#002542', '#1b3b5a', '#87a5ca'],
+            borderWidth: 0
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'bottom'
+            }
+        }
+    }
+});
+
+// Vehicle Breakdown Chart
+const vehicleCtx = document.getElementById('vehicleChart').getContext('2d');
+const vehicleLabels = {{ vehicle_breakdown | tojson | safe }};
+const vehicleData = Object.values(vehicleLabels);
+new Chart(vehicleCtx, {
+    type: 'bar',
+    data: {
+        labels: Object.keys(vehicleLabels),
+        datasets: [{
+            label: 'Count',
+            data: vehicleData,
+            backgroundColor: '#002542',
+            borderRadius: 4
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                display: false
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        }
+    }
+});
+
+// Daily Trends Chart
+const trendCtx = document.getElementById('trendChart').getContext('2d');
+const trendData = {{ daily_trends | tojson | safe }};
+new Chart(trendCtx, {
+    type: 'line',
+    data: {
+        labels: trendData.map(d => d.date),
+        datasets: [{
+            label: 'Detections',
+            data: trendData.map(d => d.detections),
+            borderColor: '#002542',
+            backgroundColor: 'rgba(0, 37, 66, 0.1)',
+            fill: true,
+            tension: 0.4
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                display: false
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        }
+    }
+});
+
+// Hourly Distribution Chart
+const hourlyCtx = document.getElementById('hourlyChart').getContext('2d');
+const hourlyData = {{ hourly_distribution | tojson | safe }};
+new Chart(hourlyCtx, {
+    type: 'bar',
+    data: {
+        labels: hourlyData.map(d => d.hour + ':00'),
+        datasets: [{
+            label: 'Detections',
+            data: hourlyData.map(d => d.count),
+            backgroundColor: '#1b3b5a',
+            borderRadius: 4
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                display: false
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        }
+    }
+});
+</script>
+</body>
+</html>
 """
 
+PROFILE_TEMPLATE = """
+<!DOCTYPE html>
+<html class="light" lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Profile | Vehicle Intelligence</title>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Manrope:wght@600;700;800&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+        darkMode: "class",
+        theme: {
+            extend: {
+                "colors": {
+                    "primary": "#002542",
+                    "primary-container": "#1b3b5a",
+                    "surface": "#faf9fc",
+                    "surface-container-lowest": "#ffffff",
+                    "surface-container-low": "#f4f3f6",
+                    "surface-container": "#eeedf0",
+                    "on-surface": "#1a1c1e",
+                    "on-surface-variant": "#43474d",
+                    "outline-variant": "#c3c6ce",
+                },
+                "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+                },
+                "fontFamily": {
+                    "headline": ["Manrope"],
+                    "body": ["Inter"],
+                    "label": ["Inter"]
+                }
+            }
+        }
+    }
+</script>
+<style>
+    .material-symbols-outlined {
+        font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    }
+    body { font-family: 'Inter', sans-serif; }
+    h1, h2, h3 { font-family: 'Manrope', sans-serif; }
+</style>
+</head>
+<body class="bg-surface text-on-surface min-h-screen">
+<div class="flex min-h-screen">
+    <!-- Sidebar -->
+    <div class="w-64 bg-surface-container-lowest border-r border-outline-variant/10 p-6">
+        <div class="mb-8">
+            <div class="flex items-center gap-3 mb-2">
+                <span class="material-symbols-outlined text-primary text-4xl">person</span>
+                <h1 class="text-xl font-bold text-primary">Profile</h1>
+            </div>
+            <p class="text-sm text-on-surface-variant">Account Settings</p>
+        </div>
+        
+        <nav class="space-y-2">
+            <a href="/" class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:bg-surface-container-low transition">
+                <span class="material-symbols-outlined">home</span>
+                <span>Home</span>
+            </a>
+            <a href="/dashboard" class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:bg-surface-container-low transition">
+                <span class="material-symbols-outlined">dashboard</span>
+                <span>Dashboard</span>
+            </a>
+            <a href="/history" class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:bg-surface-container-low transition">
+                <span class="material-symbols-outlined">history</span>
+                <span>History</span>
+            </a>
+            <a href="/profile" class="flex items-center gap-3 px-4 py-3 rounded-lg bg-primary text-on-primary font-semibold">
+                <span class="material-symbols-outlined">person</span>
+                <span>Profile</span>
+            </a>
+        </nav>
+    </div>
+    
+    <!-- Main Content -->
+    <div class="flex-1 p-8">
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold text-primary mb-2">User Profile</h1>
+            <p class="text-on-surface-variant">Manage your account settings</p>
+        </div>
+        
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="bg-surface-container-lowest rounded-xl p-6 border border-outline-variant/10">
+                <div class="flex items-center gap-3 mb-4">
+                    <span class="material-symbols-outlined text-primary-container text-3xl">directions_car</span>
+                </div>
+                <h3 class="text-2xl font-bold text-primary">{{ total_detections }}</h3>
+                <p class="text-sm text-on-surface-variant">Total Detections</p>
+            </div>
+            
+            <div class="bg-surface-container-lowest rounded-xl p-6 border border-outline-variant/10">
+                <div class="flex items-center gap-3 mb-4">
+                    <span class="material-symbols-outlined text-primary-container text-3xl">local_shipping</span>
+                </div>
+                <h3 class="text-2xl font-bold text-primary">{{ total_vehicles }}</h3>
+                <p class="text-sm text-on-surface-variant">Vehicles Detected</p>
+            </div>
+            
+            <div class="bg-surface-container-lowest rounded-xl p-6 border border-outline-variant/10">
+                <div class="flex items-center gap-3 mb-4">
+                    <span class="material-symbols-outlined text-primary-container text-3xl">calendar_today</span>
+                </div>
+                <h3 class="text-2xl font-bold text-primary">Active</h3>
+                <p class="text-sm text-on-surface-variant">Account Status</p>
+            </div>
+        </div>
+        
+        <!-- Profile Form -->
+        <div class="bg-surface-container-lowest rounded-xl p-6 border border-outline-variant/10 mb-8">
+            <h3 class="text-lg font-bold text-primary mb-4">Update Profile</h3>
+            <form action="/profile/update" method="POST" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-semibold text-on-surface-variant mb-2">Username</label>
+                    <input type="text" value="{{ user.username }}" disabled class="w-full px-4 py-2 rounded-lg border border-outline-variant/10 bg-surface-container text-on-surface">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-on-surface-variant mb-2">Email</label>
+                    <input type="email" name="email" value="{{ user.email or '' }}" class="w-full px-4 py-2 rounded-lg border border-outline-variant/10 bg-surface-container-lowest text-on-surface">
+                </div>
+                <button type="submit" class="px-6 py-2 bg-primary text-white font-semibold rounded-lg hover:bg-primary-container transition-colors">
+                    Update Profile
+                </button>
+            </form>
+        </div>
+        
+        <!-- Change Password Form -->
+        <div class="bg-surface-container-lowest rounded-xl p-6 border border-outline-variant/10 mb-8">
+            <h3 class="text-lg font-bold text-primary mb-4">Change Password</h3>
+            <form action="/profile/change_password" method="POST" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-semibold text-on-surface-variant mb-2">Current Password</label>
+                    <input type="password" name="current_password" required class="w-full px-4 py-2 rounded-lg border border-outline-variant/10 bg-surface-container-lowest text-on-surface">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-on-surface-variant mb-2">New Password</label>
+                    <input type="password" name="new_password" required minlength="6" class="w-full px-4 py-2 rounded-lg border border-outline-variant/10 bg-surface-container-lowest text-on-surface">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-on-surface-variant mb-2">Confirm New Password</label>
+                    <input type="password" name="confirm_password" required minlength="6" class="w-full px-4 py-2 rounded-lg border border-outline-variant/10 bg-surface-container-lowest text-on-surface">
+                </div>
+                <button type="submit" class="px-6 py-2 bg-primary text-white font-semibold rounded-lg hover:bg-primary-container transition-colors">
+                    Change Password
+                </button>
+            </form>
+        </div>
+        
+        <!-- Theme Settings -->
+        <div class="bg-surface-container-lowest rounded-xl p-6 border border-outline-variant/10">
+            <h3 class="text-lg font-bold text-primary mb-4">Theme Settings</h3>
+            <div class="flex items-center gap-4">
+                <div class="flex items-center gap-2">
+                    <span class="material-symbols-outlined text-primary">light_mode</span>
+                    <span class="text-sm text-on-surface-variant">Light Mode</span>
+                </div>
+                <button onclick="window.location.href='/toggle_theme'" class="px-6 py-2 bg-primary text-white font-semibold rounded-lg hover:bg-primary-container transition-colors">
+                    Switch to Dark Mode
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>
+"""
 
 @app.route('/history')
 @login_required
 def history_page():
+    """
+    Get Detection History
+    ---
+    tags:
+      - Detection
+    security:
+      - Bearer: []
+    responses:
+      200:
+        description: Detection history retrieved successfully
+      401:
+        description: Not authenticated
+    """
     """Render the history page with all past detections"""
     print("[DEBUG] History route accessed")
     history = get_detection_history_from_db(limit=50)
@@ -4558,7 +5885,871 @@ def history_page():
         print(f"[DEBUG] First entry has video_path: {'video_path' in history[0]}")
         print(f"[DEBUG] First entry video_path: {history[0].get('video_path')}")
     
-    return render_template_string(HISTORY_TEMPLATE, history=history)
+    # Get username from session
+    username = session.get('username', 'User')
+    
+    return render_template_string(HISTORY_TEMPLATE, history=history, username=username)
+
+
+@app.route('/set_language/<lang>')
+def set_language_route(lang):
+    """
+    Set language preference
+    ---
+    tags:
+      - Settings
+    parameters:
+      - name: lang
+        in: path
+        type: string
+        required: true
+        description: Language code (en or hi)
+    responses:
+      200:
+        description: Language set successfully
+    """
+    lang = set_language(lang)
+    session['language'] = lang
+    logger.info(f"Language set to: {lang}")
+    
+    # Redirect back to previous page or home
+    next_page = request.args.get('next', url_for('index'))
+    return redirect(next_page)
+
+
+@app.route('/toggle_theme')
+def toggle_theme():
+    """
+    Toggle dark/light theme
+    ---
+    tags:
+      - Settings
+    responses:
+      200:
+        description: Theme toggled successfully
+    """
+    current_theme = session.get('theme', 'light')
+    new_theme = 'dark' if current_theme == 'light' else 'light'
+    session['theme'] = new_theme
+    logger.info(f"Theme toggled to: {new_theme}")
+    
+    # Redirect back to previous page
+    next_page = request.args.get('next', request.referrer or url_for('index'))
+    return redirect(next_page)
+
+
+@app.route('/share/<int:detection_id>')
+@login_required
+def get_share_links(detection_id):
+    """
+    Get social media share links for a detection
+    ---
+    tags:
+      - Sharing
+    security:
+      - Bearer: []
+    responses:
+      200:
+        description: Share links generated
+      401:
+        description: Not authenticated
+    """
+    from sharing_service import SharingService
+    
+    try:
+        db = get_db()
+        if not db:
+            return jsonify({'success': False, 'error': 'Database connection error'}), 500
+        
+        from models import DetectionHistory
+        detection = db.query(DetectionHistory).filter(DetectionHistory.id == detection_id).first()
+        
+        if not detection:
+            return jsonify({'success': False, 'error': 'Detection not found'}), 404
+        
+        # Generate share URL
+        share_url = f"{request.host_url}view_report/{detection_id}"
+        
+        # Generate share text
+        title = f"Vehicle Detection Result"
+        description = f"Detected {detection.vehicle_count or 0} vehicles using AI-powered detection."
+        
+        # Generate share links
+        share_links = SharingService.generate_share_links(
+            title=title,
+            description=description,
+            url=share_url,
+            vehicle_count=detection.vehicle_count or 0
+        )
+        
+        return jsonify({
+            'success': True,
+            'share_links': share_links,
+            'share_url': share_url
+        })
+        
+    except Exception as e:
+        log_error(logger, 'Sharing', f'Share links error: {str(e)}')
+        return jsonify({'success': False, 'error': str(e)}), 500
+    finally:
+        if 'db' in locals() and db:
+            db.close()
+
+
+@app.route('/profile')
+@login_required
+def profile():
+    """
+    User profile page
+    ---
+    tags:
+      - User
+    security:
+      - Bearer: []
+    responses:
+      200:
+        description: Profile page loaded
+      401:
+        description: Not authenticated
+    """
+    db = get_db()
+    if not db:
+        flash('Database connection error', 'error')
+        return redirect(url_for('index'))
+    
+    try:
+        from models import User
+        user = db.query(User).filter(User.id == session.get('user_id')).first()
+        
+        if not user:
+            flash('User not found', 'error')
+            return redirect(url_for('logout'))
+        
+        # Get user stats
+        from models import DetectionHistory
+        user_detections = db.query(DetectionHistory).filter(
+            DetectionHistory.user_id == user.id
+        ).all()
+        
+        total_detections = len(user_detections)
+        total_vehicles = sum(d.vehicle_count or 0 for d in user_detections)
+        
+        return render_template_string(PROFILE_TEMPLATE,
+                                     user=user,
+                                     total_detections=total_detections,
+                                     total_vehicles=total_vehicles)
+    except Exception as e:
+        log_error(logger, 'Profile', f'Profile error: {str(e)}')
+        flash('Error loading profile', 'error')
+        return redirect(url_for('index'))
+    finally:
+        db.close()
+
+
+@app.route('/profile/update', methods=['POST'])
+@login_required
+def update_profile():
+    """
+    Update user profile
+    ---
+    tags:
+      - User
+    security:
+      - Bearer: []
+    responses:
+      200:
+        description: Profile updated
+      401:
+        description: Not authenticated
+    """
+    db = get_db()
+    if not db:
+        flash('Database connection error', 'error')
+        return redirect(url_for('profile'))
+    
+    try:
+        from models import User
+        user = db.query(User).filter(User.id == session.get('user_id')).first()
+        
+        if not user:
+            flash('User not found', 'error')
+            return redirect(url_for('logout'))
+        
+        # Update email if provided
+        email = request.form.get('email')
+        if email and email != user.email:
+            # Check if email already exists
+            existing_user = db.query(User).filter(User.email == email).first()
+            if existing_user:
+                flash('Email already in use', 'error')
+                return redirect(url_for('profile'))
+            user.email = email
+        
+        db.commit()
+        log_database_operation(logger, 'UPDATE', 'user', user.id, True)
+        flash('Profile updated successfully', 'success')
+        return redirect(url_for('profile'))
+        
+    except Exception as e:
+        db.rollback()
+        log_error(logger, 'Profile', f'Profile update error: {str(e)}')
+        flash('Error updating profile', 'error')
+        return redirect(url_for('profile'))
+    finally:
+        db.close()
+
+
+@app.route('/profile/change_password', methods=['POST'])
+@login_required
+def change_password():
+    """
+    Change user password
+    ---
+    tags:
+      - User
+    security:
+      - Bearer: []
+    responses:
+      200:
+        description: Password changed
+      401:
+        description: Not authenticated
+    """
+    db = get_db()
+    if not db:
+        flash('Database connection error', 'error')
+        return redirect(url_for('profile'))
+    
+    try:
+        from models import User
+        user = db.query(User).filter(User.id == session.get('user_id')).first()
+        
+        if not user:
+            flash('User not found', 'error')
+            return redirect(url_for('logout'))
+        
+        current_password = request.form.get('current_password')
+        new_password = request.form.get('new_password')
+        confirm_password = request.form.get('confirm_password')
+        
+        # Validate current password
+        if not check_password_hash(user.password_hash, current_password):
+            flash('Current password is incorrect', 'error')
+            return redirect(url_for('profile'))
+        
+        # Validate new password
+        if len(new_password) < 6:
+            flash('Password must be at least 6 characters', 'error')
+            return redirect(url_for('profile'))
+        
+        if new_password != confirm_password:
+            flash('New passwords do not match', 'error')
+            return redirect(url_for('profile'))
+        
+        # Update password
+        user.password_hash = generate_password_hash(new_password)
+        db.commit()
+        log_database_operation(logger, 'UPDATE', 'user', user.id, True)
+        log_auth_event(logger, 'password_change', user.username, True, request.remote_addr)
+        flash('Password changed successfully', 'success')
+        return redirect(url_for('profile'))
+        
+    except Exception as e:
+        db.rollback()
+        log_error(logger, 'Profile', f'Password change error: {str(e)}')
+        flash('Error changing password', 'error')
+        return redirect(url_for('profile'))
+    finally:
+        db.close()
+
+
+@app.route('/api/user/profile', methods=['GET'])
+@login_required
+def get_user_profile():
+    """
+    Get current user profile data
+    ---
+    tags:
+      - User API
+    security:
+      - Bearer: []
+    responses:
+      200:
+        description: User profile data retrieved
+      401:
+        description: Not authenticated
+    """
+    db = get_db()
+    if not db:
+        return jsonify({'success': False, 'error': 'Database connection error'}), 500
+    
+    try:
+        from models import User
+        user = db.query(User).filter(User.id == session.get('user_id')).first()
+        
+        if not user:
+            return jsonify({'success': False, 'error': 'User not found'}), 404
+        
+        return jsonify({
+            'success': True,
+            'user': {
+                'username': user.username,
+                'email': user.email,
+                'theme': getattr(user, 'theme', 'light')
+            }
+        })
+    except Exception as e:
+        log_error(logger, 'API Profile', f'Get profile error: {str(e)}')
+        return jsonify({'success': False, 'error': str(e)}), 500
+    finally:
+        db.close()
+
+
+@app.route('/api/user/profile', methods=['PUT'])
+@login_required
+def update_user_profile():
+    """
+    Update user profile data
+    ---
+    tags:
+      - User API
+    security:
+      - Bearer: []
+    responses:
+      200:
+        description: Profile updated successfully
+      401:
+        description: Not authenticated
+    """
+    db = get_db()
+    if not db:
+        return jsonify({'success': False, 'error': 'Database connection error'}), 500
+    
+    try:
+        from models import User
+        user = db.query(User).filter(User.id == session.get('user_id')).first()
+        
+        if not user:
+            return jsonify({'success': False, 'error': 'User not found'}), 404
+        
+        data = request.get_json()
+        username = data.get('username', '').strip()
+        email = data.get('email', '').strip()
+        password = data.get('password', '').strip()
+        theme = data.get('theme', 'light')
+        
+        # Validate inputs
+        if not username or not email:
+            return jsonify({'success': False, 'error': 'Username and email are required'}), 400
+        
+        # Check if username is already taken by another user
+        existing_user = db.query(User).filter(
+            User.username == username,
+            User.id != user.id
+        ).first()
+        if existing_user:
+            return jsonify({'success': False, 'error': 'Username already exists'}), 400
+        
+        # Check if email is already taken by another user
+        existing_user = db.query(User).filter(
+            User.email == email,
+            User.id != user.id
+        ).first()
+        if existing_user:
+            return jsonify({'success': False, 'error': 'Email already exists'}), 400
+        
+        # Update username and email
+        user.username = username
+        user.email = email
+        
+        # Update password if provided
+        if password:
+            if len(password) < 6:
+                return jsonify({'success': False, 'error': 'Password must be at least 6 characters'}), 400
+            user.password_hash = generate_password_hash(password)
+        
+        # Update theme if user has theme attribute
+        if hasattr(user, 'theme'):
+            user.theme = theme
+        
+        db.commit()
+        log_database_operation(logger, 'UPDATE', 'user', user.id, True)
+        log_auth_event(logger, 'profile_update', user.username, True, request.remote_addr)
+        
+        return jsonify({'success': True, 'message': 'Profile updated successfully'})
+        
+    except Exception as e:
+        db.rollback()
+        log_error(logger, 'API Profile', f'Update profile error: {str(e)}')
+        return jsonify({'success': False, 'error': str(e)}), 500
+    finally:
+        db.close()
+
+
+@app.route('/dashboard')
+@login_required
+@cache.cached(timeout=300, key_prefix=make_cache_key)
+def dashboard():
+    """
+    Analytics Dashboard
+    ---
+    tags:
+      - Analytics
+    security:
+      - Bearer: []
+    responses:
+      200:
+        description: Dashboard loaded successfully
+      401:
+        description: Not authenticated
+    """
+    from analytics_service import AnalyticsService
+    
+    db = get_db()
+    if not db:
+        flash('Database connection error', 'error')
+        return redirect(url_for('index'))
+    
+    try:
+        analytics = AnalyticsService(db)
+        
+        # Get various statistics
+        overall_stats = analytics.get_overall_stats(days=30)
+        detection_by_type = analytics.get_detection_by_type(days=30)
+        daily_trends = analytics.get_daily_trends(days=30)
+        vehicle_breakdown = analytics.get_vehicle_breakdown(days=30)
+        hourly_distribution = analytics.get_hourly_distribution(days=7)
+        user_activity = analytics.get_user_activity(days=30, limit=10)
+        performance_metrics = analytics.get_performance_metrics(days=30)
+        
+        return render_template_string(DASHBOARD_TEMPLATE,
+                                     overall_stats=overall_stats,
+                                     detection_by_type=detection_by_type,
+                                     daily_trends=daily_trends,
+                                     vehicle_breakdown=vehicle_breakdown,
+                                     hourly_distribution=hourly_distribution,
+                                     user_activity=user_activity,
+                                     performance_metrics=performance_metrics)
+    except Exception as e:
+        log_error(logger, 'Analytics', f'Dashboard error: {str(e)}')
+        logger.error(f"[ERROR] Dashboard error: {e}")
+        flash('Error loading dashboard', 'error')
+        return redirect(url_for('index'))
+    finally:
+        db.close()
+
+
+@app.route('/export/history/csv')
+@login_required
+@limiter.limit("20 per minute")
+def export_history_csv():
+    """
+    Export detection history to CSV
+    ---
+    tags:
+      - Export
+    security:
+      - Bearer: []
+    responses:
+      200:
+        description: CSV file downloaded
+      401:
+        description: Not authenticated
+    """
+    from export_service import ExportService
+    
+    db = get_db()
+    if not db:
+        flash('Database connection error', 'error')
+        return redirect(url_for('history'))
+    
+    try:
+        export_service = ExportService(db)
+        days = request.args.get('days', 30, type=int)
+        filename, csv_bytes = export_service.export_history_to_csv(days=days)
+        
+        return send_file(
+            BytesIO(csv_bytes),
+            mimetype='text/csv',
+            as_attachment=True,
+            download_name=filename
+        )
+    except Exception as e:
+        log_error(logger, 'Export', f'CSV export error: {str(e)}')
+        logger.error(f"[ERROR] CSV export error: {e}")
+        flash('Error exporting CSV', 'error')
+        return redirect(url_for('history'))
+    finally:
+        db.close()
+
+
+@app.route('/export/history/excel')
+@login_required
+@limiter.limit("20 per minute")
+def export_history_excel():
+    """
+    Export detection history to Excel
+    ---
+    tags:
+      - Export
+    security:
+      - Bearer: []
+    responses:
+      200:
+        description: Excel file downloaded
+      401:
+        description: Not authenticated
+    """
+    from export_service import ExportService
+    
+    db = get_db()
+    if not db:
+        flash('Database connection error', 'error')
+        return redirect(url_for('history'))
+    
+    try:
+        export_service = ExportService(db)
+        days = request.args.get('days', 30, type=int)
+        filename, excel_bytes = export_service.export_history_to_excel(days=days)
+        
+        return send_file(
+            BytesIO(excel_bytes),
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            as_attachment=True,
+            download_name=filename
+        )
+    except Exception as e:
+        log_error(logger, 'Export', f'Excel export error: {str(e)}')
+        logger.error(f"[ERROR] Excel export error: {e}")
+        flash('Error exporting Excel', 'error')
+        return redirect(url_for('history'))
+    finally:
+        db.close()
+
+
+@app.route('/export/analytics/csv')
+@login_required
+@limiter.limit("20 per minute")
+def export_analytics_csv():
+    """
+    Export analytics summary to CSV
+    ---
+    tags:
+      - Export
+    security:
+      - Bearer: []
+    responses:
+      200:
+        description: CSV file downloaded
+      401:
+        description: Not authenticated
+    """
+    from export_service import ExportService
+    
+    db = get_db()
+    if not db:
+        flash('Database connection error', 'error')
+        return redirect(url_for('dashboard'))
+    
+    try:
+        export_service = ExportService(db)
+        days = request.args.get('days', 30, type=int)
+        filename, csv_bytes = export_service.export_analytics_to_csv(days=days)
+        
+        return send_file(
+            BytesIO(csv_bytes),
+            mimetype='text/csv',
+            as_attachment=True,
+            download_name=filename
+        )
+    except Exception as e:
+        log_error(logger, 'Export', f'Analytics CSV export error: {str(e)}')
+        logger.error(f"[ERROR] Analytics CSV export error: {e}")
+        flash('Error exporting analytics CSV', 'error')
+        return redirect(url_for('dashboard'))
+    finally:
+        db.close()
+
+
+@app.route('/export/analytics/excel')
+@login_required
+@limiter.limit("20 per minute")
+def export_analytics_excel():
+    """
+    Export analytics summary to Excel
+    ---
+    tags:
+      - Export
+    security:
+      - Bearer: []
+    responses:
+      200:
+        description: Excel file downloaded
+      401:
+        description: Not authenticated
+    """
+    from export_service import ExportService
+    
+    db = get_db()
+    if not db:
+        flash('Database connection error', 'error')
+        return redirect(url_for('dashboard'))
+    
+    try:
+        export_service = ExportService(db)
+        days = request.args.get('days', 30, type=int)
+        filename, excel_bytes = export_service.export_analytics_to_excel(days=days)
+        
+        return send_file(
+            BytesIO(excel_bytes),
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            as_attachment=True,
+            download_name=filename
+        )
+    except Exception as e:
+        log_error(logger, 'Export', f'Analytics Excel export error: {str(e)}')
+        logger.error(f"[ERROR] Analytics Excel export error: {e}")
+        flash('Error exporting analytics Excel', 'error')
+        return redirect(url_for('dashboard'))
+    finally:
+        db.close()
+
+
+@app.route('/backup/create')
+@login_required
+def create_backup():
+    """
+    Create database backup
+    ---
+    tags:
+      - Backup
+    security:
+      - Bearer: []
+    parameters:
+      - name: include_static
+        in: query
+        type: boolean
+        default: false
+        description: Include static files in backup
+    responses:
+      200:
+        description: Backup created successfully
+      401:
+        description: Not authenticated
+    """
+    from backup_service import BackupService
+    
+    try:
+        include_static = request.args.get('include_static', 'false').lower() == 'true'
+        backup_service_instance = BackupService()
+        
+        success, message, backup_path = backup_service_instance.create_backup(include_static=include_static)
+        
+        if success:
+            log_database_operation(logger, 'BACKUP', 'database', None, True)
+            logger.info(f"Backup created: {message}")
+            flash(message, 'success')
+        else:
+            log_error(logger, 'Backup', message)
+            logger.error(f"[ERROR] Backup failed: {message}")
+            flash(message, 'error')
+        
+        return redirect(url_for('history'))
+    except Exception as e:
+        log_error(logger, 'Backup', f'Backup error: {str(e)}')
+        logger.error(f"[ERROR] Backup error: {e}")
+        flash('Backup failed', 'error')
+        return redirect(url_for('history'))
+
+
+@app.route('/backup/list')
+@login_required
+def list_backups():
+    """
+    List all backups
+    ---
+    tags:
+      - Backup
+    security:
+      - Bearer: []
+    responses:
+      200:
+        description: List of backups
+      401:
+        description: Not authenticated
+    """
+    from backup_service import BackupService
+    
+    try:
+        backup_service_instance = BackupService()
+        backups = backup_service_instance.list_backups()
+        
+        return jsonify({
+            'success': True,
+            'backups': backups,
+            'count': len(backups)
+        })
+    except Exception as e:
+        log_error(logger, 'Backup', f'List backups error: {str(e)}')
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+@app.route('/backup/restore/<path:filename>')
+@login_required
+def restore_backup(filename):
+    """
+    Restore database from backup
+    ---
+    tags:
+      - Backup
+    security:
+      - Bearer: []
+    responses:
+      200:
+        description: Database restored successfully
+      401:
+        description: Not authenticated
+    """
+    from backup_service import BackupService
+    
+    try:
+        backup_service_instance = BackupService()
+        backup_path = os.path.join(backup_service_instance.backup_dir, filename)
+        
+        success, message = backup_service_instance.restore_backup(backup_path)
+        
+        if success:
+            log_database_operation(logger, 'RESTORE', 'database', None, True)
+            logger.info(f"Database restored: {message}")
+            flash(message, 'success')
+        else:
+            log_error(logger, 'Backup', message)
+            logger.error(f"[ERROR] Restore failed: {message}")
+            flash(message, 'error')
+        
+        return redirect(url_for('history'))
+    except Exception as e:
+        log_error(logger, 'Backup', f'Restore error: {str(e)}')
+        logger.error(f"[ERROR] Restore error: {e}")
+        flash('Restore failed', 'error')
+        return redirect(url_for('history'))
+
+
+@app.route('/backup/delete/<path:filename>')
+@login_required
+def delete_backup(filename):
+    """
+    Delete a backup file
+    ---
+    tags:
+      - Backup
+    security:
+      - Bearer: []
+    responses:
+      200:
+        description: Backup deleted successfully
+      401:
+        description: Not authenticated
+    """
+    from backup_service import BackupService
+    
+    try:
+        backup_service_instance = BackupService()
+        backup_path = os.path.join(backup_service_instance.backup_dir, filename)
+        
+        success, message = backup_service_instance.delete_backup(backup_path)
+        
+        if success:
+            log_database_operation(logger, 'BACKUP', 'backups', None, True)
+            logger.info(f"Backup deleted: {message}")
+            flash(message, 'success')
+        else:
+            log_error(logger, 'Backup', message)
+            flash(message, 'error')
+        
+        return redirect(url_for('history'))
+    except Exception as e:
+        log_error(logger, 'Backup', f'Delete backup error: {str(e)}')
+        flash('Delete failed', 'error')
+        return redirect(url_for('history'))
+
+
+@app.route('/backup/cleanup')
+@login_required
+def cleanup_backups():
+    """
+    Delete old backups
+    ---
+    tags:
+      - Backup
+    security:
+      - Bearer: []
+    parameters:
+      - name: keep_days
+        in: query
+        type: integer
+        default: 30
+        description: Number of days to keep backups
+    responses:
+      200:
+        description: Old backups deleted
+      401:
+        description: Not authenticated
+    """
+    from backup_service import BackupService
+    
+    try:
+        keep_days = request.args.get('keep_days', 30, type=int)
+        backup_service_instance = BackupService()
+        
+        deleted_count, message = backup_service_instance.cleanup_old_backups(keep_days=keep_days)
+        
+        log_database_operation(logger, 'BACKUP', 'backups', None, True)
+        logger.info(f"Backup cleanup: {message}")
+        flash(message, 'success')
+        
+        return redirect(url_for('history'))
+    except Exception as e:
+        log_error(logger, 'Backup', f'Cleanup error: {str(e)}')
+        flash('Cleanup failed', 'error')
+        return redirect(url_for('history'))
+
+
+@app.route('/backup/info')
+@login_required
+def backup_info():
+    """
+    Get database information
+    ---
+    tags:
+      - Backup
+    security:
+      - Bearer: []
+    responses:
+      200:
+        description: Database information
+      401:
+        description: Not authenticated
+    """
+    from backup_service import BackupService
+    
+    try:
+        backup_service_instance = BackupService()
+        info = backup_service_instance.get_database_info()
+        
+        return jsonify({
+            'success': True,
+            'info': info
+        })
+    except Exception as e:
+        log_error(logger, 'Backup', f'Info error: {str(e)}')
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
 
 
 def main():

@@ -3,7 +3,20 @@ static/videos/*.mp4
 static/videos/*.avi
 static/videos/*.mov
 static/videos/*.mkv
+static/videos/*.webm
 
 # Keep only small demo videos
 !static/videos/demo_video.mp4
 !static/videos/demo_video_converted.mp4
+
+# Database file
+vehical_detections.db
+
+# Detection images and screenshots
+*.jpg
+detection_*.jpg
+screenshot_*.jpg
+
+# Temporary webcam videos
+live_live_*.webm
+tmp*.mp4
