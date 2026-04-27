@@ -272,7 +272,7 @@ class VehicleDetector:
         return annotated_frame, detections
 
 
-def process_video(detector, source, output_path=None, display=True, save_frames=False):
+def process_video(detector, source, output_path=None, display=True, save_frames=False, custom_width=None, custom_height=None):
     """
     Process video stream (webcam, Raspberry Pi camera, or file)
     
@@ -291,14 +291,23 @@ def process_video(detector, source, output_path=None, display=True, save_frames=
             from picamera2 import Picamera2
             print("[INFO] Using Raspberry Pi Camera Module (picamera2)")
             picam = Picamera2()
-            config = picam.create_video_configuration(
-                main={"size": (640, 480), "format": "RGB888"}
-            )
+            # Use native resolution or custom resolution if specified
+            if custom_width and custom_height:
+                config = picam.create_video_configuration(
+                    main={"size": (custom_width, custom_height), "format": "RGB888"}
+                )
+                print(f"[INFO] Using custom resolution: {custom_width}x{custom_height}")
+            else:
+                # Use camera's native resolution (HD/720p/1080p)
+                config = picam.create_video_configuration(
+                    main={"format": "RGB888"}
+                )
+                print("[INFO] Using camera native resolution")
             picam.configure(config)
             picam.start()
             time.sleep(2)  # Warm up camera
-            frame_width = 640
-            frame_height = 480
+            frame_width = config['main']['size'][0]
+            frame_height = config['main']['size'][1]
             fps_input = 30
         except ImportError:
             print("[ERROR] picamera2 not installed. Install with: pip install picamera2")
@@ -312,9 +321,13 @@ def process_video(detector, source, output_path=None, display=True, save_frames=
         if source.isdigit():
             source = int(source)
             cap = cv2.VideoCapture(source)
-            # Optimize webcam settings for Raspberry Pi
-            cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
-            cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+            # Use custom resolution if specified, otherwise use camera native resolution
+            if custom_width and custom_height:
+                cap.set(cv2.CAP_PROP_FRAME_WIDTH, custom_width)
+                cap.set(cv2.CAP_PROP_FRAME_HEIGHT, custom_height)
+                print(f"[INFO] Using custom resolution: {custom_width}x{custom_height}")
+            else:
+                print("[INFO] Using camera native resolution")
             cap.set(cv2.CAP_PROP_FPS, 30)
         else:
             cap = cv2.VideoCapture(source)
@@ -490,6 +503,18 @@ def main():
         action='store_true',
         help='Export model to ONNX format for faster inference'
     )
+    parser.add_argument(
+        '--width', '-w',
+        type=int,
+        default=None,
+        help='Custom width for video capture (default: use camera native resolution)'
+    )
+    parser.add_argument(
+        '--height', '-h',
+        type=int,
+        default=None,
+        help='Custom height for video capture (default: use camera native resolution)'
+    )
     
     args = parser.parse_args()
     
@@ -515,7 +540,9 @@ def main():
         args.source,
         output_path=args.output,
         display=not args.no_display,
-        save_frames=args.save_frames
+        save_frames=args.save_frames,
+        custom_width=args.width,
+        custom_height=args.height
     )
 
 

@@ -119,8 +119,8 @@ def process_video_headless(source, output_path, model_path='yolov8n.pt',
     if source.isdigit():
         source = int(source)
         cap = cv2.VideoCapture(source)
-        cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
-        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+        # Use camera native resolution (no hardcoded limits)
+        print("[INFO] Using camera native resolution")
     else:
         cap = cv2.VideoCapture(source)
     

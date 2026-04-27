@@ -2008,31 +2008,43 @@ Download Video
         async function startWebcam() {
             try {
                 webcamStream = await navigator.mediaDevices.getUserMedia({ 
-                    video: { width: 640, height: 480 } 
+                    video: { 
+                        width: { ideal: 1920 },  // Request HD resolution
+                        height: { ideal: 1080 },
+                        facingMode: 'environment'
+                    } 
                 });
                 
                 const webcamVideo = document.getElementById('webcamVideo');
                 webcamVideo.srcObject = webcamStream;
                 
-                document.getElementById('webcamSection').style.display = 'block';
-                document.getElementById('webcamInstructions').style.display = 'block';
-                document.getElementById('webcamBtn').innerHTML = '<span class="material-symbols-outlined text-xl">videocam</span> Webcam Running';
-                document.getElementById('webcamBtn').disabled = true;
-                document.getElementById('webcamBtn').classList.add('opacity-50');
-                
-                document.getElementById('dragDropArea').parentElement.style.display = 'none';
-                
-                const detectionCanvas = document.getElementById('detectionCanvas');
-                detectionCanvas.width = 640;
-                detectionCanvas.height = 480;
-                
-                updateDetectionStatus('waiting', 'Initializing...');
-                
-                isWebcamRunning = true;
-                
-                processWebcamFrame();
-                
-                console.log('[INFO] Webcam started successfully');
+                // Wait for video to load to get actual dimensions
+                webcamVideo.onloadedmetadata = function() {
+                    const actualWidth = webcamVideo.videoWidth;
+                    const actualHeight = webcamVideo.videoHeight;
+                    
+                    document.getElementById('webcamSection').style.display = 'block';
+                    document.getElementById('webcamInstructions').style.display = 'block';
+                    document.getElementById('webcamBtn').innerHTML = '<span class="material-symbols-outlined text-xl">videocam</span> Webcam Running';
+                    document.getElementById('webcamBtn').disabled = true;
+                    document.getElementById('webcamBtn').classList.add('opacity-50');
+                    
+                    document.getElementById('dragDropArea').parentElement.style.display = 'none';
+                    
+                    const detectionCanvas = document.getElementById('detectionCanvas');
+                    detectionCanvas.width = actualWidth;
+                    detectionCanvas.height = actualHeight;
+                    
+                    console.log(`[INFO] Webcam resolution: ${actualWidth}x${actualHeight}`);
+                    
+                    updateDetectionStatus('waiting', 'Initializing...');
+                    
+                    isWebcamRunning = true;
+                    
+                    processWebcamFrame();
+                    
+                    console.log('[INFO] Webcam started successfully');
+                };
                 
             } catch (err) {
                 console.error('[ERROR] Could not start webcam:', err);
@@ -2082,7 +2094,11 @@ Download Video
             const detectionCanvas = document.getElementById('detectionCanvas');
             const ctx = detectionCanvas.getContext('2d');
             
-            ctx.drawImage(webcamVideo, 0, 0, 640, 480);
+            // Use actual video dimensions instead of hardcoded 640x480
+            const actualWidth = webcamVideo.videoWidth || detectionCanvas.width;
+            const actualHeight = webcamVideo.videoHeight || detectionCanvas.height;
+            
+            ctx.drawImage(webcamVideo, 0, 0, actualWidth, actualHeight);
             
             const frameData = detectionCanvas.toDataURL('image/jpeg', 0.8);
             
@@ -2105,7 +2121,8 @@ Download Video
                     if (result.image) {
                         const img = new Image();
                         img.onload = function() {
-                            ctx.drawImage(img, 0, 0, 640, 480);
+                            // Use actual canvas dimensions
+                            ctx.drawImage(img, 0, 0, detectionCanvas.width, detectionCanvas.height);
                         };
                         img.src = 'data:image/jpeg;base64,' + result.image;
                         
