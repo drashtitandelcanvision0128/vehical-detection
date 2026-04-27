@@ -35,6 +35,38 @@ class ALPRDetector:
             print(f"[ERROR] Failed to initialize ALPR: {e}")
             self.alpr = None
     
+    def _preprocess_image(self, image: np.ndarray) -> np.ndarray:
+        """
+        Preprocess image to improve ALPR detection quality
+        - Denoising to reduce blur
+        - Sharpening to enhance edges
+        - Contrast enhancement
+        
+        Args:
+            image: Input image (BGR format)
+            
+        Returns:
+            Preprocessed image
+        """
+        # Denoising
+        denoised = cv2.fastNlMeansDenoisingColored(image, None, 10, 10, 7, 21)
+        
+        # Sharpening using kernel
+        sharpen_kernel = np.array([[-1, -1, -1],
+                                   [-1,  9, -1],
+                                   [-1, -1, -1]])
+        sharpened = cv2.filter2D(denoised, -1, sharpen_kernel)
+        
+        # Contrast enhancement using CLAHE
+        lab = cv2.cvtColor(sharpened, cv2.COLOR_BGR2LAB)
+        l, a, b = cv2.split(lab)
+        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+        l = clahe.apply(l)
+        enhanced = cv2.merge([l, a, b])
+        enhanced = cv2.cvtColor(enhanced, cv2.COLOR_LAB2BGR)
+        
+        return enhanced
+    
     def detect_plates(self, image: np.ndarray) -> list:
         """
         Detect license plates in an image
@@ -51,8 +83,11 @@ class ALPRDetector:
             return []
         
         try:
-            # Run ALPR prediction
-            results = self.alpr.predict(image)
+            # Preprocess image for better detection
+            processed_image = self._preprocess_image(image)
+            
+            # Run ALPR prediction on preprocessed image
+            results = self.alpr.predict(processed_image)
             
             plates = []
             for result in results:
@@ -91,7 +126,9 @@ class ALPRDetector:
             Tuple of (annotated_image, plates_list)
         """
         annotated = image.copy()
-        plates = self.detect_plates(image)
+        # Preprocess for detection
+        processed_image = self._preprocess_image(image)
+        plates = self.detect_plates(processed_image)
         
         for plate in plates:
             x1, y1, x2, y2 = plate['bbox']
@@ -134,7 +171,9 @@ class ALPRDetector:
                 print("[ERROR] Failed to decode base64 image")
                 return []
             
-            return self.detect_plates(image)
+            # Preprocess image for better detection
+            processed_image = self._preprocess_image(image)
+            return self.detect_plates(processed_image)
             
         except Exception as e:
             print(f"[ERROR] Failed to process base64 image: {e}")

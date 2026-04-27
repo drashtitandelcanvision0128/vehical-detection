@@ -1763,7 +1763,7 @@ Download Video
         let pasteModeActive = false;
         const MAX_IMAGE_WIDTH = 1280;
         const MAX_IMAGE_HEIGHT = 720;
-        const JPEG_QUALITY = 0.85;
+        const JPEG_QUALITY = 0.95;
         
         function compressImage(dataUrl, callback) {
             const img = new Image();
@@ -2100,7 +2100,7 @@ Download Video
             
             ctx.drawImage(webcamVideo, 0, 0, actualWidth, actualHeight);
             
-            const frameData = detectionCanvas.toDataURL('image/jpeg', 0.8);
+            const frameData = detectionCanvas.toDataURL('image/jpeg', 0.95);
             
             updateDetectionStatus('processing', 'Detecting...');
             
@@ -4544,8 +4544,8 @@ Download PDF
         // Draw video frame to canvas
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-        // Capture frame for saving (use lower quality for performance)
-        capturedFrame = canvas.toDataURL('image/jpeg', 0.5);
+        // Capture frame for saving (use higher quality for better detection)
+        capturedFrame = canvas.toDataURL('image/jpeg', 0.9);
 
         // Use full resolution for detection (good quality)
         const frameData = capturedFrame;

@@ -414,18 +414,24 @@ def process_video(detector, source, output_path=None, display=True, save_frames=
             
             # Display frame
             if display:
-                cv2.imshow('Vehicle Detection', annotated_frame)
-                
-                # Check for quit key
-                key = cv2.waitKey(1) & 0xFF
-                if key == ord('q'):
-                    print("[INFO] Quit requested by user")
-                    break
-                elif key == ord('s'):
-                    # Save current frame on 's' key
-                    timestamp = int(time.time() * 1000)
-                    cv2.imwrite(f"screenshot_{timestamp}.jpg", annotated_frame)
-                    print(f"[INFO] Screenshot saved: screenshot_{timestamp}.jpg")
+                try:
+                    cv2.imshow('Vehicle Detection', annotated_frame)
+                    
+                    # Check for quit key
+                    key = cv2.waitKey(1) & 0xFF
+                    if key == ord('q'):
+                        print("[INFO] Quit requested by user")
+                        break
+                    elif key == ord('s'):
+                        # Save current frame on 's' key
+                        timestamp = int(time.time() * 1000)
+                        cv2.imwrite(f"screenshot_{timestamp}.jpg", annotated_frame)
+                        print(f"[INFO] Screenshot saved: screenshot_{timestamp}.jpg")
+                except cv2.error as e:
+                    print(f"[WARNING] Display not available (headless mode): {e}")
+                    print("[INFO] Detection running in headless mode. Press Ctrl+C to stop.")
+                    # Sleep briefly to prevent high CPU usage in headless mode
+                    time.sleep(0.01)
     
     except KeyboardInterrupt:
         print("[INFO] Interrupted by user")
@@ -447,7 +453,10 @@ def process_video(detector, source, output_path=None, display=True, save_frames=
             cap.release()
         if writer:
             writer.release()
-        cv2.destroyAllWindows()
+        try:
+            cv2.destroyAllWindows()
+        except cv2.error:
+            pass  # Ignore if GUI not available
         print("[INFO] Detection stopped")
 
 
