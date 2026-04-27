@@ -3133,7 +3133,7 @@ def download(filename):
 
 
 @app.route('/webcam_detect', methods=['POST'])
-@limiter.limit("30 per minute")  # Limit for detection requests
+@limiter.limit("60 per second")  # Limit for detection requests - increased for real-time webcam
 def webcam_detect():
     """Process webcam frame for live detection with vehicle counting"""
     try:
