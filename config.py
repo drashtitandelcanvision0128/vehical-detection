@@ -31,8 +31,9 @@ class Config:
     ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'mp4', 'avi', 'mov'}
     
     # Detection settings
-    DEFAULT_CONFIDENCE_THRESHOLD = float(os.getenv('DEFAULT_CONFIDENCE_THRESHOLD', '0.4'))
-    MODEL_INPUT_SIZE = int(os.getenv('MODEL_INPUT_SIZE', '320'))
+    DEFAULT_CONFIDENCE_THRESHOLD = float(os.getenv('DEFAULT_CONFIDENCE_THRESHOLD', '0.35'))
+    MODEL_INPUT_SIZE = int(os.getenv('MODEL_INPUT_SIZE', '640'))
+    ENABLE_IMAGE_ENHANCEMENT = os.getenv('ENABLE_IMAGE_ENHANCEMENT', 'True').lower() == 'true'
     
     # Session settings
     SESSION_COOKIE_SECURE = False

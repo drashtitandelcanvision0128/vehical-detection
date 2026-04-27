@@ -99,7 +99,7 @@ def save_detection_to_db(vehicle_counts, total_vehicles, conf_threshold, process
 
 class VehicleDetector:
     def __init__(self, model_path='yolov8n.pt', conf_threshold=0.4, iou_threshold=0.5, 
-                 use_onnx=False, input_size=640):
+                 use_onnx=False, input_size=640, enable_enhancement=True):
         """
         Initialize Vehicle Detector
         
@@ -108,11 +108,13 @@ class VehicleDetector:
             conf_threshold: Confidence threshold for detections
             iou_threshold: IoU threshold for NMS
             use_onnx: Use ONNX runtime for faster inference
-            input_size: Input size for model (smaller = faster)
+            input_size: Input size for model (larger = better accuracy)
+            enable_enhancement: Enable image preprocessing for better quality
         """
         self.conf_threshold = conf_threshold
         self.iou_threshold = iou_threshold
         self.input_size = input_size
+        self.enable_enhancement = enable_enhancement
         self.vehicle_counts = defaultdict(int)
         self.total_vehicles = 0
         
@@ -125,6 +127,41 @@ class VehicleDetector:
         dummy_input = np.zeros((input_size, input_size, 3), dtype=np.uint8)
         self.model.predict(dummy_input, verbose=False)
         print("[INFO] Model ready!")
+    
+    def enhance_image(self, frame):
+        """
+        Enhance image quality for better detection
+        - Denoising to reduce blur
+        - Sharpening to enhance edges
+        - Contrast enhancement using CLAHE
+        
+        Args:
+            frame: Input frame (BGR image)
+            
+        Returns:
+            Enhanced frame
+        """
+        if not self.enable_enhancement:
+            return frame
+        
+        # Denoising - reduces noise while preserving edges
+        denoised = cv2.fastNlMeansDenoisingColored(frame, None, 10, 10, 7, 21)
+        
+        # Sharpening using kernel
+        sharpen_kernel = np.array([[-1, -1, -1],
+                                   [-1,  9, -1],
+                                   [-1, -1, -1]])
+        sharpened = cv2.filter2D(denoised, -1, sharpen_kernel)
+        
+        # Contrast enhancement using CLAHE (Contrast Limited Adaptive Histogram Equalization)
+        lab = cv2.cvtColor(sharpened, cv2.COLOR_BGR2LAB)
+        l, a, b = cv2.split(lab)
+        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+        l = clahe.apply(l)
+        enhanced = cv2.merge([l, a, b])
+        enhanced = cv2.cvtColor(enhanced, cv2.COLOR_LAB2BGR)
+        
+        return enhanced
     
     def filter_vehicle_detections(self, results):
         """
@@ -250,9 +287,12 @@ class VehicleDetector:
         Returns:
             Annotated frame and list of detections
         """
-        # Run inference with smaller input size for speed
+        # Enhance image quality for better detection
+        enhanced_frame = self.enhance_image(frame)
+        
+        # Run inference with enhanced image
         results = self.model.predict(
-            frame,
+            enhanced_frame,
             imgsz=self.input_size,
             conf=self.conf_threshold,
             iou=self.iou_threshold,
@@ -266,7 +306,7 @@ class VehicleDetector:
         # Update counts
         self.update_counts(detections)
         
-        # Draw detections
+        # Draw detections on original frame (not enhanced)
         annotated_frame = self.draw_detections(frame.copy(), detections)
         
         return annotated_frame, detections
@@ -504,8 +544,13 @@ def main():
         '--input-size',
         type=int,
         default=640,
-        choices=[320, 416, 480, 640],
-        help='Model input size - smaller = faster (default: 640)'
+        choices=[320, 416, 480, 640, 960, 1280],
+        help='Model input size - larger = better accuracy (default: 640)'
+    )
+    parser.add_argument(
+        '--enhance',
+        action='store_true',
+        help='Enable image enhancement for better detection quality'
     )
     parser.add_argument(
         '--export-onnx',
@@ -540,7 +585,8 @@ def main():
         model_path=args.model,
         conf_threshold=args.conf,
         iou_threshold=args.iou,
-        input_size=args.input_size
+        input_size=args.input_size,
+        enable_enhancement=args.enhance
     )
     
     # Process video

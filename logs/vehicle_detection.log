@@ -331,3 +331,15 @@ LINE 1: ..., confidence, bbox_x1, bbox_y1, bbox_x2, bbox_y2, region, ti...
 2026-04-27 18:38:20 | INFO     | vehicle_detection | init_db:413 | Tables created successfully
 2026-04-27 18:38:24 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:test | SUCCESS | IP:127.0.0.1
 2026-04-27 18:38:24 | INFO     | vehicle_detection | login:479 | User test logged in successfully from 127.0.0.1
+2026-04-27 19:09:56 | INFO     | vehicle_detection | <module>:65 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-04-27 19:09:56 | INFO     | vehicle_detection | <module>:74 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-04-27 19:09:56 | INFO     | vehicle_detection | <module>:83 | Cache initialized with type: simple
+2026-04-27 19:09:56 | INFO     | vehicle_detection | <module>:97 | Flask-Mail initialized
+2026-04-27 19:09:56 | INFO     | vehicle_detection | init_db:412 | Database connection established: postgresql://postgres:admin@localhost:5432/vehical_detections
+2026-04-27 19:09:56 | INFO     | vehicle_detection | init_db:413 | Tables created successfully
+2026-04-27 19:18:44 | INFO     | vehicle_detection | <module>:65 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-04-27 19:18:44 | INFO     | vehicle_detection | <module>:74 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-04-27 19:18:44 | INFO     | vehicle_detection | <module>:83 | Cache initialized with type: simple
+2026-04-27 19:18:44 | INFO     | vehicle_detection | <module>:97 | Flask-Mail initialized
+2026-04-27 19:18:44 | INFO     | vehicle_detection | init_db:412 | Database connection established: postgresql://postgres:admin@localhost:5432/vehical_detections
+2026-04-27 19:18:44 | INFO     | vehicle_detection | init_db:413 | Tables created successfully
