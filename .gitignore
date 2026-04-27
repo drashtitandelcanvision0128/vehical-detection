@@ -12,6 +12,10 @@ static/videos/*.webm
 # Database file
 vehical_detections.db
 
+# Log files
+logs/
+*.log
+
 # Detection images and screenshots
 *.jpg
 detection_*.jpg
