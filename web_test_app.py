@@ -404,7 +404,7 @@ def init_db():
         if 'sqlite' in DATABASE_URL:
             engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
         else:
-            engine = create_engine(DATABASE_URL, pool_size=20, max_overflow=10)
+            engine = create_engine(DATABASE_URL, pool_size=20, max_overflow=10, connect_args={"connect_timeout": 10})
         SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
         # Create all tables
         Base.metadata.create_all(bind=engine)
@@ -413,9 +413,11 @@ def init_db():
     except Exception as e:
         log_error(logger, 'Database', f'Database connection failed: {str(e)}')
         logger.error(f"[ERROR] Database connection failed: {e}")
+        logger.warning("[WARNING] App will start in degraded mode without database")
         import traceback
         traceback.print_exc()
-        engine = None
+        # Don't set engine to None, allow app to start
+        # Database operations will fail gracefully
         SessionLocal = None
 
 def get_db():
