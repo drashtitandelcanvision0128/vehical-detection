@@ -5,8 +5,8 @@ Run this locally to fix the database schema.
 import psycopg2
 from sqlalchemy import create_engine, text
 
-# Database connection from alembic.ini
-DB_URL = "postgresql://postgres:7ew8wLlHQJ4reZnowv7vUeXoVs9yQe7KPkXGjUBrq8PqgHCgOem8Wmth8u3oHou3@145.223.18.157:5433/vehical_detections"
+# Database connection from .env (local database used by Flask app)
+DB_URL = "postgresql://postgres:admin@localhost:5432/vehical_detections"
 
 def fix_columns():
     engine = create_engine(DB_URL)
