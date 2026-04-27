@@ -1249,18 +1249,6 @@ HTML_TEMPLATE = """
 <span class="material-symbols-outlined text-lg">account_circle</span>
 Profile
 </a>
-<a href="/" class="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-blue-600">
-<span class="material-symbols-outlined text-lg">upload</span>
-Upload
-</a>
-<a href="/live" class="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-blue-600">
-<span class="material-symbols-outlined text-lg">videocam</span>
-Real-time
-</a>
-<a href="/toggle_theme" class="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-blue-600">
-<span class="material-symbols-outlined text-lg">dark_mode</span>
-Toggle Theme
-</a>
 <a href="/logout" class="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-red-600">
 <span class="material-symbols-outlined text-lg">logout</span>
 Logout
@@ -3829,18 +3817,6 @@ LIVE_DETECTION_TEMPLATE = """
 <span class="material-symbols-outlined text-lg">account_circle</span>
 Profile
 </a>
-<a href="/" class="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-blue-600">
-<span class="material-symbols-outlined text-lg">upload</span>
-Upload
-</a>
-<a href="/live" class="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-blue-600">
-<span class="material-symbols-outlined text-lg">videocam</span>
-Real-time
-</a>
-<a href="/toggle_theme" class="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-blue-600">
-<span class="material-symbols-outlined text-lg">dark_mode</span>
-Toggle Theme
-</a>
 <a href="/logout" class="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-red-600">
 <span class="material-symbols-outlined text-lg">logout</span>
 Logout
@@ -4839,14 +4815,6 @@ Back to History
 <span class="material-symbols-outlined text-lg">account_circle</span>
 Profile
 </a>
-<a href="/" class="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-blue-600">
-<span class="material-symbols-outlined text-lg">upload</span>
-Upload
-</a>
-<a href="/live" class="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-blue-600">
-<span class="material-symbols-outlined text-lg">videocam</span>
-Real-time
-</a>
 <a href="/logout" class="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-red-600">
 <span class="material-symbols-outlined text-lg">logout</span>
 Logout
@@ -5127,14 +5095,6 @@ HISTORY_TEMPLATE = """
 <a href="#" onclick="openProfileModal(); return false;" class="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-blue-600">
 <span class="material-symbols-outlined text-lg">account_circle</span>
 Profile
-</a>
-<a href="/" class="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-blue-600">
-<span class="material-symbols-outlined text-lg">upload</span>
-Upload
-</a>
-<a href="/live" class="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-blue-600">
-<span class="material-symbols-outlined text-lg">videocam</span>
-Real-time
 </a>
 <a href="/logout" class="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-red-600">
 <span class="material-symbols-outlined text-lg">logout</span>
