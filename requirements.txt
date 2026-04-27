@@ -11,6 +11,11 @@ python-dotenv>=1.0.0
 psycopg2-binary>=2.9.0
 alembic>=1.13.0
 
+# Number Plate Detection (ALPR)
+fast-alpr>=0.1.0
+open-image-models>=0.1.0
+fast-plate-ocr>=0.1.0
+
 # Testing dependencies
 pytest>=7.4.0
 pytest-cov>=4.1.0

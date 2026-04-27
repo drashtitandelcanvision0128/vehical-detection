@@ -20,7 +20,7 @@ import os
 from datetime import datetime, timedelta
 from sqlalchemy import create_engine, inspect
 from sqlalchemy.orm import sessionmaker, Session
-from models import Base, ImageDetection, VideoDetection, LiveDetection, DetectionHistory, User
+from models import Base, ImageDetection, VideoDetection, LiveDetection, DetectionHistory, User, NumberPlateDetection
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
 from collections import defaultdict, deque
@@ -43,6 +43,7 @@ from flask_caching import Cache
 import backup_service
 from translations import get_translation, set_language
 from flask_mail import Mail, Message
+from alpr_detector import get_alpr_detector
 
 # Initialize logger
 logger = setup_logger("vehicle_detection", log_level="INFO")
@@ -855,6 +856,7 @@ def get_detection_history_from_db(limit=50):
         for record in history_records:
             history.append({
                 'id': record.report_id,
+                'report_id': record.report_id,  # Add report_id field for templates
                 'timestamp': record.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
                 'input_type': record.detection_type,
                 'detection_type': record.detection_type,
@@ -1115,8 +1117,8 @@ except Exception as e:
     print(f"[WARN] Could not check ffmpeg: {e}")
 
 # Load model
-print("[INFO] Loading YOLOv8n model...")
-model = YOLO('yolov8n.pt')
+print("[INFO] Loading YOLOv8s model for better accuracy...")
+model = YOLO('yolov8s.pt')
 print("[INFO] Model ready!")
 
 # HTML Template - Modern Design Matching Image
@@ -1236,6 +1238,7 @@ HTML_TEMPLATE = """
 <a class="text-blue-900 font-semibold text-sm" href="/">Upload</a>
 <a class="text-slate-500 hover:bg-blue-50 transition-colors px-3 py-1 rounded-lg text-sm" href="/live">Real-time</a>
 <a class="text-slate-500 hover:bg-blue-50 transition-colors px-3 py-1 rounded-lg text-sm" href="/history">History</a>
+<a class="text-slate-500 hover:bg-blue-50 transition-colors px-3 py-1 rounded-lg text-sm" href="/number_plate_detection">Plate Detection</a>
 </nav>
 <div class="flex items-center gap-3 border-l border-outline-variant/20 pl-6">
 <div class="relative">
@@ -2192,8 +2195,8 @@ def detect_vehicles_image(image_data, conf_threshold=0.4):
     # Run detection
     results = model.predict(
         image,
-        imgsz=320,  # Reduced for faster Pi performance
-        conf=conf_threshold,
+        imgsz=640,  # Increased for better detection accuracy
+        conf=0.25,  # Lowered to detect more vehicles
         verbose=False,
         classes=list(VEHICLE_CLASSES.keys())
     )
@@ -2288,9 +2291,21 @@ def extract_video_first_frame(video_path):
     return None
 
 
-def detect_vehicles_video(video_path, output_path, conf_threshold=0.4):
-    """Process video and detect vehicles with terminal progress output"""
+def detect_vehicles_video(video_path, output_path, conf_threshold=0.4, report_id=None):
+    """Process video and detect vehicles with terminal progress output and optional number plate detection"""
     start_time = time.time()
+    
+    # Initialize ALPR if report_id provided for number plate detection
+    alpr = None
+    if report_id:
+        try:
+            alpr = get_alpr_detector()
+            print(f"[INFO] Number plate detection enabled for video with report_id: {report_id}")
+        except Exception as e:
+            print(f"[WARNING] Could not initialize ALPR for video: {e}")
+    
+    # Track unique plates across all frames
+    all_plates = []
     
     cap = cv2.VideoCapture(video_path)
     if not cap.isOpened():
@@ -2351,8 +2366,8 @@ def detect_vehicles_video(video_path, output_path, conf_threshold=0.4):
             try:
                 results = model.predict(
                     frame,
-                    imgsz=480,
-                    conf=conf_threshold,
+                    imgsz=640,  # Increased for better detection accuracy
+                    conf=0.25,  # Lowered to detect more vehicles
                     verbose=False,
                     classes=list(VEHICLE_CLASSES.keys())
                 )
@@ -2365,6 +2380,7 @@ def detect_vehicles_video(video_path, output_path, conf_threshold=0.4):
             
             annotated = frame.copy()
             frame_detections = 0
+            frame_plates = []
             
             for result in results:
                 boxes = result.boxes
@@ -2395,6 +2411,35 @@ def detect_vehicles_video(video_path, output_path, conf_threshold=0.4):
                                     (int(x1) + label_w, int(y1)), color, -1)
                         cv2.putText(annotated, label, (int(x1), int(y1) - 5),
                                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2)
+            
+            # Detect number plates if ALPR is enabled and vehicles were detected
+            if alpr and frame_detections > 0 and frame_count % 5 == 0:  # Run every 5th frame to save performance
+                try:
+                    plates = alpr.detect_plates(frame)
+                    if plates:
+                        frame_plates.extend(plates)
+                        all_plates.extend(plates)
+                        
+                        # Draw plates on annotated frame
+                        for plate in plates:
+                            px1, py1, px2, py2 = plate['bbox']
+                            text = plate['text']
+                            p_conf = plate['confidence']
+                            
+                            # Draw plate bounding box in green
+                            cv2.rectangle(annotated, (px1, py1), (px2, py2), (0, 255, 0), 2)
+                            
+                            # Draw plate label
+                            plate_label = f"Plate: {text} ({p_conf*100:.1f}%)"
+                            (p_label_w, p_label_h), _ = cv2.getTextSize(plate_label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 2)
+                            cv2.rectangle(annotated, (px1, py1 - p_label_h - 10),
+                                        (px1 + p_label_w, py1), (0, 255, 0), -1)
+                            cv2.putText(annotated, plate_label, (px1, py1 - 5),
+                                       cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2)
+                        
+                        print(f"[INFO] Frame {frame_count}: Detected {len(plates)} number plates")
+                except Exception as e:
+                    print(f"[WARNING] Number plate detection failed on frame {frame_count}: {e}")
             
             # Add frame info
             cv2.putText(annotated, f"Frame: {frame_count}", (10, 30),
@@ -2456,16 +2501,56 @@ def detect_vehicles_video(video_path, output_path, conf_threshold=0.4):
     processing_time = time.time() - start_time
     avg_fps = frame_count / processing_time if processing_time > 0 else 0
     
+    # Save detected number plates to database if report_id provided
+    unique_plates = []
+    if report_id and all_plates:
+        try:
+            # Remove duplicates based on plate text
+            seen_plates = set()
+            unique_plates = []
+            for plate in all_plates:
+                if plate['text'] not in seen_plates:
+                    seen_plates.add(plate['text'])
+                    unique_plates.append(plate)
+            
+            # Save to database
+            Session = sessionmaker(bind=engine)
+            db_session = Session()
+            try:
+                for plate in unique_plates:
+                    plate_detection = NumberPlateDetection(
+                        report_id=report_id,
+                        plate_number=plate['text'],
+                        confidence=plate['confidence'],
+                        bbox_x1=plate['bbox'][0],
+                        bbox_y1=plate['bbox'][1],
+                        bbox_x2=plate['bbox'][2],
+                        bbox_y2=plate['bbox'][3],
+                        region=plate.get('region'),
+                        plate_image=None  # Could add plate image extraction here
+                    )
+                    db_session.add(plate_detection)
+                db_session.commit()
+                print(f"[SUCCESS] Saved {len(unique_plates)} unique number plates to database for report_id: {report_id}")
+            except Exception as e:
+                db_session.rollback()
+                print(f"[ERROR] Failed to save number plates to database: {e}")
+            finally:
+                db_session.close()
+        except Exception as e:
+            print(f"[ERROR] Database error saving plates: {e}")
+    
     # Log final summary
     breakdown_str = ", ".join([f"{DISPLAY_NAMES.get(cls, cls)}: {count}" for cls, count in class_counts.items()])
     log_detection(logger, 'video', total_detections, processing_time, conf_threshold, session.get('user_id'))
-    logger.info(f"Video detection complete | Frames: {frame_count} | Vehicles: {total_detections} | Time: {processing_time:.1f}s | FPS: {avg_fps:.1f} | Breakdown: {breakdown_str}")
+    logger.info(f"Video detection complete | Frames: {frame_count} | Vehicles: {total_detections} | Plates: {len(unique_plates)} | Time: {processing_time:.1f}s | FPS: {avg_fps:.1f} | Breakdown: {breakdown_str}")
     
     # Add codec info to message
     codec_info = f" (Codec: {used_codec})" if used_codec else " (Codec: unknown)"
+    plates_info = f", {len(unique_plates)} plates" if unique_plates else ""
     
     if total_detections > 0:
-        message = f"SUCCESS: Processed {frame_count} frames, detected {total_detections} vehicles{codec_info}"
+        message = f"SUCCESS: Processed {frame_count} frames, detected {total_detections} vehicles{plates_info}{codec_info}"
     else:
         message = f"NO VEHICLES: Processed {frame_count} frames, no vehicles detected{codec_info}"
     
@@ -2477,7 +2562,9 @@ def detect_vehicles_video(video_path, output_path, conf_threshold=0.4):
         'count': total_detections,
         'breakdown': class_counts,
         'codec': used_codec if used_codec else 'unknown',
-        'first_frame': first_frame
+        'first_frame': first_frame,
+        'plates': unique_plates if unique_plates else None,
+        'plate_count': len(unique_plates) if unique_plates else 0
     }
 
 
@@ -2489,7 +2576,7 @@ def index():
     
     if request.method == 'POST':
         # Get confidence threshold
-        conf_threshold = float(request.form.get('confidence', 0.4))
+        conf_threshold = float(request.form.get('confidence', 0.25))
         
         # Check for pasted image first
         pasted_image_data = request.form.get('pasted_image', '')
@@ -3133,7 +3220,7 @@ def download(filename):
 
 
 @app.route('/webcam_detect', methods=['POST'])
-@limiter.limit("60 per second")  # Limit for detection requests - increased for real-time webcam
+@limiter.limit("10000 per hour")  # High limit for real-time webcam detection (10fps = 36000/hr)
 def webcam_detect():
     """Process webcam frame for live detection with vehicle counting"""
     try:
@@ -3173,11 +3260,11 @@ def webcam_detect():
         frame_height = image.shape[0]
         count_line_pixel = int(frame_height * count_line_y)
 
-        # Run detection - smaller imgsz for faster inference on Pi
+        # Run detection - larger imgsz for better accuracy
         results = model.predict(
             image,
-            imgsz=320,  # Reduced from 640 for faster Pi performance
-            conf=conf_threshold,
+            imgsz=640,  # Increased from 320 for better detection accuracy
+            conf=0.25,  # Lowered from 0.4 to detect more vehicles
             verbose=False,
             classes=list(VEHICLE_CLASSES.keys())
         )
@@ -3275,7 +3362,7 @@ def webcam_detect():
 
         return {
             'image': img_base64,
-            'count': len(tracked_vehicles),
+            'count': vehicle_tracker.count_up + vehicle_tracker.count_down,  # Cumulative count (persists)
             'breakdown': breakdown_text,
             'count_up': vehicle_tracker.count_up,
             'count_down': vehicle_tracker.count_down,
@@ -3393,9 +3480,9 @@ def upload_live_video():
         processed_path = os.path.join(STATIC_DIR, processed_filename)
         print(f"[INFO] Will process video to: {processed_path}")
 
-        # Process video with detections
+        # Process video with detections and number plate detection
         try:
-            vehicle_counts = process_video_with_detections(video_path, processed_path, recording_duration)
+            vehicle_counts = process_video_with_detections(video_path, processed_path, recording_duration, report_id)
         except Exception as e:
             print(f"[ERROR] Video processing failed: {e}")
             import traceback
@@ -3506,8 +3593,8 @@ def extract_frames_from_video(video_path, max_frames=3):
     return frames
 
 
-def process_video_with_detections(input_path, output_path, recording_duration=0):
-    """Process video with YOLOv8 vehicle detection and draw bounding boxes"""
+def process_video_with_detections(input_path, output_path, recording_duration=0, report_id=None):
+    """Process video with YOLOv8 vehicle detection and draw bounding boxes with optional number plate detection"""
     import cv2
     from ultralytics import YOLO
 
@@ -3526,6 +3613,16 @@ def process_video_with_detections(input_path, output_path, recording_duration=0)
         'bus': (0, 0, 255),
         'truck': (255, 255, 0)
     }
+    
+    # Initialize ALPR if report_id provided for number plate detection
+    alpr = None
+    all_plates = []
+    if report_id:
+        try:
+            alpr = get_alpr_detector()
+            print(f"[INFO] Number plate detection enabled for live video with report_id: {report_id}")
+        except Exception as e:
+            print(f"[WARNING] Could not initialize ALPR for live video: {e}")
 
     # Initialize video capture
     cap = cv2.VideoCapture(input_path)
@@ -3555,6 +3652,9 @@ def process_video_with_detections(input_path, output_path, recording_duration=0)
     
     frame_count = 0
     total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    
+    # Initialize vehicle counts
+    vehicle_counts = {'total': 0, 'car': 0, 'motorcycle': 0, 'bus': 0, 'truck': 0}
 
     print(f"[INFO] Processing video: {input_path}")
     print(f"[INFO] Video properties: {width}x{height} @ {fps}fps, Total frames: {total_frames}")
@@ -3565,7 +3665,10 @@ def process_video_with_detections(input_path, output_path, recording_duration=0)
             break
         
         # Run YOLO detection
-        results = model.predict(frame, imgsz=320, conf=0.4, verbose=False)
+        results = model.predict(frame, imgsz=640, conf=0.25, verbose=False)
+        
+        # Track vehicles detected in this frame
+        frame_vehicles = 0
         
         # Draw detections on frame
         for result in results:
@@ -3588,6 +3691,35 @@ def process_video_with_detections(input_path, output_path, recording_duration=0)
                     # Count vehicles
                     vehicle_counts[class_name] += 1
                     vehicle_counts['total'] += 1
+                    frame_vehicles += 1
+        
+        # Detect number plates if ALPR is enabled and vehicles were detected
+        if alpr and frame_vehicles > 0 and frame_count % 5 == 0:  # Run every 5th frame to save performance
+            try:
+                plates = alpr.detect_plates(frame)
+                if plates:
+                    all_plates.extend(plates)
+                    
+                    # Draw plates on frame
+                    for plate in plates:
+                        px1, py1, px2, py2 = plate['bbox']
+                        text = plate['text']
+                        p_conf = plate['confidence']
+                        
+                        # Draw plate bounding box in green
+                        cv2.rectangle(frame, (px1, py1), (px2, py2), (0, 255, 0), 2)
+                        
+                        # Draw plate label
+                        plate_label = f"Plate: {text} ({p_conf*100:.1f}%)"
+                        (p_label_w, p_label_h), _ = cv2.getTextSize(plate_label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 2)
+                        cv2.rectangle(frame, (px1, py1 - p_label_h - 10),
+                                    (px1 + p_label_w, py1), (0, 255, 0), -1)
+                        cv2.putText(frame, plate_label, (px1, py1 - 5),
+                                   cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2)
+                    
+                    print(f"[INFO] Frame {frame_count}: Detected {len(plates)} number plates")
+            except Exception as e:
+                print(f"[WARNING] Number plate detection failed on frame {frame_count}: {e}")
         
         # Write processed frame
         out.write(frame)
@@ -3604,14 +3736,59 @@ def process_video_with_detections(input_path, output_path, recording_duration=0)
         print(f"[ERROR] Processed video not created: {output_path}")
         # Return empty counts since video processing failed
         return {}
+    
+    # Save detected number plates to database if report_id provided
+    unique_plates = []
+    if report_id and all_plates:
+        try:
+            # Remove duplicates based on plate text
+            seen_plates = set()
+            unique_plates = []
+            for plate in all_plates:
+                if plate['text'] not in seen_plates:
+                    seen_plates.add(plate['text'])
+                    unique_plates.append(plate)
+            
+            # Save to database
+            Session = sessionmaker(bind=engine)
+            db_session = Session()
+            try:
+                for plate in unique_plates:
+                    plate_detection = NumberPlateDetection(
+                        report_id=report_id,
+                        plate_number=plate['text'],
+                        confidence=plate['confidence'],
+                        bbox_x1=plate['bbox'][0],
+                        bbox_y1=plate['bbox'][1],
+                        bbox_x2=plate['bbox'][2],
+                        bbox_y2=plate['bbox'][3],
+                        region=plate.get('region'),
+                        plate_image=None
+                    )
+                    db_session.add(plate_detection)
+                db_session.commit()
+                print(f"[SUCCESS] Saved {len(unique_plates)} unique number plates to database for live video report_id: {report_id}")
+            except Exception as e:
+                db_session.rollback()
+                print(f"[ERROR] Failed to save number plates to database: {e}")
+            finally:
+                db_session.close()
+        except Exception as e:
+            print(f"[ERROR] Database error saving plates: {e}")
 
-    print(f"[INFO] Video processing complete. Total vehicles: {vehicle_counts}")
+    print(f"[INFO] Video processing complete. Total vehicles: {vehicle_counts}, Plates: {len(unique_plates)}")
     print(f"[INFO] Processed video saved to: {output_path}")
+
+    # Add plates to vehicle_counts for return
+    if unique_plates:
+        vehicle_counts['plates'] = unique_plates
+        vehicle_counts['plate_count'] = len(unique_plates)
 
     return vehicle_counts
 
 
 @app.route('/view/<path:filename>')
+@limiter.exempt
 def view_video(filename):
     """Serve video for inline viewing in browser with proper headers"""
     # Handle 'videos/' prefix in the URL
@@ -5083,6 +5260,7 @@ HISTORY_TEMPLATE = """
 <a class="text-slate-500 hover:bg-blue-50 transition-colors px-3 py-1 rounded-lg text-sm" href="/">Upload</a>
 <a class="text-slate-500 hover:bg-blue-50 transition-colors px-3 py-1 rounded-lg text-sm" href="/live">Real-time</a>
 <a class="text-blue-900 font-semibold text-sm" href="/history">History</a>
+<a class="text-slate-500 hover:bg-blue-50 transition-colors px-3 py-1 rounded-lg text-sm" href="/number_plate_detection">Plate Detection</a>
 </nav>
 <div class="flex items-center gap-3 border-l border-slate-200 pl-6">
 <div class="relative">
@@ -5137,7 +5315,11 @@ No Video
 {% elif item.video_path %}
 <video src="/view/{{ item.video_path }}" class="w-32 h-24 object-cover rounded-lg" controls></video>
 {% elif item.image_data %}
+{% if item.image_data.startswith('data:') %}
 <img src="{{ item.image_data }}" class="w-32 h-24 object-cover rounded-lg" loading="lazy" alt="Detection">
+{% else %}
+<img src="data:image/jpeg;base64,{{ item.image_data }}" class="w-32 h-24 object-cover rounded-lg" loading="lazy" alt="Detection">
+{% endif %}
 {% elif item.stats and item.stats.first_frame %}
 <img src="{{ item.stats.first_frame }}" class="w-32 h-24 object-cover rounded-lg" loading="lazy" alt="Frame">
 {% else %}
@@ -5175,7 +5357,7 @@ No Video
 </div>
 {% endif %}
 
-<div class="mt-4 flex gap-3">
+<div class="mt-4 flex gap-3 flex-wrap">
 <a href="/generate_pdf/{{ item.id }}" target="_blank" class="text-sm font-semibold text-primary hover:text-primary-container transition-colors">
 Download Report
 </a>
@@ -5186,6 +5368,12 @@ View Report
 <a href="/view/videos/{{ item.video_path }}" target="_blank" class="text-sm font-semibold text-primary hover:text-primary-container transition-colors">
 View Video
 </a>
+{% endif %}
+{% if item.image_data and item.detection_type != 'live' %}
+<button onclick="detectNumberPlates('{{ item.report_id }}', this)" class="text-sm font-semibold text-green-600 hover:text-green-700 transition-colors flex items-center gap-1">
+<span class="material-symbols-outlined text-base">directions_car</span>
+Detect Plates
+</button>
 {% endif %}
 <button onclick="deleteDetection('{{ item.id }}')" class="text-sm font-semibold text-red-600 hover:text-red-700 transition-colors">
 Delete
@@ -5340,7 +5528,98 @@ function deleteDetection(reportId) {
         });
     }
 }
+
+function detectNumberPlates(reportId, button) {
+    button.disabled = true;
+    button.innerHTML = '<span class="material-symbols-outlined text-base animate-spin">refresh</span> Detecting...';
+    
+    const formData = new FormData();
+    formData.append('report_id', reportId);
+    
+    fetch('/api/detect_number_plates', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNumberPlateModal(data);
+        } else {
+            alert('Failed to detect number plates: ' + data.error);
+        }
+    })
+    .catch(error => {
+        alert('Error: ' + error);
+    })
+    .finally(() => {
+        button.disabled = false;
+        button.innerHTML = '<span class="material-symbols-outlined text-base">directions_car</span> Detect Plates';
+    });
+}
+
+function showNumberPlateModal(data) {
+    const modal = document.getElementById('numberPlateModal');
+    const resultImage = document.getElementById('plateResultImage');
+    const platesList = document.getElementById('platesList');
+    
+    resultImage.src = data.annotated_image;
+    
+    platesList.innerHTML = '';
+    if (data.plates && data.plates.length > 0) {
+        data.plates.forEach(plate => {
+            const plateItem = document.createElement('div');
+            plateItem.className = 'flex items-center justify-between p-3 bg-surface-container rounded-lg';
+            plateItem.innerHTML = `
+                <div class="flex items-center gap-3">
+                    <span class="material-symbols-outlined text-primary">confirmation_number</span>
+                    <div>
+                        <div class="font-bold text-lg">${plate.text}</div>
+                        <div class="text-sm text-slate-500">Confidence: ${(plate.confidence * 100).toFixed(1)}%</div>
+                    </div>
+                </div>
+                ${plate.region ? `<span class="text-xs font-semibold px-2 py-1 bg-primary/10 text-primary rounded">${plate.region}</span>` : ''}
+            `;
+            platesList.appendChild(plateItem);
+        });
+    } else {
+        platesList.innerHTML = '<p class="text-slate-500 text-center py-4">No number plates detected</p>';
+    }
+    
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+}
+
+function closeNumberPlateModal() {
+    const modal = document.getElementById('numberPlateModal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+}
 </script>
+
+<!-- Number Plate Detection Modal -->
+<div id="numberPlateModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden items-center justify-center z-50">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl mx-4 overflow-hidden max-h-[90vh] overflow-y-auto">
+        <div class="bg-gradient-to-r from-green-600 to-green-700 px-6 py-4 flex justify-between items-center">
+            <h3 class="text-xl font-bold text-white flex items-center gap-2">
+                <span class="material-symbols-outlined">directions_car</span>
+                Number Plate Detection Results
+            </h3>
+            <button onclick="closeNumberPlateModal()" class="text-white hover:bg-white/20 rounded-full p-1">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+        </div>
+        <div class="p-6 space-y-6">
+            <div>
+                <img id="plateResultImage" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" class="w-full rounded-lg border border-slate-200" alt="Number Plate Detection">
+            </div>
+            <div>
+                <h4 class="font-bold text-lg mb-3 text-primary">Detected Plates</h4>
+                <div id="platesList" class="space-y-2">
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 </body>
 </html>
 
@@ -5676,6 +5955,369 @@ new Chart(hourlyCtx, {
 </html>
 """
 
+NUMBER_PLATE_DETECTION_TEMPLATE = """
+<!DOCTYPE html>
+<html class="light" lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Number Plate Detection | Vehicle Intelligence</title>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Manrope:wght@600;700;800&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary": "#002542",
+                        "primary-container": "#1b3b5a",
+                        "surface": "#faf9fc",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-container-low": "#f4f3f6",
+                        "surface-container": "#eeedf0",
+                        "on-surface": "#1a1c1e",
+                        "on-surface-variant": "#43474d",
+                        "outline-variant": "#c3c6ce",
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "fontFamily": {
+                        "headline": ["Manrope"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body { font-family: 'Inter', sans-serif; }
+        h1, h2, h3 { font-family: 'Manrope', sans-serif; }
+    </style>
+</head>
+<body class="bg-surface text-on-surface min-h-screen">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-slate-50/70 backdrop-blur-md shadow-[0px_8px_24px_rgba(0,37,66,0.06)] flex items-center justify-between px-6 h-16 w-full">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-blue-900">directions_car</span>
+<span class="text-xl font-bold tracking-tight text-blue-900">Number Plate Detection</span>
+</div>
+<div class="flex items-center gap-6">
+<nav class="hidden md:flex gap-6">
+<a class="text-slate-500 hover:bg-blue-50 transition-colors px-3 py-1 rounded-lg text-sm" href="/">Upload</a>
+<a class="text-slate-500 hover:bg-blue-50 transition-colors px-3 py-1 rounded-lg text-sm" href="/live">Real-time</a>
+<a class="text-slate-500 hover:bg-blue-50 transition-colors px-3 py-1 rounded-lg text-sm" href="/history">History</a>
+<a class="text-blue-900 font-semibold text-sm" href="/number_plate_detection">Plate Detection</a>
+</nav>
+<div class="flex items-center gap-3 border-l border-slate-200 pl-6">
+<div class="relative">
+<button onclick="toggleDropdown()" class="flex items-center gap-2 text-sm font-medium text-slate-700 hover:bg-slate-100 transition-colors px-3 py-1.5 rounded-lg">
+<span class="material-symbols-outlined text-slate-600 text-xl">person</span>
+<span>{{ username }}</span>
+<span class="material-symbols-outlined text-slate-600 text-sm">expand_more</span>
+</button>
+<div id="userDropdown" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-[9999]">
+<a href="/logout" class="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-red-600">
+<span class="material-symbols-outlined text-lg">logout</span>
+Logout
+</a>
+</div>
+</div>
+</div>
+</div>
+</header>
+<main class="max-w-7xl mx-auto px-6 py-20">
+<div class="flex flex-col gap-8">
+<!-- Header -->
+<div class="flex justify-between items-center">
+<div>
+<h2 class="text-3xl font-extrabold text-primary">Number Plate Detection</h2>
+<p class="text-on-surface-variant mt-2">Select an image or video to detect number plates</p>
+</div>
+<div class="text-sm text-slate-500">
+<span id="totalCount">{{ media_items|length }}</span> media items
+</div>
+</div>
+
+<!-- Media Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="mediaGrid">
+{% if media_items %}
+{% for item in media_items %}
+<div class="bg-surface-container-lowest rounded-xl overflow-hidden shadow-sm border border-outline-variant/10 hover:border-primary/20 transition-all">
+<!-- Media Preview -->
+<div class="relative aspect-video bg-surface-container">
+{% if item.video_path %}
+<video src="/view/{{ item.video_path }}" class="w-full h-full object-cover" controls></video>
+{% elif item.image_data %}
+{% if item.image_data.startswith('data:') %}
+<img src="{{ item.image_data }}" class="w-full h-full object-cover" loading="lazy" alt="Detection">
+{% else %}
+<img src="data:image/jpeg;base64,{{ item.image_data }}" class="w-full h-full object-cover" loading="lazy" alt="Detection">
+{% endif %}
+{% else %}
+<div class="w-full h-full flex items-center justify-center">
+<span class="material-symbols-outlined text-slate-400 text-4xl">image_not_supported</span>
+</div>
+{% endif %}
+<div class="absolute top-2 right-2">
+<span class="text-xs font-bold uppercase tracking-wider px-2 py-1 rounded bg-primary/10 text-primary">
+{{ 'Video' if item.video_path else 'Image' }}
+</span>
+</div>
+</div>
+
+<!-- Details -->
+<div class="p-4">
+<div class="flex items-center gap-2 mb-2">
+<span class="text-xs text-slate-500">{{ item.timestamp }}</span>
+</div>
+<h3 class="text-sm font-bold text-primary mb-2 truncate">{{ item.message or 'Detection' }}</h3>
+<div class="text-xs text-slate-500 mb-3">
+Vehicles: {{ item.vehicle_count or 0 }}
+</div>
+
+<!-- Action Buttons -->
+<div class="flex gap-2">
+{% if item.image_data %}
+<button onclick="detectNumberPlates('{{ item.report_id }}', this)" class="flex-1 text-xs font-semibold text-green-600 hover:text-green-700 transition-colors flex items-center justify-center gap-1 px-3 py-2 bg-green-50 rounded-lg">
+<span class="material-symbols-outlined text-base">confirmation_number</span>
+Detect Plates
+</button>
+{% endif %}
+{% if item.video_path %}
+<button onclick="detectVideoPlates('{{ item.report_id }}', this)" class="flex-1 text-xs font-semibold text-blue-600 hover:text-blue-700 transition-colors flex items-center justify-center gap-1 px-3 py-2 bg-blue-50 rounded-lg">
+<span class="material-symbols-outlined text-base">videocam</span>
+Detect Video Plates
+</button>
+{% endif %}
+</div>
+</div>
+</div>
+{% endfor %}
+{% else %}
+<div class="col-span-full bg-surface-container-lowest rounded-xl p-12 text-center border border-outline-variant/10">
+<span class="material-symbols-outlined text-6xl text-slate-300">directions_car</span>
+<h3 class="text-xl font-bold text-primary mt-4">No Media Found</h3>
+<p class="text-slate-500 mt-2">Upload images or videos to start number plate detection</p>
+<a href="/" class="inline-flex items-center gap-2 mt-6 px-6 py-3 bg-primary text-white font-semibold rounded-lg hover:bg-primary-container transition-colors">
+<span class="material-symbols-outlined">upload</span>
+Upload Media
+</a>
+</div>
+{% endif %}
+</div>
+</div>
+</main>
+
+<!-- Number Plate Detection Modal -->
+<div id="numberPlateModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden items-center justify-center z-50">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl mx-4 overflow-hidden max-h-[90vh] overflow-y-auto">
+        <div class="bg-gradient-to-r from-green-600 to-green-700 px-6 py-4 flex justify-between items-center">
+            <h3 class="text-xl font-bold text-white flex items-center gap-2">
+                <span class="material-symbols-outlined">confirmation_number</span>
+                Number Plate Detection Results
+            </h3>
+            <button onclick="closeNumberPlateModal()" class="text-white hover:bg-white/20 rounded-full p-1">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+        </div>
+        <div class="p-6 space-y-6">
+            <div>
+                <img id="plateResultImage" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" class="w-full rounded-lg border border-slate-200" alt="Number Plate Detection">
+            </div>
+            <div>
+                <h4 class="font-bold text-lg mb-3 text-primary">Detected Plates</h4>
+                <div id="platesList" class="space-y-2">
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Toggle dropdown menu
+function toggleDropdown() {
+    const dropdown = document.getElementById('userDropdown');
+    dropdown.classList.toggle('hidden');
+}
+
+// Close dropdown when clicking outside
+document.addEventListener('click', function(event) {
+    const dropdown = document.getElementById('userDropdown');
+    const button = event.target.closest('button');
+    if (!button || !button.onclick) {
+        if (!event.target.closest('#userDropdown')) {
+            dropdown.classList.add('hidden');
+        }
+    }
+});
+
+function detectNumberPlates(reportId, button) {
+    button.disabled = true;
+    button.innerHTML = '<span class="material-symbols-outlined text-base animate-spin">refresh</span> Detecting...';
+    
+    const formData = new FormData();
+    formData.append('report_id', reportId);
+    
+    fetch('/api/detect_number_plates', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNumberPlateModal(data);
+        } else {
+            alert('Failed to detect number plates: ' + data.error);
+        }
+    })
+    .catch(error => {
+        alert('Error: ' + error);
+    })
+    .finally(() => {
+        button.disabled = false;
+        button.innerHTML = '<span class="material-symbols-outlined text-base">confirmation_number</span> Detect Plates';
+    });
+}
+
+function detectVideoPlates(reportId, button) {
+    button.disabled = true;
+    button.innerHTML = '<span class="material-symbols-outlined text-base animate-spin">refresh</span> Detecting...';
+    
+    const formData = new FormData();
+    formData.append('report_id', reportId);
+    
+    fetch('/api/detect_video_plates', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showVideoPlateModal(data);
+        } else {
+            alert('Failed to detect number plates: ' + data.error);
+        }
+    })
+    .catch(error => {
+        alert('Error: ' + error);
+    })
+    .finally(() => {
+        button.disabled = false;
+        button.innerHTML = '<span class="material-symbols-outlined text-base">videocam</span> Detect Video Plates';
+    });
+}
+
+function showVideoPlateModal(data) {
+    const modal = document.getElementById('numberPlateModal');
+    const resultImage = document.getElementById('plateResultImage');
+    const platesList = document.getElementById('platesList');
+    
+    // Show first annotated frame or preview
+    if (data.annotated_image) {
+        resultImage.src = data.annotated_image;
+    }
+    
+    platesList.innerHTML = '';
+    if (data.plates && data.plates.length > 0) {
+        // Add summary info
+        const summary = document.createElement('div');
+        summary.className = 'text-sm text-slate-500 mb-3 p-2 bg-blue-50 rounded-lg';
+        summary.innerHTML = `Scanned ${data.frames_processed || '?'} frames from ${data.total_frames || '?'} total frames`;
+        platesList.appendChild(summary);
+        
+        data.plates.forEach(plate => {
+            const plateItem = document.createElement('div');
+            plateItem.className = 'flex items-center justify-between p-3 bg-surface-container rounded-lg';
+            plateItem.innerHTML = `
+                <div class="flex items-center gap-3">
+                    <span class="material-symbols-outlined text-primary">confirmation_number</span>
+                    <div>
+                        <div class="font-bold text-lg">${plate.text}</div>
+                        <div class="text-sm text-slate-500">Confidence: ${(plate.confidence * 100).toFixed(1)}%</div>
+                    </div>
+                </div>
+                ${plate.region ? `<span class="text-xs font-semibold px-2 py-1 bg-primary/10 text-primary rounded">${plate.region}</span>` : ''}
+            `;
+            platesList.appendChild(plateItem);
+        });
+    } else {
+        platesList.innerHTML = '<p class="text-slate-500 text-center py-4">No number plates detected in video</p>';
+    }
+    
+    // Show annotated frames carousel if available
+    if (data.annotated_frames && data.annotated_frames.length > 0) {
+        const framesSection = document.createElement('div');
+        framesSection.className = 'mt-4';
+        framesSection.innerHTML = '<h4 class="font-bold text-sm mb-2 text-primary">Detected Frames</h4>';
+        const framesGrid = document.createElement('div');
+        framesGrid.className = 'grid grid-cols-2 gap-2 max-h-60 overflow-y-auto';
+        data.annotated_frames.forEach((frameSrc, idx) => {
+            const frameImg = document.createElement('img');
+            frameImg.src = frameSrc;
+            frameImg.className = 'w-full rounded border border-slate-200';
+            frameImg.alt = `Frame ${idx + 1}`;
+            framesGrid.appendChild(frameImg);
+        });
+        framesSection.appendChild(framesGrid);
+        platesList.appendChild(framesSection);
+    }
+    
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+}
+
+function showNumberPlateModal(data) {
+    const modal = document.getElementById('numberPlateModal');
+    const resultImage = document.getElementById('plateResultImage');
+    const platesList = document.getElementById('platesList');
+    
+    resultImage.src = data.annotated_image;
+    
+    platesList.innerHTML = '';
+    if (data.plates && data.plates.length > 0) {
+        data.plates.forEach(plate => {
+            const plateItem = document.createElement('div');
+            plateItem.className = 'flex items-center justify-between p-3 bg-surface-container rounded-lg';
+            plateItem.innerHTML = `
+                <div class="flex items-center gap-3">
+                    <span class="material-symbols-outlined text-primary">confirmation_number</span>
+                    <div>
+                        <div class="font-bold text-lg">${plate.text}</div>
+                        <div class="text-sm text-slate-500">Confidence: ${(plate.confidence * 100).toFixed(1)}%</div>
+                    </div>
+                </div>
+                ${plate.region ? `<span class="text-xs font-semibold px-2 py-1 bg-primary/10 text-primary rounded">${plate.region}</span>` : ''}
+            `;
+            platesList.appendChild(plateItem);
+        });
+    } else {
+        platesList.innerHTML = '<p class="text-slate-500 text-center py-4">No number plates detected</p>';
+    }
+    
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+}
+
+function closeNumberPlateModal() {
+    const modal = document.getElementById('numberPlateModal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+}
+</script>
+</body>
+</html>
+"""
+
 PROFILE_TEMPLATE = """
 <!DOCTYPE html>
 <html class="light" lang="en">
@@ -5883,6 +6525,382 @@ def history_page():
     username = session.get('username', 'User')
     
     return render_template_string(HISTORY_TEMPLATE, history=history, username=username)
+
+
+@app.route('/number_plate_detection')
+@login_required
+def number_plate_detection_page():
+    """
+    Number Plate Detection Page - View all stored images/videos and detect plates
+    ---
+    tags:
+      - Number Plate
+    security:
+      - Bearer: []
+    responses:
+      200:
+        description: Number plate detection page rendered
+      401:
+        description: Not authenticated
+    """
+    """Render the number plate detection page with all stored images/videos"""
+    print("[DEBUG] Number plate detection route accessed")
+    history = get_detection_history_from_db(limit=100)
+    
+    # Filter only entries with image_data or video_path
+    media_items = []
+    for item in history:
+        if item.get('image_data') or item.get('video_path'):
+            print(f"[DEBUG] Adding media item - id: {item.get('id')}, report_id: {item.get('report_id')}")
+            media_items.append(item)
+    
+    print(f"[DEBUG] Media items: {len(media_items)}")
+    
+    # Get username from session
+    username = session.get('username', 'User')
+    
+    return render_template_string(NUMBER_PLATE_DETECTION_TEMPLATE, media_items=media_items, username=username)
+
+
+@app.route('/api/detect_number_plates', methods=['POST'])
+@login_required
+def detect_number_plates():
+    """
+    Detect number plates from a stored detection image
+    ---
+    tags:
+      - Number Plate
+    security:
+      - Bearer: []
+    parameters:
+      - name: report_id
+        in: formData
+        type: string
+        required: true
+        description: Report ID from detection history
+    responses:
+      200:
+        description: Number plates detected successfully
+      400:
+        description: Invalid request or no image found
+      401:
+        description: Not authenticated
+      500:
+        description: Server error
+    """
+    try:
+        report_id = request.form.get('report_id')
+        print(f"[DEBUG] detect_number_plates called with report_id: {report_id}")
+        
+        if not report_id:
+            print("[ERROR] report_id is required")
+            return jsonify({'error': 'report_id is required'}), 400
+        
+        # Get database session
+        Session = sessionmaker(bind=engine)
+        session = Session()
+        
+        # Get detection history entry
+        history_entry = session.query(DetectionHistory).filter_by(report_id=report_id).first()
+        
+        if not history_entry:
+            session.close()
+            print(f"[ERROR] Detection not found for report_id: {report_id}")
+            return jsonify({'error': 'Detection not found'}), 404
+        
+        # Check if image data exists
+        if not history_entry.image_data:
+            session.close()
+            print(f"[ERROR] No image data found for report_id: {report_id}")
+            return jsonify({'error': 'No image data found for this detection'}), 400
+        
+        # Decode base64 image
+        if ',' in history_entry.image_data:
+            base64_data = history_entry.image_data.split(',')[1]
+        else:
+            base64_data = history_entry.image_data
+        
+        img_data = base64.b64decode(base64_data)
+        nparr = np.frombuffer(img_data, np.uint8)
+        image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+        
+        if image is None:
+            session.close()
+            return jsonify({'error': 'Failed to decode image'}), 400
+        
+        # Detect number plates
+        alpr = get_alpr_detector()
+        plates = alpr.detect_plates(image)
+        
+        # Save plates to database
+        for plate in plates:
+            plate_detection = NumberPlateDetection(
+                report_id=report_id,
+                plate_number=plate['text'],
+                confidence=plate['confidence'],
+                bbox_x1=plate['bbox'][0],
+                bbox_y1=plate['bbox'][1],
+                bbox_x2=plate['bbox'][2],
+                bbox_y2=plate['bbox'][3],
+                region=plate.get('region')
+            )
+            session.add(plate_detection)
+        
+        session.commit()
+        session.close()
+        
+        # Draw plates on image for response
+        annotated_image, _ = alpr.detect_and_draw(image)
+        _, buffer = cv2.imencode('.jpg', annotated_image)
+        annotated_base64 = base64.b64encode(buffer).decode('utf-8')
+        
+        return jsonify({
+            'success': True,
+            'plates': plates,
+            'annotated_image': f'data:image/jpeg;base64,{annotated_base64}'
+        })
+        
+    except Exception as e:
+        logger.error(f"Error detecting number plates: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/detect_video_plates', methods=['POST'])
+@login_required
+def detect_video_plates():
+    """
+    Detect number plates from a stored detection video
+    ---
+    tags:
+      - Number Plate
+    security:
+      - Bearer: []
+    parameters:
+      - name: report_id
+        in: formData
+        type: string
+        required: true
+        description: Report ID from detection history
+    responses:
+      200:
+        description: Number plates detected successfully from video
+      400:
+        description: Invalid request or no video found
+      401:
+        description: Not authenticated
+      500:
+        description: Server error
+    """
+    try:
+        report_id = request.form.get('report_id')
+        print(f"[DEBUG] detect_video_plates called with report_id: {report_id}")
+        
+        if not report_id:
+            print("[ERROR] report_id is required")
+            return jsonify({'error': 'report_id is required'}), 400
+        
+        # Get database session
+        Session = sessionmaker(bind=engine)
+        db_session = Session()
+        
+        # Get detection history entry
+        history_entry = db_session.query(DetectionHistory).filter_by(report_id=report_id).first()
+        
+        if not history_entry:
+            db_session.close()
+            print(f"[ERROR] Detection not found for report_id: {report_id}")
+            return jsonify({'error': 'Detection not found'}), 404
+        
+        # Check if video path exists
+        video_path = history_entry.video_path
+        if not video_path:
+            db_session.close()
+            print(f"[ERROR] No video path found for report_id: {report_id}")
+            return jsonify({'error': 'No video found for this detection'}), 400
+        
+        # Resolve video path
+        full_video_path = os.path.join(STATIC_DIR, video_path) if not os.path.isabs(video_path) else video_path
+        if not os.path.exists(full_video_path):
+            # Try alternate paths
+            alt_path = os.path.join(STATIC_DIR, os.path.basename(video_path))
+            if os.path.exists(alt_path):
+                full_video_path = alt_path
+            else:
+                db_session.close()
+                print(f"[ERROR] Video file not found: {full_video_path}")
+                return jsonify({'error': 'Video file not found on disk'}), 404
+        
+        print(f"[INFO] Processing video for plates: {full_video_path}")
+        
+        # Initialize ALPR
+        alpr = get_alpr_detector()
+        
+        # Open video and extract frames for plate detection
+        cap = cv2.VideoCapture(full_video_path)
+        if not cap.isOpened():
+            db_session.close()
+            return jsonify({'error': 'Could not open video file'}), 400
+        
+        total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        all_plates = []
+        annotated_frames = []
+        frame_count = 0
+        
+        # Sample frames evenly (every N frames, max 20 frames for plate detection)
+        max_sample_frames = 20
+        sample_interval = max(1, total_frames // max_sample_frames)
+        
+        while True:
+            ret, frame = cap.read()
+            if not ret:
+                break
+            
+            # Only process sampled frames
+            if frame_count % sample_interval == 0:
+                try:
+                    plates = alpr.detect_plates(frame)
+                    if plates:
+                        all_plates.extend(plates)
+                        
+                        # Draw plates on frame for preview
+                        for plate in plates:
+                            px1, py1, px2, py2 = plate['bbox']
+                            text = plate['text']
+                            p_conf = plate['confidence']
+                            cv2.rectangle(frame, (px1, py1), (px2, py2), (0, 255, 0), 2)
+                            plate_label = f"Plate: {text} ({p_conf*100:.1f}%)"
+                            cv2.putText(frame, plate_label, (px1, py1 - 5),
+                                       cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2)
+                        
+                        # Save annotated frame for preview
+                        _, buffer = cv2.imencode('.jpg', frame)
+                        frame_b64 = base64.b64encode(buffer).decode('utf-8')
+                        annotated_frames.append(f'data:image/jpeg;base64,{frame_b64}')
+                        
+                        print(f"[INFO] Frame {frame_count}: Detected {len(plates)} plates")
+                except Exception as e:
+                    print(f"[WARNING] Plate detection failed on frame {frame_count}: {e}")
+            
+            frame_count += 1
+        
+        cap.release()
+        
+        # Remove duplicate plates based on text
+        seen_plates = set()
+        unique_plates = []
+        for plate in all_plates:
+            if plate['text'] not in seen_plates:
+                seen_plates.add(plate['text'])
+                unique_plates.append(plate)
+        
+        # Save plates to database
+        if unique_plates:
+            try:
+                for plate in unique_plates:
+                    plate_detection = NumberPlateDetection(
+                        report_id=report_id,
+                        plate_number=plate['text'],
+                        confidence=plate['confidence'],
+                        bbox_x1=plate['bbox'][0],
+                        bbox_y1=plate['bbox'][1],
+                        bbox_x2=plate['bbox'][2],
+                        bbox_y2=plate['bbox'][3],
+                        region=plate.get('region'),
+                        plate_image=None
+                    )
+                    db_session.add(plate_detection)
+                db_session.commit()
+                print(f"[SUCCESS] Saved {len(unique_plates)} unique plates to database for video report_id: {report_id}")
+            except Exception as e:
+                db_session.rollback()
+                print(f"[ERROR] Failed to save plates to database: {e}")
+        
+        db_session.close()
+        
+        # Use the first annotated frame as preview, or extract a frame if none found
+        preview_image = annotated_frames[0] if annotated_frames else None
+        
+        if not preview_image:
+            # Extract a frame from the video for preview
+            cap = cv2.VideoCapture(full_video_path)
+            ret, frame = cap.read()
+            cap.release()
+            if ret:
+                _, buffer = cv2.imencode('.jpg', frame)
+                preview_image = f'data:image/jpeg;base64,{base64.b64encode(buffer).decode("utf-8")}'
+        
+        return jsonify({
+            'success': True,
+            'plates': unique_plates,
+            'annotated_image': preview_image,
+            'annotated_frames': annotated_frames[:5],  # Send max 5 frames
+            'total_frames': total_frames,
+            'frames_processed': frame_count // sample_interval if sample_interval > 0 else frame_count
+        })
+        
+    except Exception as e:
+        logger.error(f"Error detecting video plates: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/get_number_plates/<report_id>')
+@login_required
+def get_number_plates(report_id):
+    """
+    Get number plates for a detection
+    ---
+    tags:
+      - Number Plate
+    security:
+      - Bearer: []
+    parameters:
+      - name: report_id
+        in: path
+        type: string
+        required: true
+        description: Report ID from detection history
+    responses:
+      200:
+        description: Number plates retrieved successfully
+      401:
+        description: Not authenticated
+      404:
+        description: Detection not found
+    """
+    try:
+        Session = sessionmaker(bind=engine)
+        session = Session()
+        
+        plates = session.query(NumberPlateDetection).filter_by(report_id=report_id).all()
+        
+        plates_data = []
+        for plate in plates:
+            plates_data.append({
+                'id': plate.id,
+                'plate_number': plate.plate_number,
+                'confidence': plate.confidence,
+                'bbox': {
+                    'x1': plate.bbox_x1,
+                    'y1': plate.bbox_y1,
+                    'x2': plate.bbox_x2,
+                    'y2': plate.bbox_y2
+                },
+                'region': plate.region,
+                'timestamp': plate.timestamp.isoformat() if plate.timestamp else None
+            })
+        
+        session.close()
+        
+        return jsonify({
+            'success': True,
+            'plates': plates_data
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting number plates: {e}")
+        return jsonify({'error': str(e)}), 500
 
 
 @app.route('/set_language/<lang>')

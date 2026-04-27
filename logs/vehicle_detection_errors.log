@@ -1,0 +1,38 @@
+2026-04-27 17:15:44 | ERROR    | vehicle_detection | detect_number_plates:6400 | Error detecting number plates: (psycopg2.errors.UndefinedColumn) column "region" of relation "number_plate_detections" does not exist
+LINE 1: ..., confidence, bbox_x1, bbox_y1, bbox_x2, bbox_y2, region, ti...
+                                                             ^
+
+[SQL: INSERT INTO number_plate_detections (report_id, plate_number, confidence, bbox_x1, bbox_y1, bbox_x2, bbox_y2, region, timestamp, plate_image) VALUES (%(report_id)s, %(plate_number)s, %(confidence)s, %(bbox_x1)s, %(bbox_y1)s, %(bbox_x2)s, %(bbox_y2)s, %(region)s, %(timestamp)s, %(plate_image)s) RETURNING number_plate_detections.id]
+[parameters: {'report_id': 'd44c6624', 'plate_number': 'YSX213', 'confidence': 0.9976844847202301, 'bbox_x1': 170, 'bbox_y1': 139, 'bbox_x2': 203, 'bbox_y2': 150, 'region': 'United Kingdom', 'timestamp': datetime.datetime(2026, 4, 27, 11, 45, 44, 131438), 'plate_image': None}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+2026-04-27 17:15:57 | ERROR    | vehicle_detection | detect_number_plates:6400 | Error detecting number plates: (psycopg2.errors.UndefinedColumn) column "region" of relation "number_plate_detections" does not exist
+LINE 1: ..., confidence, bbox_x1, bbox_y1, bbox_x2, bbox_y2, region, ti...
+                                                             ^
+
+[SQL: INSERT INTO number_plate_detections (report_id, plate_number, confidence, bbox_x1, bbox_y1, bbox_x2, bbox_y2, region, timestamp, plate_image) VALUES (%(report_id)s, %(plate_number)s, %(confidence)s, %(bbox_x1)s, %(bbox_y1)s, %(bbox_x2)s, %(bbox_y2)s, %(region)s, %(timestamp)s, %(plate_image)s) RETURNING number_plate_detections.id]
+[parameters: {'report_id': 'd44c6624', 'plate_number': 'YSX213', 'confidence': 0.9976844847202301, 'bbox_x1': 170, 'bbox_y1': 139, 'bbox_x2': 203, 'bbox_y2': 150, 'region': 'United Kingdom', 'timestamp': datetime.datetime(2026, 4, 27, 11, 45, 57, 726369), 'plate_image': None}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+2026-04-27 17:17:58 | ERROR    | vehicle_detection | detect_number_plates:6400 | Error detecting number plates: (psycopg2.errors.UndefinedColumn) column "region" of relation "number_plate_detections" does not exist
+LINE 1: ..., confidence, bbox_x1, bbox_y1, bbox_x2, bbox_y2, region, ti...
+                                                             ^
+
+[SQL: INSERT INTO number_plate_detections (report_id, plate_number, confidence, bbox_x1, bbox_y1, bbox_x2, bbox_y2, region, timestamp, plate_image) VALUES (%(report_id)s, %(plate_number)s, %(confidence)s, %(bbox_x1)s, %(bbox_y1)s, %(bbox_x2)s, %(bbox_y2)s, %(region)s, %(timestamp)s, %(plate_image)s) RETURNING number_plate_detections.id]
+[parameters: {'report_id': 'd44c6624', 'plate_number': 'YSX213', 'confidence': 0.9976844847202301, 'bbox_x1': 170, 'bbox_y1': 139, 'bbox_x2': 203, 'bbox_y2': 150, 'region': 'United Kingdom', 'timestamp': datetime.datetime(2026, 4, 27, 11, 47, 58, 5455), 'plate_image': None}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+2026-04-27 17:18:01 | ERROR    | vehicle_detection | detect_number_plates:6400 | Error detecting number plates: (psycopg2.errors.UndefinedColumn) column "region" of relation "number_plate_detections" does not exist
+LINE 1: ..., confidence, bbox_x1, bbox_y1, bbox_x2, bbox_y2, region, ti...
+                                                             ^
+
+[SQL: INSERT INTO number_plate_detections (report_id, plate_number, confidence, bbox_x1, bbox_y1, bbox_x2, bbox_y2, region, timestamp, plate_image) VALUES (%(report_id)s, %(plate_number)s, %(confidence)s, %(bbox_x1)s, %(bbox_y1)s, %(bbox_x2)s, %(bbox_y2)s, %(region)s, %(timestamp)s, %(plate_image)s) RETURNING number_plate_detections.id]
+[parameters: {'report_id': 'd44c6624', 'plate_number': 'YSX213', 'confidence': 0.9976844847202301, 'bbox_x1': 170, 'bbox_y1': 139, 'bbox_x2': 203, 'bbox_y2': 150, 'region': 'United Kingdom', 'timestamp': datetime.datetime(2026, 4, 27, 11, 48, 1, 136978), 'plate_image': None}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+2026-04-27 17:20:38 | ERROR    | vehicle_detection | detect_number_plates:6404 | Error detecting number plates: (psycopg2.errors.StringDataRightTruncation) value too long for type character varying(10)
+
+[SQL: INSERT INTO number_plate_detections (report_id, plate_number, confidence, bbox_x1, bbox_y1, bbox_x2, bbox_y2, region, timestamp, plate_image) VALUES (%(report_id)s, %(plate_number)s, %(confidence)s, %(bbox_x1)s, %(bbox_y1)s, %(bbox_x2)s, %(bbox_y2)s, %(region)s, %(timestamp)s, %(plate_image)s) RETURNING number_plate_detections.id]
+[parameters: {'report_id': 'd44c6624', 'plate_number': 'YSX213', 'confidence': 0.9976844847202301, 'bbox_x1': 170, 'bbox_y1': 139, 'bbox_x2': 203, 'bbox_y2': 150, 'region': 'United Kingdom', 'timestamp': datetime.datetime(2026, 4, 27, 11, 50, 38, 76909), 'plate_image': None}]
+(Background on this error at: https://sqlalche.me/e/20/9h9h)
+2026-04-27 17:20:47 | ERROR    | vehicle_detection | detect_number_plates:6404 | Error detecting number plates: (psycopg2.errors.StringDataRightTruncation) value too long for type character varying(10)
+
+[SQL: INSERT INTO number_plate_detections (report_id, plate_number, confidence, bbox_x1, bbox_y1, bbox_x2, bbox_y2, region, timestamp, plate_image) VALUES (%(report_id)s, %(plate_number)s, %(confidence)s, %(bbox_x1)s, %(bbox_y1)s, %(bbox_x2)s, %(bbox_y2)s, %(region)s, %(timestamp)s, %(plate_image)s) RETURNING number_plate_detections.id]
+[parameters: {'report_id': 'd44c6624', 'plate_number': 'YSX213', 'confidence': 0.9976844847202301, 'bbox_x1': 170, 'bbox_y1': 139, 'bbox_x2': 203, 'bbox_y2': 150, 'region': 'United Kingdom', 'timestamp': datetime.datetime(2026, 4, 27, 11, 50, 47, 882337), 'plate_image': None}]
+(Background on this error at: https://sqlalche.me/e/20/9h9h)

@@ -118,3 +118,208 @@
 2026-04-27 13:04:24 | INFO     | vehicle_detection | init_db:412 | Tables created successfully
 2026-04-27 13:04:32 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:test | SUCCESS | IP:127.0.0.1
 2026-04-27 13:04:32 | INFO     | vehicle_detection | login:472 | User test logged in successfully from 127.0.0.1
+2026-04-27 15:11:12 | INFO     | vehicle_detection | <module>:64 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-04-27 15:11:12 | INFO     | vehicle_detection | <module>:73 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-04-27 15:11:12 | INFO     | vehicle_detection | <module>:82 | Cache initialized with type: simple
+2026-04-27 15:11:12 | INFO     | vehicle_detection | <module>:96 | Flask-Mail initialized
+2026-04-27 15:11:12 | INFO     | vehicle_detection | init_db:411 | Database connection established: postgresql://postgres:admin@localhost:5432/vehical_detections
+2026-04-27 15:11:12 | INFO     | vehicle_detection | init_db:412 | Tables created successfully
+2026-04-27 15:11:17 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:test | SUCCESS | IP:127.0.0.1
+2026-04-27 15:11:17 | INFO     | vehicle_detection | login:472 | User test logged in successfully from 127.0.0.1
+2026-04-27 15:11:43 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:hello | SUCCESS | IP:127.0.0.1
+2026-04-27 15:11:43 | INFO     | vehicle_detection | login:472 | User hello logged in successfully from 127.0.0.1
+2026-04-27 15:30:13 | INFO     | vehicle_detection | <module>:64 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-04-27 15:30:13 | INFO     | vehicle_detection | <module>:73 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-04-27 15:30:13 | INFO     | vehicle_detection | <module>:82 | Cache initialized with type: simple
+2026-04-27 15:30:13 | INFO     | vehicle_detection | <module>:96 | Flask-Mail initialized
+2026-04-27 15:30:13 | INFO     | vehicle_detection | init_db:411 | Database connection established: postgresql://postgres:admin@localhost:5432/vehical_detections
+2026-04-27 15:30:13 | INFO     | vehicle_detection | init_db:412 | Tables created successfully
+2026-04-27 15:32:08 | INFO     | vehicle_detection | <module>:64 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-04-27 15:32:08 | INFO     | vehicle_detection | <module>:73 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-04-27 15:32:08 | INFO     | vehicle_detection | <module>:82 | Cache initialized with type: simple
+2026-04-27 15:32:08 | INFO     | vehicle_detection | <module>:96 | Flask-Mail initialized
+2026-04-27 15:32:08 | INFO     | vehicle_detection | init_db:411 | Database connection established: postgresql://postgres:admin@localhost:5432/vehical_detections
+2026-04-27 15:32:08 | INFO     | vehicle_detection | init_db:412 | Tables created successfully
+2026-04-27 15:34:21 | INFO     | vehicle_detection | <module>:64 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-04-27 15:34:21 | INFO     | vehicle_detection | <module>:73 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-04-27 15:34:21 | INFO     | vehicle_detection | <module>:82 | Cache initialized with type: simple
+2026-04-27 15:34:21 | INFO     | vehicle_detection | <module>:96 | Flask-Mail initialized
+2026-04-27 15:34:21 | INFO     | vehicle_detection | init_db:411 | Database connection established: postgresql://postgres:admin@localhost:5432/vehical_detections
+2026-04-27 15:34:21 | INFO     | vehicle_detection | init_db:412 | Tables created successfully
+2026-04-27 15:36:36 | INFO     | vehicle_detection | <module>:64 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-04-27 15:36:36 | INFO     | vehicle_detection | <module>:73 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-04-27 15:36:36 | INFO     | vehicle_detection | <module>:82 | Cache initialized with type: simple
+2026-04-27 15:36:36 | INFO     | vehicle_detection | <module>:96 | Flask-Mail initialized
+2026-04-27 15:36:37 | INFO     | vehicle_detection | init_db:411 | Database connection established: postgresql://postgres:admin@localhost:5432/vehical_detections
+2026-04-27 15:36:37 | INFO     | vehicle_detection | init_db:412 | Tables created successfully
+2026-04-27 15:40:09 | INFO     | vehicle_detection | <module>:64 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-04-27 15:40:09 | INFO     | vehicle_detection | <module>:73 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-04-27 15:40:09 | INFO     | vehicle_detection | <module>:82 | Cache initialized with type: simple
+2026-04-27 15:40:09 | INFO     | vehicle_detection | <module>:96 | Flask-Mail initialized
+2026-04-27 15:40:12 | INFO     | vehicle_detection | init_db:411 | Database connection established: postgresql://postgres:admin@localhost:5432/vehical_detections
+2026-04-27 15:40:12 | INFO     | vehicle_detection | init_db:412 | Tables created successfully
+2026-04-27 16:46:14 | INFO     | vehicle_detection | <module>:54 | ALPR module loaded successfully
+2026-04-27 16:46:14 | INFO     | vehicle_detection | <module>:73 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-04-27 16:46:14 | INFO     | vehicle_detection | <module>:82 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-04-27 16:46:14 | INFO     | vehicle_detection | <module>:91 | Cache initialized with type: simple
+2026-04-27 16:46:14 | INFO     | vehicle_detection | <module>:105 | Flask-Mail initialized
+2026-04-27 16:46:14 | INFO     | vehicle_detection | init_db:420 | Database connection established: postgresql://postgres:admin@localhost:5432/vehical_detections
+2026-04-27 16:46:15 | INFO     | vehicle_detection | init_db:421 | Tables created successfully
+2026-04-27 16:52:09 | INFO     | vehicle_detection | <module>:65 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-04-27 16:52:09 | INFO     | vehicle_detection | <module>:74 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-04-27 16:52:09 | INFO     | vehicle_detection | <module>:83 | Cache initialized with type: simple
+2026-04-27 16:52:09 | INFO     | vehicle_detection | <module>:97 | Flask-Mail initialized
+2026-04-27 16:52:09 | INFO     | vehicle_detection | init_db:412 | Database connection established: postgresql://postgres:admin@localhost:5432/vehical_detections
+2026-04-27 16:52:09 | INFO     | vehicle_detection | init_db:413 | Tables created successfully
+2026-04-27 16:53:09 | INFO     | vehicle_detection | <module>:65 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-04-27 16:53:09 | INFO     | vehicle_detection | <module>:74 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-04-27 16:53:09 | INFO     | vehicle_detection | <module>:83 | Cache initialized with type: simple
+2026-04-27 16:53:09 | INFO     | vehicle_detection | <module>:97 | Flask-Mail initialized
+2026-04-27 16:53:09 | INFO     | vehicle_detection | init_db:412 | Database connection established: postgresql://postgres:admin@localhost:5432/vehical_detections
+2026-04-27 16:53:09 | INFO     | vehicle_detection | init_db:413 | Tables created successfully
+2026-04-27 16:53:40 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:test | SUCCESS | IP:192.168.29.217
+2026-04-27 16:53:40 | INFO     | vehicle_detection | login:478 | User test logged in successfully from 192.168.29.217
+2026-04-27 16:57:41 | INFO     | vehicle_detection | <module>:65 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-04-27 16:57:41 | INFO     | vehicle_detection | <module>:74 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-04-27 16:57:41 | INFO     | vehicle_detection | <module>:83 | Cache initialized with type: simple
+2026-04-27 16:57:41 | INFO     | vehicle_detection | <module>:97 | Flask-Mail initialized
+2026-04-27 16:57:41 | INFO     | vehicle_detection | init_db:412 | Database connection established: postgresql://postgres:admin@localhost:5432/vehical_detections
+2026-04-27 16:57:41 | INFO     | vehicle_detection | init_db:413 | Tables created successfully
+2026-04-27 16:57:58 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:test | SUCCESS | IP:127.0.0.1
+2026-04-27 16:57:58 | INFO     | vehicle_detection | login:479 | User test logged in successfully from 127.0.0.1
+2026-04-27 16:59:22 | INFO     | vehicle_detection | <module>:65 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-04-27 16:59:22 | INFO     | vehicle_detection | <module>:74 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-04-27 16:59:22 | INFO     | vehicle_detection | <module>:83 | Cache initialized with type: simple
+2026-04-27 16:59:22 | INFO     | vehicle_detection | <module>:97 | Flask-Mail initialized
+2026-04-27 16:59:23 | INFO     | vehicle_detection | init_db:412 | Database connection established: postgresql://postgres:admin@localhost:5432/vehical_detections
+2026-04-27 16:59:23 | INFO     | vehicle_detection | init_db:413 | Tables created successfully
+2026-04-27 17:00:52 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:hello | SUCCESS | IP:127.0.0.1
+2026-04-27 17:00:52 | INFO     | vehicle_detection | login:479 | User hello logged in successfully from 127.0.0.1
+2026-04-27 17:01:27 | INFO     | vehicle_detection | <module>:65 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-04-27 17:01:27 | INFO     | vehicle_detection | <module>:74 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-04-27 17:01:27 | INFO     | vehicle_detection | <module>:83 | Cache initialized with type: simple
+2026-04-27 17:01:27 | INFO     | vehicle_detection | <module>:97 | Flask-Mail initialized
+2026-04-27 17:01:27 | INFO     | vehicle_detection | init_db:412 | Database connection established: postgresql://postgres:admin@localhost:5432/vehical_detections
+2026-04-27 17:01:27 | INFO     | vehicle_detection | init_db:413 | Tables created successfully
+2026-04-27 17:01:37 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:test | SUCCESS | IP:127.0.0.1
+2026-04-27 17:01:37 | INFO     | vehicle_detection | login:479 | User test logged in successfully from 127.0.0.1
+2026-04-27 17:03:07 | INFO     | vehicle_detection | <module>:65 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-04-27 17:03:07 | INFO     | vehicle_detection | <module>:74 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-04-27 17:03:07 | INFO     | vehicle_detection | <module>:83 | Cache initialized with type: simple
+2026-04-27 17:03:07 | INFO     | vehicle_detection | <module>:97 | Flask-Mail initialized
+2026-04-27 17:03:08 | INFO     | vehicle_detection | init_db:412 | Database connection established: postgresql://postgres:admin@localhost:5432/vehical_detections
+2026-04-27 17:03:08 | INFO     | vehicle_detection | init_db:413 | Tables created successfully
+2026-04-27 17:07:18 | INFO     | vehicle_detection | detect_vehicles_image:2192 | Image detection started | Resolution: 400x279 | Confidence: 0.25
+2026-04-27 17:07:18 | INFO     | vehicle_detection | log_detection:111 | DETECTION | Type:image | Vehicles:1 | Time:0.293s | Confidence:0.25 | User:2
+2026-04-27 17:07:18 | INFO     | vehicle_detection | detect_vehicles_image:2249 | Image detection complete | Vehicles: 1 | Time: 0.293s | Breakdown: Car: 1
+2026-04-27 17:07:24 | INFO     | vehicle_detection | save_detection_to_db:824 | Detection saved to database: d44c6624, type=image, count=1
+2026-04-27 17:13:05 | INFO     | vehicle_detection | <module>:65 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-04-27 17:13:05 | INFO     | vehicle_detection | <module>:74 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-04-27 17:13:05 | INFO     | vehicle_detection | <module>:83 | Cache initialized with type: simple
+2026-04-27 17:13:05 | INFO     | vehicle_detection | <module>:97 | Flask-Mail initialized
+2026-04-27 17:13:05 | INFO     | vehicle_detection | init_db:412 | Database connection established: postgresql://postgres:admin@localhost:5432/vehical_detections
+2026-04-27 17:13:05 | INFO     | vehicle_detection | init_db:413 | Tables created successfully
+2026-04-27 17:14:23 | INFO     | vehicle_detection | <module>:65 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-04-27 17:14:23 | INFO     | vehicle_detection | <module>:74 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-04-27 17:14:23 | INFO     | vehicle_detection | <module>:83 | Cache initialized with type: simple
+2026-04-27 17:14:23 | INFO     | vehicle_detection | <module>:97 | Flask-Mail initialized
+2026-04-27 17:14:24 | INFO     | vehicle_detection | init_db:412 | Database connection established: postgresql://postgres:admin@localhost:5432/vehical_detections
+2026-04-27 17:14:24 | INFO     | vehicle_detection | init_db:413 | Tables created successfully
+2026-04-27 17:15:25 | INFO     | vehicle_detection | <module>:65 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-04-27 17:15:25 | INFO     | vehicle_detection | <module>:74 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-04-27 17:15:25 | INFO     | vehicle_detection | <module>:83 | Cache initialized with type: simple
+2026-04-27 17:15:25 | INFO     | vehicle_detection | <module>:97 | Flask-Mail initialized
+2026-04-27 17:15:25 | INFO     | vehicle_detection | init_db:412 | Database connection established: postgresql://postgres:admin@localhost:5432/vehical_detections
+2026-04-27 17:15:25 | INFO     | vehicle_detection | init_db:413 | Tables created successfully
+2026-04-27 17:15:44 | ERROR    | vehicle_detection | detect_number_plates:6400 | Error detecting number plates: (psycopg2.errors.UndefinedColumn) column "region" of relation "number_plate_detections" does not exist
+LINE 1: ..., confidence, bbox_x1, bbox_y1, bbox_x2, bbox_y2, region, ti...
+                                                             ^
+
+[SQL: INSERT INTO number_plate_detections (report_id, plate_number, confidence, bbox_x1, bbox_y1, bbox_x2, bbox_y2, region, timestamp, plate_image) VALUES (%(report_id)s, %(plate_number)s, %(confidence)s, %(bbox_x1)s, %(bbox_y1)s, %(bbox_x2)s, %(bbox_y2)s, %(region)s, %(timestamp)s, %(plate_image)s) RETURNING number_plate_detections.id]
+[parameters: {'report_id': 'd44c6624', 'plate_number': 'YSX213', 'confidence': 0.9976844847202301, 'bbox_x1': 170, 'bbox_y1': 139, 'bbox_x2': 203, 'bbox_y2': 150, 'region': 'United Kingdom', 'timestamp': datetime.datetime(2026, 4, 27, 11, 45, 44, 131438), 'plate_image': None}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+2026-04-27 17:15:57 | ERROR    | vehicle_detection | detect_number_plates:6400 | Error detecting number plates: (psycopg2.errors.UndefinedColumn) column "region" of relation "number_plate_detections" does not exist
+LINE 1: ..., confidence, bbox_x1, bbox_y1, bbox_x2, bbox_y2, region, ti...
+                                                             ^
+
+[SQL: INSERT INTO number_plate_detections (report_id, plate_number, confidence, bbox_x1, bbox_y1, bbox_x2, bbox_y2, region, timestamp, plate_image) VALUES (%(report_id)s, %(plate_number)s, %(confidence)s, %(bbox_x1)s, %(bbox_y1)s, %(bbox_x2)s, %(bbox_y2)s, %(region)s, %(timestamp)s, %(plate_image)s) RETURNING number_plate_detections.id]
+[parameters: {'report_id': 'd44c6624', 'plate_number': 'YSX213', 'confidence': 0.9976844847202301, 'bbox_x1': 170, 'bbox_y1': 139, 'bbox_x2': 203, 'bbox_y2': 150, 'region': 'United Kingdom', 'timestamp': datetime.datetime(2026, 4, 27, 11, 45, 57, 726369), 'plate_image': None}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+2026-04-27 17:17:22 | INFO     | vehicle_detection | <module>:65 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-04-27 17:17:22 | INFO     | vehicle_detection | <module>:74 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-04-27 17:17:22 | INFO     | vehicle_detection | <module>:83 | Cache initialized with type: simple
+2026-04-27 17:17:22 | INFO     | vehicle_detection | <module>:97 | Flask-Mail initialized
+2026-04-27 17:17:22 | INFO     | vehicle_detection | init_db:412 | Database connection established: postgresql://postgres:admin@localhost:5432/vehical_detections
+2026-04-27 17:17:22 | INFO     | vehicle_detection | init_db:413 | Tables created successfully
+2026-04-27 17:17:58 | ERROR    | vehicle_detection | detect_number_plates:6400 | Error detecting number plates: (psycopg2.errors.UndefinedColumn) column "region" of relation "number_plate_detections" does not exist
+LINE 1: ..., confidence, bbox_x1, bbox_y1, bbox_x2, bbox_y2, region, ti...
+                                                             ^
+
+[SQL: INSERT INTO number_plate_detections (report_id, plate_number, confidence, bbox_x1, bbox_y1, bbox_x2, bbox_y2, region, timestamp, plate_image) VALUES (%(report_id)s, %(plate_number)s, %(confidence)s, %(bbox_x1)s, %(bbox_y1)s, %(bbox_x2)s, %(bbox_y2)s, %(region)s, %(timestamp)s, %(plate_image)s) RETURNING number_plate_detections.id]
+[parameters: {'report_id': 'd44c6624', 'plate_number': 'YSX213', 'confidence': 0.9976844847202301, 'bbox_x1': 170, 'bbox_y1': 139, 'bbox_x2': 203, 'bbox_y2': 150, 'region': 'United Kingdom', 'timestamp': datetime.datetime(2026, 4, 27, 11, 47, 58, 5455), 'plate_image': None}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+2026-04-27 17:18:01 | ERROR    | vehicle_detection | detect_number_plates:6400 | Error detecting number plates: (psycopg2.errors.UndefinedColumn) column "region" of relation "number_plate_detections" does not exist
+LINE 1: ..., confidence, bbox_x1, bbox_y1, bbox_x2, bbox_y2, region, ti...
+                                                             ^
+
+[SQL: INSERT INTO number_plate_detections (report_id, plate_number, confidence, bbox_x1, bbox_y1, bbox_x2, bbox_y2, region, timestamp, plate_image) VALUES (%(report_id)s, %(plate_number)s, %(confidence)s, %(bbox_x1)s, %(bbox_y1)s, %(bbox_x2)s, %(bbox_y2)s, %(region)s, %(timestamp)s, %(plate_image)s) RETURNING number_plate_detections.id]
+[parameters: {'report_id': 'd44c6624', 'plate_number': 'YSX213', 'confidence': 0.9976844847202301, 'bbox_x1': 170, 'bbox_y1': 139, 'bbox_x2': 203, 'bbox_y2': 150, 'region': 'United Kingdom', 'timestamp': datetime.datetime(2026, 4, 27, 11, 48, 1, 136978), 'plate_image': None}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+2026-04-27 17:19:49 | INFO     | vehicle_detection | <module>:65 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-04-27 17:19:49 | INFO     | vehicle_detection | <module>:74 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-04-27 17:19:49 | INFO     | vehicle_detection | <module>:83 | Cache initialized with type: simple
+2026-04-27 17:19:49 | INFO     | vehicle_detection | <module>:97 | Flask-Mail initialized
+2026-04-27 17:19:49 | INFO     | vehicle_detection | init_db:412 | Database connection established: postgresql://postgres:admin@localhost:5432/vehical_detections
+2026-04-27 17:19:49 | INFO     | vehicle_detection | init_db:413 | Tables created successfully
+2026-04-27 17:20:17 | INFO     | vehicle_detection | <module>:65 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-04-27 17:20:17 | INFO     | vehicle_detection | <module>:74 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-04-27 17:20:17 | INFO     | vehicle_detection | <module>:83 | Cache initialized with type: simple
+2026-04-27 17:20:17 | INFO     | vehicle_detection | <module>:97 | Flask-Mail initialized
+2026-04-27 17:20:17 | INFO     | vehicle_detection | init_db:412 | Database connection established: postgresql://postgres:admin@localhost:5432/vehical_detections
+2026-04-27 17:20:17 | INFO     | vehicle_detection | init_db:413 | Tables created successfully
+2026-04-27 17:20:38 | ERROR    | vehicle_detection | detect_number_plates:6404 | Error detecting number plates: (psycopg2.errors.StringDataRightTruncation) value too long for type character varying(10)
+
+[SQL: INSERT INTO number_plate_detections (report_id, plate_number, confidence, bbox_x1, bbox_y1, bbox_x2, bbox_y2, region, timestamp, plate_image) VALUES (%(report_id)s, %(plate_number)s, %(confidence)s, %(bbox_x1)s, %(bbox_y1)s, %(bbox_x2)s, %(bbox_y2)s, %(region)s, %(timestamp)s, %(plate_image)s) RETURNING number_plate_detections.id]
+[parameters: {'report_id': 'd44c6624', 'plate_number': 'YSX213', 'confidence': 0.9976844847202301, 'bbox_x1': 170, 'bbox_y1': 139, 'bbox_x2': 203, 'bbox_y2': 150, 'region': 'United Kingdom', 'timestamp': datetime.datetime(2026, 4, 27, 11, 50, 38, 76909), 'plate_image': None}]
+(Background on this error at: https://sqlalche.me/e/20/9h9h)
+2026-04-27 17:20:47 | ERROR    | vehicle_detection | detect_number_plates:6404 | Error detecting number plates: (psycopg2.errors.StringDataRightTruncation) value too long for type character varying(10)
+
+[SQL: INSERT INTO number_plate_detections (report_id, plate_number, confidence, bbox_x1, bbox_y1, bbox_x2, bbox_y2, region, timestamp, plate_image) VALUES (%(report_id)s, %(plate_number)s, %(confidence)s, %(bbox_x1)s, %(bbox_y1)s, %(bbox_x2)s, %(bbox_y2)s, %(region)s, %(timestamp)s, %(plate_image)s) RETURNING number_plate_detections.id]
+[parameters: {'report_id': 'd44c6624', 'plate_number': 'YSX213', 'confidence': 0.9976844847202301, 'bbox_x1': 170, 'bbox_y1': 139, 'bbox_x2': 203, 'bbox_y2': 150, 'region': 'United Kingdom', 'timestamp': datetime.datetime(2026, 4, 27, 11, 50, 47, 882337), 'plate_image': None}]
+(Background on this error at: https://sqlalche.me/e/20/9h9h)
+2026-04-27 17:22:38 | INFO     | vehicle_detection | <module>:65 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-04-27 17:22:38 | INFO     | vehicle_detection | <module>:74 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-04-27 17:22:38 | INFO     | vehicle_detection | <module>:83 | Cache initialized with type: simple
+2026-04-27 17:22:38 | INFO     | vehicle_detection | <module>:97 | Flask-Mail initialized
+2026-04-27 17:22:38 | INFO     | vehicle_detection | init_db:412 | Database connection established: postgresql://postgres:admin@localhost:5432/vehical_detections
+2026-04-27 17:22:38 | INFO     | vehicle_detection | init_db:413 | Tables created successfully
+2026-04-27 17:23:13 | INFO     | vehicle_detection | <module>:65 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-04-27 17:23:13 | INFO     | vehicle_detection | <module>:74 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-04-27 17:23:13 | INFO     | vehicle_detection | <module>:83 | Cache initialized with type: simple
+2026-04-27 17:23:13 | INFO     | vehicle_detection | <module>:97 | Flask-Mail initialized
+2026-04-27 17:23:13 | INFO     | vehicle_detection | init_db:412 | Database connection established: postgresql://postgres:admin@localhost:5432/vehical_detections
+2026-04-27 17:23:13 | INFO     | vehicle_detection | init_db:413 | Tables created successfully
+2026-04-27 17:46:57 | INFO     | vehicle_detection | <module>:65 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-04-27 17:46:57 | INFO     | vehicle_detection | <module>:74 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-04-27 17:46:57 | INFO     | vehicle_detection | <module>:83 | Cache initialized with type: simple
+2026-04-27 17:46:57 | INFO     | vehicle_detection | <module>:97 | Flask-Mail initialized
+2026-04-27 17:46:57 | INFO     | vehicle_detection | init_db:412 | Database connection established: postgresql://postgres:admin@localhost:5432/vehical_detections
+2026-04-27 17:46:57 | INFO     | vehicle_detection | init_db:413 | Tables created successfully
+2026-04-27 17:48:41 | INFO     | vehicle_detection | <module>:65 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-04-27 17:48:41 | INFO     | vehicle_detection | <module>:74 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-04-27 17:48:41 | INFO     | vehicle_detection | <module>:83 | Cache initialized with type: simple
+2026-04-27 17:48:41 | INFO     | vehicle_detection | <module>:97 | Flask-Mail initialized
+2026-04-27 17:48:41 | INFO     | vehicle_detection | init_db:412 | Database connection established: postgresql://postgres:admin@localhost:5432/vehical_detections
+2026-04-27 17:48:41 | INFO     | vehicle_detection | init_db:413 | Tables created successfully
+2026-04-27 17:55:55 | INFO     | vehicle_detection | <module>:65 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-04-27 17:55:55 | INFO     | vehicle_detection | <module>:74 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-04-27 17:55:55 | INFO     | vehicle_detection | <module>:83 | Cache initialized with type: simple
+2026-04-27 17:55:55 | INFO     | vehicle_detection | <module>:97 | Flask-Mail initialized
+2026-04-27 17:55:55 | INFO     | vehicle_detection | init_db:412 | Database connection established: postgresql://postgres:admin@localhost:5432/vehical_detections
+2026-04-27 17:55:55 | INFO     | vehicle_detection | init_db:413 | Tables created successfully
+2026-04-27 17:56:12 | INFO     | vehicle_detection | <module>:65 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-04-27 17:56:12 | INFO     | vehicle_detection | <module>:74 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-04-27 17:56:12 | INFO     | vehicle_detection | <module>:83 | Cache initialized with type: simple
+2026-04-27 17:56:12 | INFO     | vehicle_detection | <module>:97 | Flask-Mail initialized
+2026-04-27 17:56:12 | INFO     | vehicle_detection | init_db:412 | Database connection established: postgresql://postgres:admin@localhost:5432/vehical_detections
+2026-04-27 17:56:12 | INFO     | vehicle_detection | init_db:413 | Tables created successfully

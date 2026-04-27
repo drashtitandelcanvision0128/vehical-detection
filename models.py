@@ -107,3 +107,23 @@ class DetectionHistory(Base):
     
     # Relationship
     user = relationship("User", backref="detection_history")
+
+
+class NumberPlateDetection(Base):
+    """Model for number plate detection results"""
+    __tablename__ = 'number_plate_detections'
+
+    id = Column(Integer, primary_key=True)
+    report_id = Column(String(50), ForeignKey('detection_history.report_id'), nullable=True)
+    plate_number = Column(String(50), nullable=False)
+    confidence = Column(Float, default=0.0)
+    bbox_x1 = Column(Integer)
+    bbox_y1 = Column(Integer)
+    bbox_x2 = Column(Integer)
+    bbox_y2 = Column(Integer)
+    region = Column(String(50), nullable=True)  # Country/region code if available
+    timestamp = Column(DateTime, default=datetime.utcnow)
+    plate_image = Column(Text, nullable=True)  # Base64 encoded cropped plate image
+    
+    # Relationship
+    detection_history = relationship("DetectionHistory", backref="number_plates")
