@@ -1672,7 +1672,9 @@ Download Video
     }
 
     // Handle profile form submission
-    document.getElementById('profileForm').addEventListener('submit', function(e) {
+    const profileForm = document.getElementById('profileForm');
+    if (profileForm) {
+        profileForm.addEventListener('submit', function(e) {
         e.preventDefault();
         
         const formData = {
@@ -1702,7 +1704,8 @@ Download Video
         .catch(error => {
             alert('Error: ' + error);
         });
-    });
+        });
+    }
 
     // Show result modal when result is available
     {% if result %}
@@ -1904,9 +1907,11 @@ Download Video
             }
         });
         
-        document.getElementById('uploadForm').addEventListener('submit', function(e) {
-            const fileInput = document.getElementById('fileInput');
-            const pastedData = document.getElementById('pastedImageData').value;
+        const uploadForm = document.getElementById('uploadForm');
+        if (uploadForm) {
+            uploadForm.addEventListener('submit', function(e) {
+                const fileInput = document.getElementById('fileInput');
+                const pastedData = document.getElementById('pastedImageData') ? document.getElementById('pastedImageData').value : '';
             
             if (!fileInput.value && !pastedData) {
                 e.preventDefault();
@@ -1918,60 +1923,52 @@ Download Video
             document.getElementById('detectBtn').innerHTML = '<span class="material-symbols-outlined animate-spin">refresh</span> Processing...';
             
             return true;
-        });
+            });
+        }
         
-        document.getElementById('fileInput').addEventListener('change', function() {
-            if (this.value) {
-                document.getElementById('pastedImageData').value = '';
-                document.getElementById('pastePreviewContainer').style.display = 'none';
-                const fileName = this.files[0] ? this.files[0].name : '';
-                document.getElementById('fileName').textContent = fileName;
-                document.getElementById('selectedFileDisplay').style.display = 'block';
-            }
-        });
+        const fileInputEl = document.getElementById('fileInput');
+        if (fileInputEl) {
+            fileInputEl.addEventListener('change', function() {
+                if (this.value) {
+                    const pastedImageData = document.getElementById('pastedImageData');
+                    if (pastedImageData) pastedImageData.value = '';
+                    const pastePreviewContainer = document.getElementById('pastePreviewContainer');
+                    if (pastePreviewContainer) pastePreviewContainer.style.display = 'none';
+                    const fileName = this.files[0] ? this.files[0].name : '';
+                    const fileNameEl = document.getElementById('fileName');
+                    if (fileNameEl) fileNameEl.textContent = fileName;
+                    const selectedFileDisplay = document.getElementById('selectedFileDisplay');
+                    if (selectedFileDisplay) selectedFileDisplay.style.display = 'block';
+                }
+            });
+        }
         
         const dragDropArea = document.getElementById('dragDropArea');
         const dropZone = document.getElementById('uploadForm');
         const fileInput = document.getElementById('fileInput');
         
-        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-            dropZone.addEventListener(eventName, preventDefaults, false);
-            document.body.addEventListener(eventName, preventDefaults, false);
-        });
-        
-        function preventDefaults(e) {
-            e.preventDefault();
-            e.stopPropagation();
-        }
-        
-        ['dragenter', 'dragover'].forEach(eventName => {
-            dropZone.addEventListener(eventName, highlight, false);
-        });
-        
-        ['dragleave', 'drop'].forEach(eventName => {
-            dropZone.addEventListener(eventName, unhighlight, false);
-        });
-        
-        function highlight(e) {
-            dragDropArea.style.borderColor = '#4CAF50';
-            dragDropArea.style.background = '#e8f5e9';
-            dragDropArea.style.transform = 'scale(1.02)';
-        }
-        
-        function unhighlight(e) {
-            dragDropArea.style.borderColor = '';
-            dragDropArea.style.background = '';
-            dragDropArea.style.transform = 'scale(1)';
-        }
-        
-        dropZone.addEventListener('drop', handleDrop, false);
-        
-        function handleDrop(e) {
-            const dt = e.dataTransfer;
-            const files = dt.files;
+        if (dropZone && fileInput) {
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, preventDefaults, false);
+                document.body.addEventListener(eventName, preventDefaults, false);
+            });
             
-            if (files.length > 0) {
-                const file = files[0];
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            
+            ['dragenter', 'dragover'].forEach(eventName => {
+                if (dropZone) dropZone.addEventListener(eventName, highlight, false);
+            });
+        
+            ['dragleave', 'drop'].forEach(eventName => {
+                if (dropZone) dropZone.addEventListener(eventName, unhighlight, false);
+            });
+            
+            function highlight(e) {
+                if (dragDropArea) dragDropArea.style.transform = 'scale(1.02)';
+                if (dragDropArea) dragDropArea.style.borderColor = '#10b981';
                 const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'video/mp4', 'video/avi', 'video/quicktime'];
                 
                 if (validTypes.includes(file.type) || file.name.match(/\\.(jpg|jpeg|png|mp4|avi|mov)$/i)) {
@@ -1998,9 +1995,12 @@ Download Video
             }
         }
         
-        dragDropArea.addEventListener('click', function() {
-            fileInput.click();
-        });
+        const dragDropArea = document.getElementById('dragDropArea');
+        if (dragDropArea) {
+            dragDropArea.addEventListener('click', function() {
+                fileInput.click();
+            });
+        }
         
         let webcamStream = null;
         let isWebcamRunning = false;
@@ -4803,7 +4803,9 @@ Download PDF
     }
 
     // Handle profile form submission
-    document.getElementById('profileForm').addEventListener('submit', function(e) {
+    const profileForm = document.getElementById('profileForm');
+    if (profileForm) {
+        profileForm.addEventListener('submit', function(e) {
         e.preventDefault();
         
         const formData = {
@@ -4833,7 +4835,8 @@ Download PDF
         .catch(error => {
             alert('Error: ' + error);
         });
-    });
+        });
+    }
 </script>
 
 <!-- Profile Modal -->
@@ -5180,7 +5183,9 @@ Download PDF
     }
 
     // Handle profile form submission
-    document.getElementById('profileForm').addEventListener('submit', function(e) {
+    const profileForm = document.getElementById('profileForm');
+    if (profileForm) {
+        profileForm.addEventListener('submit', function(e) {
         e.preventDefault();
         
         const formData = {
@@ -5210,7 +5215,8 @@ Download PDF
         .catch(error => {
             alert('Error: ' + error);
         });
-    });
+        });
+    }
 </script>
 </body>
 </html>
