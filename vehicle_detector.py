@@ -510,7 +510,7 @@ def main():
         help='Custom width for video capture (default: use camera native resolution)'
     )
     parser.add_argument(
-        '--height', '-h',
+        '--height',
         type=int,
         default=None,
         help='Custom height for video capture (default: use camera native resolution)'
