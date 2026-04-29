@@ -844,7 +844,7 @@ def get_detection_history_from_db(limit=50):
         # Get user_id from session
         user_id = session.get('user_id')
         print(f"[DEBUG] Fetching history for user_id: {user_id}")
-        
+
         # Get detections filtered by user_id from unified history table
         query = db.query(DetectionHistory).order_by(DetectionHistory.timestamp.desc())
         if user_id:
@@ -854,6 +854,16 @@ def get_detection_history_from_db(limit=50):
         # Convert to history format
         history = []
         for record in history_records:
+            # Fetch number plates for this detection
+            number_plates = db.query(NumberPlateDetection).filter_by(report_id=record.report_id).all()
+            plates_data = []
+            for plate in number_plates:
+                plates_data.append({
+                    'plate_number': plate.plate_number,
+                    'confidence': plate.confidence,
+                    'region': plate.region
+                })
+
             history.append({
                 'id': record.report_id,
                 'report_id': record.report_id,  # Add report_id field for templates
@@ -866,7 +876,8 @@ def get_detection_history_from_db(limit=50):
                 'image_data': record.image_data,  # Add both keys for compatibility
                 'video_path': record.video_path,
                 'vehicle_count': record.vehicle_count,
-                'breakdown': record.breakdown
+                'breakdown': record.breakdown,
+                'number_plates': plates_data  # Add detected plates
             })
 
         print(f"[INFO] Fetched {len(history)} records from unified history table")
@@ -1966,6 +1977,11 @@ Download Video
                 if (dropZone) dropZone.addEventListener(eventName, unhighlight, false);
             });
             
+            function unhighlight(e) {
+                if (dragDropArea) dragDropArea.style.transform = 'scale(1)';
+                if (dragDropArea) dragDropArea.style.borderColor = '';
+            }
+            
             function highlight(e) {
                 if (dragDropArea) dragDropArea.style.transform = 'scale(1.02)';
                 if (dragDropArea) dragDropArea.style.borderColor = '#10b981';
@@ -1995,7 +2011,6 @@ Download Video
             }
         }
         
-        const dragDropArea = document.getElementById('dragDropArea');
         if (dragDropArea) {
             dragDropArea.addEventListener('click', function() {
                 fileInput.click();
@@ -2726,7 +2741,24 @@ def index():
             'user_info': user_info_for_pdf  # Store full user info for PDF
         }
         print(f"[DEBUG] Result stored with report_id: {report_id} for user_id: {user_id}")
-        # Note: Data is saved to database only when user clicks 'Save Report' button
+        
+        # Save to database immediately after detection (not waiting for Save Report button)
+        timestamp = time.strftime('%Y-%m-%d %H:%M:%S')
+        input_type = 'video' if result.get('video_path') else 'image'
+        try:
+            save_detection_to_db(
+                report_id=report_id,
+                timestamp=timestamp,
+                input_type=input_type,
+                message=result.get('message', ''),
+                stats=result.get('stats', {}),
+                image_data=result.get('image', ''),
+                video_path=result.get('video_path', ''),
+                conf_threshold=conf_threshold if request.method == 'POST' else 0.5
+            )
+            print(f"[INFO] Detection saved to database immediately: report_id={report_id}, type={input_type}")
+        except Exception as e:
+            print(f"[ERROR] Failed to save detection to database: {e}")
 
     return render_template_string(HTML_TEMPLATE, result=result, report_id=report_id)
 
@@ -5393,10 +5425,20 @@ View Video
 </a>
 {% endif %}
 {% if item.image_data and item.detection_type != 'live' %}
+{% if item.number_plates and item.number_plates|length > 0 %}
+<div onclick="showExistingPlates('{{ item.report_id }}')" class="text-sm font-semibold text-green-600 flex items-center gap-1 cursor-pointer hover:bg-green-50 px-2 py-1 rounded transition-colors">
+<span class="material-symbols-outlined text-base">confirmation_number</span>
+{{ item.number_plates[0].plate_number }}
+{% if item.number_plates|length > 1 %}
+<span class="text-xs text-slate-500">+{{ item.number_plates|length - 1 }} more</span>
+{% endif %}
+</div>
+{% else %}
 <button onclick="detectNumberPlates('{{ item.report_id }}', this)" class="text-sm font-semibold text-green-600 hover:text-green-700 transition-colors flex items-center gap-1">
 <span class="material-symbols-outlined text-base">directions_car</span>
 Detect Plates
 </button>
+{% endif %}
 {% endif %}
 <button onclick="deleteDetection('{{ item.id }}')" class="text-sm font-semibold text-red-600 hover:text-red-700 transition-colors">
 Delete
@@ -5555,10 +5597,10 @@ function deleteDetection(reportId) {
 function detectNumberPlates(reportId, button) {
     button.disabled = true;
     button.innerHTML = '<span class="material-symbols-outlined text-base animate-spin">refresh</span> Detecting...';
-    
+
     const formData = new FormData();
     formData.append('report_id', reportId);
-    
+
     fetch('/api/detect_number_plates', {
         method: 'POST',
         body: formData
@@ -5567,14 +5609,26 @@ function detectNumberPlates(reportId, button) {
     .then(data => {
         if (data.success) {
             showNumberPlateModal(data);
+            // Replace button with plate number display
+            if (data.plates && data.plates.length > 0) {
+                const plateText = data.plates[0].text || data.plates[0].plate_number;
+                const moreCount = data.plates.length - 1;
+                let html = `<div class="text-sm font-semibold text-green-600 flex items-center gap-1">`;
+                html += `<span class="material-symbols-outlined text-base">confirmation_number</span>${plateText}`;
+                if (moreCount > 0) {
+                    html += `<span class="text-xs text-slate-500">+${moreCount} more</span>`;
+                }
+                html += `</div>`;
+                button.outerHTML = html;
+            }
         } else {
             alert('Failed to detect number plates: ' + data.error);
+            button.disabled = false;
+            button.innerHTML = '<span class="material-symbols-outlined text-base">directions_car</span> Detect Plates';
         }
     })
     .catch(error => {
         alert('Error: ' + error);
-    })
-    .finally(() => {
         button.disabled = false;
         button.innerHTML = '<span class="material-symbols-outlined text-base">directions_car</span> Detect Plates';
     });
@@ -5616,6 +5670,33 @@ function closeNumberPlateModal() {
     const modal = document.getElementById('numberPlateModal');
     modal.classList.add('hidden');
     modal.classList.remove('flex');
+}
+
+function showExistingPlates(reportId) {
+    // Show loading state
+    const modal = document.getElementById('numberPlateModal');
+    const resultImage = document.getElementById('plateResultImage');
+    const platesList = document.getElementById('platesList');
+
+    resultImage.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+    platesList.innerHTML = '<p class="text-slate-500 text-center py-4">Loading...</p>';
+
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+
+    // Fetch plates with image
+    fetch(`/api/get_number_plates_with_image/${reportId}`)
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNumberPlateModal(data);
+        } else {
+            platesList.innerHTML = '<p class="text-red-500 text-center py-4">Failed to load plates: ' + (data.error || 'Unknown error') + '</p>';
+        }
+    })
+    .catch(error => {
+        platesList.innerHTML = '<p class="text-red-500 text-center py-4">Error: ' + error + '</p>';
+    });
 }
 </script>
 
@@ -6111,10 +6192,20 @@ Vehicles: {{ item.vehicle_count or 0 }}
 <!-- Action Buttons -->
 <div class="flex gap-2">
 {% if item.image_data %}
+{% if item.number_plates and item.number_plates|length > 0 %}
+<div onclick="showExistingPlates('{{ item.report_id }}')" class="flex-1 text-xs font-semibold text-green-600 flex items-center justify-center gap-1 px-3 py-2 bg-green-50 rounded-lg cursor-pointer hover:bg-green-100 transition-colors">
+<span class="material-symbols-outlined text-base">confirmation_number</span>
+{{ item.number_plates[0].plate_number }}
+{% if item.number_plates|length > 1 %}
+<span class="text-xs text-slate-500">+{{ item.number_plates|length - 1 }}</span>
+{% endif %}
+</div>
+{% else %}
 <button onclick="detectNumberPlates('{{ item.report_id }}', this)" class="flex-1 text-xs font-semibold text-green-600 hover:text-green-700 transition-colors flex items-center justify-center gap-1 px-3 py-2 bg-green-50 rounded-lg">
 <span class="material-symbols-outlined text-base">confirmation_number</span>
 Detect Plates
 </button>
+{% endif %}
 {% endif %}
 {% if item.video_path %}
 <button onclick="detectVideoPlates('{{ item.report_id }}', this)" class="flex-1 text-xs font-semibold text-blue-600 hover:text-blue-700 transition-colors flex items-center justify-center gap-1 px-3 py-2 bg-blue-50 rounded-lg">
@@ -6187,10 +6278,10 @@ document.addEventListener('click', function(event) {
 function detectNumberPlates(reportId, button) {
     button.disabled = true;
     button.innerHTML = '<span class="material-symbols-outlined text-base animate-spin">refresh</span> Detecting...';
-    
+
     const formData = new FormData();
     formData.append('report_id', reportId);
-    
+
     fetch('/api/detect_number_plates', {
         method: 'POST',
         body: formData
@@ -6199,14 +6290,26 @@ function detectNumberPlates(reportId, button) {
     .then(data => {
         if (data.success) {
             showNumberPlateModal(data);
+            // Replace button with plate number display
+            if (data.plates && data.plates.length > 0) {
+                const plateText = data.plates[0].text || data.plates[0].plate_number;
+                const moreCount = data.plates.length - 1;
+                let html = `<div class="flex-1 text-xs font-semibold text-green-600 flex items-center justify-center gap-1 px-3 py-2 bg-green-50 rounded-lg">`;
+                html += `<span class="material-symbols-outlined text-base">confirmation_number</span>${plateText}`;
+                if (moreCount > 0) {
+                    html += `<span class="text-xs text-slate-500">+${moreCount}</span>`;
+                }
+                html += `</div>`;
+                button.outerHTML = html;
+            }
         } else {
             alert('Failed to detect number plates: ' + data.error);
+            button.disabled = false;
+            button.innerHTML = '<span class="material-symbols-outlined text-base">confirmation_number</span> Detect Plates';
         }
     })
     .catch(error => {
         alert('Error: ' + error);
-    })
-    .finally(() => {
         button.disabled = false;
         button.innerHTML = '<span class="material-symbols-outlined text-base">confirmation_number</span> Detect Plates';
     });
@@ -6335,6 +6438,33 @@ function closeNumberPlateModal() {
     const modal = document.getElementById('numberPlateModal');
     modal.classList.add('hidden');
     modal.classList.remove('flex');
+}
+
+function showExistingPlates(reportId) {
+    // Show loading state
+    const modal = document.getElementById('numberPlateModal');
+    const resultImage = document.getElementById('plateResultImage');
+    const platesList = document.getElementById('platesList');
+
+    resultImage.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+    platesList.innerHTML = '<p class="text-slate-500 text-center py-4">Loading...</p>';
+
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+
+    // Fetch plates with image
+    fetch(`/api/get_number_plates_with_image/${reportId}`)
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNumberPlateModal(data);
+        } else {
+            platesList.innerHTML = '<p class="text-red-500 text-center py-4">Failed to load plates: ' + (data.error || 'Unknown error') + '</p>';
+        }
+    })
+    .catch(error => {
+        platesList.innerHTML = '<p class="text-red-500 text-center py-4">Error: ' + error + '</p>';
+    });
 }
 </script>
 </body>
@@ -6622,6 +6752,57 @@ def detect_number_plates():
         # Get database session
         Session = sessionmaker(bind=engine)
         session = Session()
+        
+        # Check if number plates were already detected for this report_id
+        existing_plates = session.query(NumberPlateDetection).filter_by(report_id=report_id).all()
+        
+        if existing_plates:
+            # Plates already detected, return cached results
+            print(f"[INFO] Number plates already detected for report_id: {report_id}, returning cached results")
+            
+            plates_data = []
+            for plate in existing_plates:
+                plates_data.append({
+                    'text': plate.plate_number,
+                    'confidence': plate.confidence,
+                    'bbox': [plate.bbox_x1, plate.bbox_y1, plate.bbox_x2, plate.bbox_y2],
+                    'region': plate.region
+                })
+            
+            # Get detection history entry to get the image for drawing
+            history_entry = session.query(DetectionHistory).filter_by(report_id=report_id).first()
+            
+            if history_entry and history_entry.image_data:
+                # Decode and draw plates on image
+                if ',' in history_entry.image_data:
+                    base64_data = history_entry.image_data.split(',')[1]
+                else:
+                    base64_data = history_entry.image_data
+                
+                img_data = base64.b64decode(base64_data)
+                nparr = np.frombuffer(img_data, np.uint8)
+                image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+                
+                if image is not None:
+                    alpr = get_alpr_detector()
+                    annotated_image, _ = alpr.detect_and_draw(image)
+                    _, buffer = cv2.imencode('.jpg', annotated_image)
+                    annotated_base64 = base64.b64encode(buffer).decode('utf-8')
+                    
+                    session.close()
+                    return jsonify({
+                        'success': True,
+                        'plates': plates_data,
+                        'annotated_image': f'data:image/jpeg;base64,{annotated_base64}',
+                        'cached': True
+                    })
+            
+            session.close()
+            return jsonify({
+                'success': True,
+                'plates': plates_data,
+                'cached': True
+            })
         
         # Get detection history entry
         history_entry = session.query(DetectionHistory).filter_by(report_id=report_id).first()
@@ -6923,6 +7104,89 @@ def get_number_plates(report_id):
         
     except Exception as e:
         logger.error(f"Error getting number plates: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/get_number_plates_with_image/<report_id>')
+@login_required
+def get_number_plates_with_image(report_id):
+    """
+    Get number plates with annotated image for a detection
+    ---
+    tags:
+      - Number Plate
+    security:
+      - Bearer: []
+    parameters:
+      - name: report_id
+        in: path
+        type: string
+        required: true
+        description: Report ID from detection history
+    responses:
+      200:
+        description: Number plates with image retrieved successfully
+      401:
+        description: Not authenticated
+      404:
+        description: Detection not found
+    """
+    try:
+        Session = sessionmaker(bind=engine)
+        db_session = Session()
+
+        # Get plates from database
+        plates = db_session.query(NumberPlateDetection).filter_by(report_id=report_id).all()
+
+        if not plates:
+            db_session.close()
+            return jsonify({'error': 'No plates found for this detection'}), 404
+
+        plates_data = []
+        for plate in plates:
+            plates_data.append({
+                'text': plate.plate_number,
+                'plate_number': plate.plate_number,
+                'confidence': plate.confidence,
+                'bbox': [plate.bbox_x1, plate.bbox_y1, plate.bbox_x2, plate.bbox_y2],
+                'region': plate.region
+            })
+
+        # Get detection history entry to get the image
+        history_entry = db_session.query(DetectionHistory).filter_by(report_id=report_id).first()
+
+        annotated_image = None
+        if history_entry and history_entry.image_data:
+            # Decode and draw plates on image
+            if ',' in history_entry.image_data:
+                base64_data = history_entry.image_data.split(',')[1]
+            else:
+                base64_data = history_entry.image_data
+
+            try:
+                img_data = base64.b64decode(base64_data)
+                nparr = np.frombuffer(img_data, np.uint8)
+                image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+
+                if image is not None:
+                    from alpr_detector import get_alpr_detector
+                    alpr = get_alpr_detector()
+                    annotated_image_obj, _ = alpr.detect_and_draw(image)
+                    _, buffer = cv2.imencode('.jpg', annotated_image_obj)
+                    annotated_image = f'data:image/jpeg;base64,{base64.b64encode(buffer).decode("utf-8")}'
+            except Exception as e:
+                print(f"[WARN] Failed to generate annotated image: {e}")
+
+        db_session.close()
+
+        return jsonify({
+            'success': True,
+            'plates': plates_data,
+            'annotated_image': annotated_image
+        })
+
+    except Exception as e:
+        logger.error(f"Error getting number plates with image: {e}")
         return jsonify({'error': str(e)}), 500
 
 

@@ -5,6 +5,7 @@ Uses fast-alpr library for number plate detection and OCR
 
 import cv2
 import numpy as np
+import statistics
 from typing import Optional
 import os
 from dotenv import load_dotenv
@@ -67,27 +68,30 @@ class ALPRDetector:
         
         return enhanced
     
-    def detect_plates(self, image: np.ndarray) -> list:
+    def detect_plates(self, image: np.ndarray, preprocess: bool = False) -> list:
         """
         Detect license plates in an image
         
         Args:
             image: Input image (BGR format)
+            preprocess: Whether to preprocess image before detection (default False,
+                ALPR models are trained on raw images)
             
         Returns:
             List of detected plates with text and confidence
-            Format: [{'text': str, 'confidence': float, 'bbox': (x1, y1, x2, y2)}]
+            Format: [{'text': str, 'confidence': float, 'detection_confidence': float,
+                     'bbox': (x1, y1, x2, y2), 'region': str, 'region_confidence': float}]
         """
         if self.alpr is None:
             print("[ERROR] ALPR not initialized")
             return []
         
         try:
-            # Preprocess image for better detection
-            processed_image = self._preprocess_image(image)
+            # Optionally preprocess image for better detection
+            input_image = self._preprocess_image(image) if preprocess else image
             
-            # Run ALPR prediction on preprocessed image
-            results = self.alpr.predict(processed_image)
+            # Run ALPR prediction
+            results = self.alpr.predict(input_image)
             
             plates = []
             for result in results:
@@ -97,7 +101,7 @@ class ALPRDetector:
                 if ocr is not None and ocr.text:
                     bbox = detection.bounding_box
                     confidence = (
-                        sum(ocr.confidence) / len(ocr.confidence)
+                        statistics.mean(ocr.confidence)
                         if isinstance(ocr.confidence, list)
                         else ocr.confidence
                     )
@@ -105,8 +109,10 @@ class ALPRDetector:
                     plates.append({
                         'text': ocr.text,
                         'confidence': float(confidence),
+                        'detection_confidence': float(detection.confidence),
                         'bbox': (int(bbox.x1), int(bbox.y1), int(bbox.x2), int(bbox.y2)),
-                        'region': ocr.region if ocr.region else None
+                        'region': ocr.region if ocr.region else None,
+                        'region_confidence': float(ocr.region_confidence) if ocr.region_confidence is not None else None
                     })
             
             return plates
@@ -115,38 +121,56 @@ class ALPRDetector:
             print(f"[ERROR] ALPR detection failed: {e}")
             return []
     
-    def detect_and_draw(self, image: np.ndarray) -> tuple:
+    def detect_and_draw(self, image: np.ndarray, preprocess: bool = False) -> tuple:
         """
-        Detect plates and draw bounding boxes on image
+        Detect plates and draw bounding boxes on image using ALPR's draw_predictions
+        for high-quality annotations with proper font scaling, outlines, and region display.
         
         Args:
             image: Input image (BGR format)
+            preprocess: Whether to preprocess image before detection
             
         Returns:
             Tuple of (annotated_image, plates_list)
         """
-        annotated = image.copy()
-        # Preprocess for detection
-        processed_image = self._preprocess_image(image)
-        plates = self.detect_plates(processed_image)
+        if self.alpr is None:
+            print("[ERROR] ALPR not initialized")
+            return image.copy(), []
         
-        for plate in plates:
-            x1, y1, x2, y2 = plate['bbox']
-            text = plate['text']
-            conf = plate['confidence']
+        try:
+            # Use ALPR's draw_predictions for professional annotations
+            # It handles font scaling, text outlines, region display, multi-line labels
+            drawn = self.alpr.draw_predictions(image)
+            annotated_image = drawn.image
             
-            # Draw bounding box
-            cv2.rectangle(annotated, (x1, y1), (x2, y2), (0, 255, 0), 2)
+            # Convert ALPR results to plates dict list for compatibility
+            plates = []
+            for result in drawn.results:
+                detection = result.detection
+                ocr = result.ocr
+                
+                if ocr is not None and ocr.text:
+                    bbox = detection.bounding_box
+                    confidence = (
+                        statistics.mean(ocr.confidence)
+                        if isinstance(ocr.confidence, list)
+                        else ocr.confidence
+                    )
+                    
+                    plates.append({
+                        'text': ocr.text,
+                        'confidence': float(confidence),
+                        'detection_confidence': float(detection.confidence),
+                        'bbox': (int(bbox.x1), int(bbox.y1), int(bbox.x2), int(bbox.y2)),
+                        'region': ocr.region if ocr.region else None,
+                        'region_confidence': float(ocr.region_confidence) if ocr.region_confidence is not None else None
+                    })
             
-            # Draw label
-            label = f"{text} ({conf*100:.1f}%)"
-            label_size, _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 2)
-            cv2.rectangle(annotated, (x1, y1 - label_size[1] - 10), 
-                         (x1 + label_size[0], y1), (0, 255, 0), -1)
-            cv2.putText(annotated, label, (x1, y1 - 5), 
-                       cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2)
-        
-        return annotated, plates
+            return annotated_image, plates
+            
+        except Exception as e:
+            print(f"[ERROR] ALPR detect_and_draw failed: {e}")
+            return image.copy(), []
     
     def detect_from_base64(self, base64_image: str) -> list:
         """
@@ -171,9 +195,8 @@ class ALPRDetector:
                 print("[ERROR] Failed to decode base64 image")
                 return []
             
-            # Preprocess image for better detection
-            processed_image = self._preprocess_image(image)
-            return self.detect_plates(processed_image)
+            # Pass raw image to detect_plates (ALPR models trained on raw images)
+            return self.detect_plates(image)
             
         except Exception as e:
             print(f"[ERROR] Failed to process base64 image: {e}")
