@@ -36,3 +36,338 @@ LINE 1: ..., confidence, bbox_x1, bbox_y1, bbox_x2, bbox_y2, region, ti...
 [SQL: INSERT INTO number_plate_detections (report_id, plate_number, confidence, bbox_x1, bbox_y1, bbox_x2, bbox_y2, region, timestamp, plate_image) VALUES (%(report_id)s, %(plate_number)s, %(confidence)s, %(bbox_x1)s, %(bbox_y1)s, %(bbox_x2)s, %(bbox_y2)s, %(region)s, %(timestamp)s, %(plate_image)s) RETURNING number_plate_detections.id]
 [parameters: {'report_id': 'd44c6624', 'plate_number': 'YSX213', 'confidence': 0.9976844847202301, 'bbox_x1': 170, 'bbox_y1': 139, 'bbox_x2': 203, 'bbox_y2': 150, 'region': 'United Kingdom', 'timestamp': datetime.datetime(2026, 4, 27, 11, 50, 47, 882337), 'plate_image': None}]
 (Background on this error at: https://sqlalche.me/e/20/9h9h)
+2026-04-29 15:06:00 | ERROR    | vehicle_detection | log_error:133 | ERROR | Type:Authentication | Login error: (psycopg2.errors.UndefinedColumn) column users.role does not exist
+LINE 1: ...e AS users_is_active, users.theme AS users_theme, users.role...
+                                                             ^
+
+[SQL: SELECT users.id AS users_id, users.username AS users_username, users.email AS users_email, users.password_hash AS users_password_hash, users.created_at AS users_created_at, users.is_active AS users_is_active, users.theme AS users_theme, users.role AS users_role, users.reset_token AS users_reset_token, users.reset_token_expires AS users_reset_token_expires, users.two_factor_enabled AS users_two_factor_enabled, users.two_factor_secret AS users_two_factor_secret 
+FROM users 
+WHERE users.username = %(username_1)s 
+ LIMIT %(param_1)s]
+[parameters: {'username_1': 'test', 'param_1': 1}]
+(Background on this error at: https://sqlalche.me/e/20/f405) | Anonymous | Details:{'username': 'test'}
+2026-04-29 15:06:00 | ERROR    | vehicle_detection | login:594 | [ERROR] Login error: (psycopg2.errors.UndefinedColumn) column users.role does not exist
+LINE 1: ...e AS users_is_active, users.theme AS users_theme, users.role...
+                                                             ^
+
+[SQL: SELECT users.id AS users_id, users.username AS users_username, users.email AS users_email, users.password_hash AS users_password_hash, users.created_at AS users_created_at, users.is_active AS users_is_active, users.theme AS users_theme, users.role AS users_role, users.reset_token AS users_reset_token, users.reset_token_expires AS users_reset_token_expires, users.two_factor_enabled AS users_two_factor_enabled, users.two_factor_secret AS users_two_factor_secret 
+FROM users 
+WHERE users.username = %(username_1)s 
+ LIMIT %(param_1)s]
+[parameters: {'username_1': 'test', 'param_1': 1}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+2026-04-29 15:06:02 | ERROR    | vehicle_detection | log_error:133 | ERROR | Type:Authentication | Login error: (psycopg2.errors.UndefinedColumn) column users.role does not exist
+LINE 1: ...e AS users_is_active, users.theme AS users_theme, users.role...
+                                                             ^
+
+[SQL: SELECT users.id AS users_id, users.username AS users_username, users.email AS users_email, users.password_hash AS users_password_hash, users.created_at AS users_created_at, users.is_active AS users_is_active, users.theme AS users_theme, users.role AS users_role, users.reset_token AS users_reset_token, users.reset_token_expires AS users_reset_token_expires, users.two_factor_enabled AS users_two_factor_enabled, users.two_factor_secret AS users_two_factor_secret 
+FROM users 
+WHERE users.username = %(username_1)s 
+ LIMIT %(param_1)s]
+[parameters: {'username_1': 'test', 'param_1': 1}]
+(Background on this error at: https://sqlalche.me/e/20/f405) | Anonymous | Details:{'username': 'test'}
+2026-04-29 15:06:02 | ERROR    | vehicle_detection | login:594 | [ERROR] Login error: (psycopg2.errors.UndefinedColumn) column users.role does not exist
+LINE 1: ...e AS users_is_active, users.theme AS users_theme, users.role...
+                                                             ^
+
+[SQL: SELECT users.id AS users_id, users.username AS users_username, users.email AS users_email, users.password_hash AS users_password_hash, users.created_at AS users_created_at, users.is_active AS users_is_active, users.theme AS users_theme, users.role AS users_role, users.reset_token AS users_reset_token, users.reset_token_expires AS users_reset_token_expires, users.two_factor_enabled AS users_two_factor_enabled, users.two_factor_secret AS users_two_factor_secret 
+FROM users 
+WHERE users.username = %(username_1)s 
+ LIMIT %(param_1)s]
+[parameters: {'username_1': 'test', 'param_1': 1}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+2026-04-29 15:06:03 | ERROR    | vehicle_detection | log_error:133 | ERROR | Type:Authentication | Login error: (psycopg2.errors.UndefinedColumn) column users.role does not exist
+LINE 1: ...e AS users_is_active, users.theme AS users_theme, users.role...
+                                                             ^
+
+[SQL: SELECT users.id AS users_id, users.username AS users_username, users.email AS users_email, users.password_hash AS users_password_hash, users.created_at AS users_created_at, users.is_active AS users_is_active, users.theme AS users_theme, users.role AS users_role, users.reset_token AS users_reset_token, users.reset_token_expires AS users_reset_token_expires, users.two_factor_enabled AS users_two_factor_enabled, users.two_factor_secret AS users_two_factor_secret 
+FROM users 
+WHERE users.username = %(username_1)s 
+ LIMIT %(param_1)s]
+[parameters: {'username_1': 'test', 'param_1': 1}]
+(Background on this error at: https://sqlalche.me/e/20/f405) | Anonymous | Details:{'username': 'test'}
+2026-04-29 15:06:03 | ERROR    | vehicle_detection | login:594 | [ERROR] Login error: (psycopg2.errors.UndefinedColumn) column users.role does not exist
+LINE 1: ...e AS users_is_active, users.theme AS users_theme, users.role...
+                                                             ^
+
+[SQL: SELECT users.id AS users_id, users.username AS users_username, users.email AS users_email, users.password_hash AS users_password_hash, users.created_at AS users_created_at, users.is_active AS users_is_active, users.theme AS users_theme, users.role AS users_role, users.reset_token AS users_reset_token, users.reset_token_expires AS users_reset_token_expires, users.two_factor_enabled AS users_two_factor_enabled, users.two_factor_secret AS users_two_factor_secret 
+FROM users 
+WHERE users.username = %(username_1)s 
+ LIMIT %(param_1)s]
+[parameters: {'username_1': 'test', 'param_1': 1}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+2026-04-29 15:06:05 | ERROR    | vehicle_detection | log_error:133 | ERROR | Type:Authentication | Login error: (psycopg2.errors.UndefinedColumn) column users.role does not exist
+LINE 1: ...e AS users_is_active, users.theme AS users_theme, users.role...
+                                                             ^
+
+[SQL: SELECT users.id AS users_id, users.username AS users_username, users.email AS users_email, users.password_hash AS users_password_hash, users.created_at AS users_created_at, users.is_active AS users_is_active, users.theme AS users_theme, users.role AS users_role, users.reset_token AS users_reset_token, users.reset_token_expires AS users_reset_token_expires, users.two_factor_enabled AS users_two_factor_enabled, users.two_factor_secret AS users_two_factor_secret 
+FROM users 
+WHERE users.username = %(username_1)s 
+ LIMIT %(param_1)s]
+[parameters: {'username_1': 'test', 'param_1': 1}]
+(Background on this error at: https://sqlalche.me/e/20/f405) | Anonymous | Details:{'username': 'test'}
+2026-04-29 15:06:05 | ERROR    | vehicle_detection | login:594 | [ERROR] Login error: (psycopg2.errors.UndefinedColumn) column users.role does not exist
+LINE 1: ...e AS users_is_active, users.theme AS users_theme, users.role...
+                                                             ^
+
+[SQL: SELECT users.id AS users_id, users.username AS users_username, users.email AS users_email, users.password_hash AS users_password_hash, users.created_at AS users_created_at, users.is_active AS users_is_active, users.theme AS users_theme, users.role AS users_role, users.reset_token AS users_reset_token, users.reset_token_expires AS users_reset_token_expires, users.two_factor_enabled AS users_two_factor_enabled, users.two_factor_secret AS users_two_factor_secret 
+FROM users 
+WHERE users.username = %(username_1)s 
+ LIMIT %(param_1)s]
+[parameters: {'username_1': 'test', 'param_1': 1}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+2026-04-29 15:06:05 | ERROR    | vehicle_detection | log_error:133 | ERROR | Type:Authentication | Login error: (psycopg2.errors.UndefinedColumn) column users.role does not exist
+LINE 1: ...e AS users_is_active, users.theme AS users_theme, users.role...
+                                                             ^
+
+[SQL: SELECT users.id AS users_id, users.username AS users_username, users.email AS users_email, users.password_hash AS users_password_hash, users.created_at AS users_created_at, users.is_active AS users_is_active, users.theme AS users_theme, users.role AS users_role, users.reset_token AS users_reset_token, users.reset_token_expires AS users_reset_token_expires, users.two_factor_enabled AS users_two_factor_enabled, users.two_factor_secret AS users_two_factor_secret 
+FROM users 
+WHERE users.username = %(username_1)s 
+ LIMIT %(param_1)s]
+[parameters: {'username_1': 'test', 'param_1': 1}]
+(Background on this error at: https://sqlalche.me/e/20/f405) | Anonymous | Details:{'username': 'test'}
+2026-04-29 15:06:05 | ERROR    | vehicle_detection | login:594 | [ERROR] Login error: (psycopg2.errors.UndefinedColumn) column users.role does not exist
+LINE 1: ...e AS users_is_active, users.theme AS users_theme, users.role...
+                                                             ^
+
+[SQL: SELECT users.id AS users_id, users.username AS users_username, users.email AS users_email, users.password_hash AS users_password_hash, users.created_at AS users_created_at, users.is_active AS users_is_active, users.theme AS users_theme, users.role AS users_role, users.reset_token AS users_reset_token, users.reset_token_expires AS users_reset_token_expires, users.two_factor_enabled AS users_two_factor_enabled, users.two_factor_secret AS users_two_factor_secret 
+FROM users 
+WHERE users.username = %(username_1)s 
+ LIMIT %(param_1)s]
+[parameters: {'username_1': 'test', 'param_1': 1}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+2026-04-29 15:06:05 | ERROR    | vehicle_detection | log_error:133 | ERROR | Type:Authentication | Login error: (psycopg2.errors.UndefinedColumn) column users.role does not exist
+LINE 1: ...e AS users_is_active, users.theme AS users_theme, users.role...
+                                                             ^
+
+[SQL: SELECT users.id AS users_id, users.username AS users_username, users.email AS users_email, users.password_hash AS users_password_hash, users.created_at AS users_created_at, users.is_active AS users_is_active, users.theme AS users_theme, users.role AS users_role, users.reset_token AS users_reset_token, users.reset_token_expires AS users_reset_token_expires, users.two_factor_enabled AS users_two_factor_enabled, users.two_factor_secret AS users_two_factor_secret 
+FROM users 
+WHERE users.username = %(username_1)s 
+ LIMIT %(param_1)s]
+[parameters: {'username_1': 'test', 'param_1': 1}]
+(Background on this error at: https://sqlalche.me/e/20/f405) | Anonymous | Details:{'username': 'test'}
+2026-04-29 15:06:05 | ERROR    | vehicle_detection | login:594 | [ERROR] Login error: (psycopg2.errors.UndefinedColumn) column users.role does not exist
+LINE 1: ...e AS users_is_active, users.theme AS users_theme, users.role...
+                                                             ^
+
+[SQL: SELECT users.id AS users_id, users.username AS users_username, users.email AS users_email, users.password_hash AS users_password_hash, users.created_at AS users_created_at, users.is_active AS users_is_active, users.theme AS users_theme, users.role AS users_role, users.reset_token AS users_reset_token, users.reset_token_expires AS users_reset_token_expires, users.two_factor_enabled AS users_two_factor_enabled, users.two_factor_secret AS users_two_factor_secret 
+FROM users 
+WHERE users.username = %(username_1)s 
+ LIMIT %(param_1)s]
+[parameters: {'username_1': 'test', 'param_1': 1}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+2026-04-29 15:11:33 | ERROR    | vehicle_detection | log_error:133 | ERROR | Type:Authentication | Login error: (psycopg2.errors.UndefinedColumn) column users.role does not exist
+LINE 1: ...e AS users_is_active, users.theme AS users_theme, users.role...
+                                                             ^
+
+[SQL: SELECT users.id AS users_id, users.username AS users_username, users.email AS users_email, users.password_hash AS users_password_hash, users.created_at AS users_created_at, users.is_active AS users_is_active, users.theme AS users_theme, users.role AS users_role, users.reset_token AS users_reset_token, users.reset_token_expires AS users_reset_token_expires, users.two_factor_enabled AS users_two_factor_enabled, users.two_factor_secret AS users_two_factor_secret 
+FROM users 
+WHERE users.username = %(username_1)s 
+ LIMIT %(param_1)s]
+[parameters: {'username_1': 'test', 'param_1': 1}]
+(Background on this error at: https://sqlalche.me/e/20/f405) | Anonymous | Details:{'username': 'test'}
+2026-04-29 15:11:33 | ERROR    | vehicle_detection | login:594 | [ERROR] Login error: (psycopg2.errors.UndefinedColumn) column users.role does not exist
+LINE 1: ...e AS users_is_active, users.theme AS users_theme, users.role...
+                                                             ^
+
+[SQL: SELECT users.id AS users_id, users.username AS users_username, users.email AS users_email, users.password_hash AS users_password_hash, users.created_at AS users_created_at, users.is_active AS users_is_active, users.theme AS users_theme, users.role AS users_role, users.reset_token AS users_reset_token, users.reset_token_expires AS users_reset_token_expires, users.two_factor_enabled AS users_two_factor_enabled, users.two_factor_secret AS users_two_factor_secret 
+FROM users 
+WHERE users.username = %(username_1)s 
+ LIMIT %(param_1)s]
+[parameters: {'username_1': 'test', 'param_1': 1}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+2026-04-29 15:11:36 | ERROR    | vehicle_detection | log_error:133 | ERROR | Type:Authentication | Login error: (psycopg2.errors.UndefinedColumn) column users.role does not exist
+LINE 1: ...e AS users_is_active, users.theme AS users_theme, users.role...
+                                                             ^
+
+[SQL: SELECT users.id AS users_id, users.username AS users_username, users.email AS users_email, users.password_hash AS users_password_hash, users.created_at AS users_created_at, users.is_active AS users_is_active, users.theme AS users_theme, users.role AS users_role, users.reset_token AS users_reset_token, users.reset_token_expires AS users_reset_token_expires, users.two_factor_enabled AS users_two_factor_enabled, users.two_factor_secret AS users_two_factor_secret 
+FROM users 
+WHERE users.username = %(username_1)s 
+ LIMIT %(param_1)s]
+[parameters: {'username_1': 'test', 'param_1': 1}]
+(Background on this error at: https://sqlalche.me/e/20/f405) | Anonymous | Details:{'username': 'test'}
+2026-04-29 15:11:36 | ERROR    | vehicle_detection | login:594 | [ERROR] Login error: (psycopg2.errors.UndefinedColumn) column users.role does not exist
+LINE 1: ...e AS users_is_active, users.theme AS users_theme, users.role...
+                                                             ^
+
+[SQL: SELECT users.id AS users_id, users.username AS users_username, users.email AS users_email, users.password_hash AS users_password_hash, users.created_at AS users_created_at, users.is_active AS users_is_active, users.theme AS users_theme, users.role AS users_role, users.reset_token AS users_reset_token, users.reset_token_expires AS users_reset_token_expires, users.two_factor_enabled AS users_two_factor_enabled, users.two_factor_secret AS users_two_factor_secret 
+FROM users 
+WHERE users.username = %(username_1)s 
+ LIMIT %(param_1)s]
+[parameters: {'username_1': 'test', 'param_1': 1}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+2026-04-29 15:11:41 | ERROR    | vehicle_detection | log_error:133 | ERROR | Type:Authentication | Login error: (psycopg2.errors.UndefinedColumn) column users.role does not exist
+LINE 1: ...e AS users_is_active, users.theme AS users_theme, users.role...
+                                                             ^
+
+[SQL: SELECT users.id AS users_id, users.username AS users_username, users.email AS users_email, users.password_hash AS users_password_hash, users.created_at AS users_created_at, users.is_active AS users_is_active, users.theme AS users_theme, users.role AS users_role, users.reset_token AS users_reset_token, users.reset_token_expires AS users_reset_token_expires, users.two_factor_enabled AS users_two_factor_enabled, users.two_factor_secret AS users_two_factor_secret 
+FROM users 
+WHERE users.username = %(username_1)s 
+ LIMIT %(param_1)s]
+[parameters: {'username_1': 'test', 'param_1': 1}]
+(Background on this error at: https://sqlalche.me/e/20/f405) | Anonymous | Details:{'username': 'test'}
+2026-04-29 15:11:41 | ERROR    | vehicle_detection | login:594 | [ERROR] Login error: (psycopg2.errors.UndefinedColumn) column users.role does not exist
+LINE 1: ...e AS users_is_active, users.theme AS users_theme, users.role...
+                                                             ^
+
+[SQL: SELECT users.id AS users_id, users.username AS users_username, users.email AS users_email, users.password_hash AS users_password_hash, users.created_at AS users_created_at, users.is_active AS users_is_active, users.theme AS users_theme, users.role AS users_role, users.reset_token AS users_reset_token, users.reset_token_expires AS users_reset_token_expires, users.two_factor_enabled AS users_two_factor_enabled, users.two_factor_secret AS users_two_factor_secret 
+FROM users 
+WHERE users.username = %(username_1)s 
+ LIMIT %(param_1)s]
+[parameters: {'username_1': 'test', 'param_1': 1}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+2026-04-29 15:11:42 | ERROR    | vehicle_detection | log_error:133 | ERROR | Type:Authentication | Login error: (psycopg2.errors.UndefinedColumn) column users.role does not exist
+LINE 1: ...e AS users_is_active, users.theme AS users_theme, users.role...
+                                                             ^
+
+[SQL: SELECT users.id AS users_id, users.username AS users_username, users.email AS users_email, users.password_hash AS users_password_hash, users.created_at AS users_created_at, users.is_active AS users_is_active, users.theme AS users_theme, users.role AS users_role, users.reset_token AS users_reset_token, users.reset_token_expires AS users_reset_token_expires, users.two_factor_enabled AS users_two_factor_enabled, users.two_factor_secret AS users_two_factor_secret 
+FROM users 
+WHERE users.username = %(username_1)s 
+ LIMIT %(param_1)s]
+[parameters: {'username_1': 'test', 'param_1': 1}]
+(Background on this error at: https://sqlalche.me/e/20/f405) | Anonymous | Details:{'username': 'test'}
+2026-04-29 15:11:42 | ERROR    | vehicle_detection | login:594 | [ERROR] Login error: (psycopg2.errors.UndefinedColumn) column users.role does not exist
+LINE 1: ...e AS users_is_active, users.theme AS users_theme, users.role...
+                                                             ^
+
+[SQL: SELECT users.id AS users_id, users.username AS users_username, users.email AS users_email, users.password_hash AS users_password_hash, users.created_at AS users_created_at, users.is_active AS users_is_active, users.theme AS users_theme, users.role AS users_role, users.reset_token AS users_reset_token, users.reset_token_expires AS users_reset_token_expires, users.two_factor_enabled AS users_two_factor_enabled, users.two_factor_secret AS users_two_factor_secret 
+FROM users 
+WHERE users.username = %(username_1)s 
+ LIMIT %(param_1)s]
+[parameters: {'username_1': 'test', 'param_1': 1}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+2026-04-29 15:14:16 | ERROR    | vehicle_detection | log_error:133 | ERROR | Type:Authentication | Login error: (psycopg2.errors.UndefinedColumn) column users.role does not exist
+LINE 1: ...e AS users_is_active, users.theme AS users_theme, users.role...
+                                                             ^
+
+[SQL: SELECT users.id AS users_id, users.username AS users_username, users.email AS users_email, users.password_hash AS users_password_hash, users.created_at AS users_created_at, users.is_active AS users_is_active, users.theme AS users_theme, users.role AS users_role, users.reset_token AS users_reset_token, users.reset_token_expires AS users_reset_token_expires, users.two_factor_enabled AS users_two_factor_enabled, users.two_factor_secret AS users_two_factor_secret 
+FROM users 
+WHERE users.username = %(username_1)s 
+ LIMIT %(param_1)s]
+[parameters: {'username_1': 'test', 'param_1': 1}]
+(Background on this error at: https://sqlalche.me/e/20/f405) | Anonymous | Details:{'username': 'test'}
+2026-04-29 15:14:16 | ERROR    | vehicle_detection | login:594 | [ERROR] Login error: (psycopg2.errors.UndefinedColumn) column users.role does not exist
+LINE 1: ...e AS users_is_active, users.theme AS users_theme, users.role...
+                                                             ^
+
+[SQL: SELECT users.id AS users_id, users.username AS users_username, users.email AS users_email, users.password_hash AS users_password_hash, users.created_at AS users_created_at, users.is_active AS users_is_active, users.theme AS users_theme, users.role AS users_role, users.reset_token AS users_reset_token, users.reset_token_expires AS users_reset_token_expires, users.two_factor_enabled AS users_two_factor_enabled, users.two_factor_secret AS users_two_factor_secret 
+FROM users 
+WHERE users.username = %(username_1)s 
+ LIMIT %(param_1)s]
+[parameters: {'username_1': 'test', 'param_1': 1}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+2026-04-29 15:14:23 | ERROR    | vehicle_detection | log_error:133 | ERROR | Type:Authentication | Login error: (psycopg2.errors.UndefinedColumn) column users.role does not exist
+LINE 1: ...e AS users_is_active, users.theme AS users_theme, users.role...
+                                                             ^
+
+[SQL: SELECT users.id AS users_id, users.username AS users_username, users.email AS users_email, users.password_hash AS users_password_hash, users.created_at AS users_created_at, users.is_active AS users_is_active, users.theme AS users_theme, users.role AS users_role, users.reset_token AS users_reset_token, users.reset_token_expires AS users_reset_token_expires, users.two_factor_enabled AS users_two_factor_enabled, users.two_factor_secret AS users_two_factor_secret 
+FROM users 
+WHERE users.username = %(username_1)s 
+ LIMIT %(param_1)s]
+[parameters: {'username_1': 'test', 'param_1': 1}]
+(Background on this error at: https://sqlalche.me/e/20/f405) | Anonymous | Details:{'username': 'test'}
+2026-04-29 15:14:23 | ERROR    | vehicle_detection | login:594 | [ERROR] Login error: (psycopg2.errors.UndefinedColumn) column users.role does not exist
+LINE 1: ...e AS users_is_active, users.theme AS users_theme, users.role...
+                                                             ^
+
+[SQL: SELECT users.id AS users_id, users.username AS users_username, users.email AS users_email, users.password_hash AS users_password_hash, users.created_at AS users_created_at, users.is_active AS users_is_active, users.theme AS users_theme, users.role AS users_role, users.reset_token AS users_reset_token, users.reset_token_expires AS users_reset_token_expires, users.two_factor_enabled AS users_two_factor_enabled, users.two_factor_secret AS users_two_factor_secret 
+FROM users 
+WHERE users.username = %(username_1)s 
+ LIMIT %(param_1)s]
+[parameters: {'username_1': 'test', 'param_1': 1}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+2026-04-29 15:14:39 | ERROR    | vehicle_detection | log_error:133 | ERROR | Type:Database | Registration error: (psycopg2.errors.UndefinedColumn) column users.role does not exist
+LINE 1: ...e AS users_is_active, users.theme AS users_theme, users.role...
+                                                             ^
+
+[SQL: SELECT users.id AS users_id, users.username AS users_username, users.email AS users_email, users.password_hash AS users_password_hash, users.created_at AS users_created_at, users.is_active AS users_is_active, users.theme AS users_theme, users.role AS users_role, users.reset_token AS users_reset_token, users.reset_token_expires AS users_reset_token_expires, users.two_factor_enabled AS users_two_factor_enabled, users.two_factor_secret AS users_two_factor_secret 
+FROM users 
+WHERE users.username = %(username_1)s OR users.email = %(email_1)s 
+ LIMIT %(param_1)s]
+[parameters: {'username_1': 'dwdx', 'email_1': 'dxdx@gmail.com', 'param_1': 1}]
+(Background on this error at: https://sqlalche.me/e/20/f405) | Anonymous | Details:{'username': 'dwdx', 'email': 'dxdx@gmail.com'}
+2026-04-29 15:14:39 | ERROR    | vehicle_detection | register:703 | [ERROR] Registration error: (psycopg2.errors.UndefinedColumn) column users.role does not exist
+LINE 1: ...e AS users_is_active, users.theme AS users_theme, users.role...
+                                                             ^
+
+[SQL: SELECT users.id AS users_id, users.username AS users_username, users.email AS users_email, users.password_hash AS users_password_hash, users.created_at AS users_created_at, users.is_active AS users_is_active, users.theme AS users_theme, users.role AS users_role, users.reset_token AS users_reset_token, users.reset_token_expires AS users_reset_token_expires, users.two_factor_enabled AS users_two_factor_enabled, users.two_factor_secret AS users_two_factor_secret 
+FROM users 
+WHERE users.username = %(username_1)s OR users.email = %(email_1)s 
+ LIMIT %(param_1)s]
+[parameters: {'username_1': 'dwdx', 'email_1': 'dxdx@gmail.com', 'param_1': 1}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+2026-04-29 15:38:07 | ERROR    | vehicle_detection | forgot_password:799 | Forgot password error: type object 'datetime.datetime' has no attribute 'UTC'
+2026-04-29 15:38:14 | ERROR    | vehicle_detection | forgot_password:799 | Forgot password error: type object 'datetime.datetime' has no attribute 'UTC'
+2026-04-29 16:05:44 | ERROR    | vehicle_detection | reset_password:859 | Reset password error: can't compare offset-naive and offset-aware datetimes
+2026-04-29 16:05:56 | ERROR    | vehicle_detection | reset_password:859 | Reset password error: can't compare offset-naive and offset-aware datetimes
+2026-04-29 16:06:05 | ERROR    | vehicle_detection | reset_password:859 | Reset password error: can't compare offset-naive and offset-aware datetimes
+2026-04-29 16:06:20 | ERROR    | vehicle_detection | reset_password:859 | Reset password error: can't compare offset-naive and offset-aware datetimes
+2026-05-04 12:06:52 | ERROR    | vehicle_detection | forgot_password:845 | Failed to send reset email: (550, b'5.7.0 Too many emails per second. Please upgrade your plan https://mailtrap.io/billing/plans/testing')
+2026-05-04 12:07:42 | ERROR    | vehicle_detection | forgot_password:845 | Failed to send reset email: (550, b'5.7.0 Too many emails per second. Please upgrade your plan https://mailtrap.io/billing/plans/testing')
+2026-05-04 12:11:08 | ERROR    | vehicle_detection | log_error:133 | ERROR | Type:Database | Database connection failed during login | Anonymous | Details:{'email': None}
+2026-05-04 12:17:38 | ERROR    | vehicle_detection | forgot_password:845 | Failed to send reset email: (550, b'5.7.0 Too many emails per second. Please upgrade your plan https://mailtrap.io/billing/plans/testing')
+2026-05-04 12:20:31 | ERROR    | vehicle_detection | forgot_password:845 | Failed to send reset email: (550, b'5.7.0 Too many emails per second. Please upgrade your plan https://mailtrap.io/billing/plans/testing')
+2026-05-04 12:21:24 | ERROR    | vehicle_detection | log_error:133 | ERROR | Type:Database | Database connection failed during login | Anonymous | Details:{'email': 'test@test.com'}
+2026-05-04 12:36:48 | ERROR    | vehicle_detection | log_error:133 | ERROR | Type:Database | Database connection failed during login | Anonymous | Details:{'email': 'test@example.com'}
+2026-05-04 13:16:00 | ERROR    | vehicle_detection | stream_frames:2037 | Multi-camera stream error: Working outside of request context.
+
+This typically means that you attempted to use functionality that needed
+an active HTTP request. Consult the documentation on testing for
+information about how to avoid this problem.
+2026-05-04 13:16:12 | ERROR    | vehicle_detection | stream_frames:2037 | Multi-camera stream error: Working outside of request context.
+
+This typically means that you attempted to use functionality that needed
+an active HTTP request. Consult the documentation on testing for
+information about how to avoid this problem.
+2026-05-04 14:35:42 | ERROR    | vehicle_detection | detection_task:2147 | [Scheduled Task task3] Failed to open webcam 1
+2026-05-04 14:36:42 | ERROR    | vehicle_detection | detection_task:2147 | [Scheduled Task task3] Failed to open webcam 1
+2026-05-04 14:37:42 | ERROR    | vehicle_detection | detection_task:2147 | [Scheduled Task task3] Failed to open webcam 1
+2026-05-04 14:38:42 | ERROR    | vehicle_detection | detection_task:2147 | [Scheduled Task task3] Failed to open webcam 1
+2026-05-04 14:39:42 | ERROR    | vehicle_detection | detection_task:2147 | [Scheduled Task task3] Failed to open webcam 1
+2026-05-04 14:40:42 | ERROR    | vehicle_detection | detection_task:2147 | [Scheduled Task task3] Failed to open webcam 1
+2026-05-04 14:41:42 | ERROR    | vehicle_detection | detection_task:2147 | [Scheduled Task task3] Failed to open webcam 1
+2026-05-04 14:42:42 | ERROR    | vehicle_detection | detection_task:2147 | [Scheduled Task task3] Failed to open webcam 1
+2026-05-04 14:43:42 | ERROR    | vehicle_detection | detection_task:2147 | [Scheduled Task task3] Failed to open webcam 1
+2026-05-04 14:44:42 | ERROR    | vehicle_detection | detection_task:2147 | [Scheduled Task task3] Failed to open webcam 1
+2026-05-04 14:45:42 | ERROR    | vehicle_detection | detection_task:2147 | [Scheduled Task task3] Failed to open webcam 1
+2026-05-04 14:46:42 | ERROR    | vehicle_detection | detection_task:2147 | [Scheduled Task task3] Failed to open webcam 1
+2026-05-04 14:52:07 | ERROR    | vehicle_detection | detection_task:2147 | [Scheduled Task task3] Failed to open webcam 1
+2026-05-04 14:53:07 | ERROR    | vehicle_detection | detection_task:2147 | [Scheduled Task task3] Failed to open webcam 1
+2026-05-04 14:54:08 | ERROR    | vehicle_detection | detection_task:2147 | [Scheduled Task task3] Failed to open webcam 1
+2026-05-04 14:54:46 | ERROR    | vehicle_detection | detection_task:2147 | [Scheduled Task task2] Failed to open webcam 1
+2026-05-04 15:49:49 | ERROR    | vehicle_detection | detection_task:2147 | [Scheduled Task task2] Failed to open webcam 1
+2026-05-04 15:50:49 | ERROR    | vehicle_detection | detection_task:2147 | [Scheduled Task task2] Failed to open webcam 1
+2026-05-04 15:51:49 | ERROR    | vehicle_detection | detection_task:2147 | [Scheduled Task task2] Failed to open webcam 1
+2026-05-04 15:52:50 | ERROR    | vehicle_detection | detection_task:2206 | [Scheduled Task 1] ERROR: name 'VehicleDetector' is not defined
+2026-05-04 15:52:51 | ERROR    | vehicle_detection | detection_task:2208 | Traceback (most recent call last):
+  File "C:\vehical  detection\web_test_app.py", line 2156, in detection_task
+    task_func=detection_task,
+                           ^^
+NameError: name 'VehicleDetector' is not defined
+
+2026-05-04 15:53:51 | ERROR    | vehicle_detection | detection_task:2206 | [Scheduled Task 1] ERROR: name 'VehicleDetector' is not defined
+2026-05-04 15:53:51 | ERROR    | vehicle_detection | detection_task:2208 | Traceback (most recent call last):
+  File "C:\vehical  detection\web_test_app.py", line 2156, in detection_task
+    task_func=detection_task,
+                           ^^
+NameError: name 'VehicleDetector' is not defined
+
+2026-05-04 15:54:51 | ERROR    | vehicle_detection | detection_task:2206 | [Scheduled Task 1] ERROR: name 'VehicleDetector' is not defined
+2026-05-04 15:54:51 | ERROR    | vehicle_detection | detection_task:2208 | Traceback (most recent call last):
+  File "C:\vehical  detection\web_test_app.py", line 2156, in detection_task
+    task_func=detection_task,
+                           ^^
+NameError: name 'VehicleDetector' is not defined
+
+2026-05-04 15:55:51 | ERROR    | vehicle_detection | detection_task:2206 | [Scheduled Task 1] ERROR: name 'VehicleDetector' is not defined
+2026-05-04 15:55:51 | ERROR    | vehicle_detection | detection_task:2208 | Traceback (most recent call last):
+  File "C:\vehical  detection\web_test_app.py", line 2156, in detection_task
+    task_func=detection_task,
+                           ^^
+NameError: name 'VehicleDetector' is not defined
+
+2026-05-04 17:21:57 | ERROR    | vehicle_detection | stream_frames:2046 | Multi-camera stream error: Working outside of request context.
+
+This typically means that you attempted to use functionality that needed
+an active HTTP request. Consult the documentation on testing for
+information about how to avoid this problem.

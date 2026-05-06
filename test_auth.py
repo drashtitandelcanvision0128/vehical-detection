@@ -97,10 +97,10 @@ except ImportError as e:
         <form method="POST" action="/login">
             <div class="space-y-4">
                 <div>
-                    <label class="block text-sm font-semibold text-primary mb-2">Username</label>
-                    <input type="text" name="username" required
+                    <label class="block text-sm font-semibold text-primary mb-2">Email</label>
+                    <input type="email" name="email" required
                         class="w-full px-4 py-3 rounded-lg border border-outline-variant/40 bg-surface-container-low focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
-                        placeholder="Enter your username">
+                        placeholder="Enter your email">
                 </div>
                 <div>
                     <label class="block text-sm font-semibold text-primary mb-2">Password</label>
@@ -243,10 +243,10 @@ app.secret_key = 'test-secret-key'
 def login():
     print("[TEST] Login route accessed!")
     if request.method == 'POST':
-        username = request.form.get('username')
+        email = request.form.get('email')
         password = request.form.get('password')
-        print(f"[TEST] Login attempt: {username}")
-        return f"Login POST received for {username}"
+        print(f"[TEST] Login attempt: {email}")
+        return f"Login POST received for {email}"
     return render_template_string(LOGIN_TEMPLATE)
 
 @app.route('/register', methods=['GET', 'POST'])

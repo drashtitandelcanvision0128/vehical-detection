@@ -4,6 +4,7 @@ Simple web interface for testing vehicle detection on images/videos
 """
 
 from flask import Flask, render_template_string, request, send_file, flash, redirect, session, url_for, jsonify
+from flask_socketio import SocketIO, emit
 import cv2
 import numpy as np
 from ultralytics import YOLO
@@ -17,10 +18,11 @@ from fpdf import FPDF
 import uuid
 from dotenv import load_dotenv
 import os
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from sqlalchemy import create_engine, inspect
 from sqlalchemy.orm import sessionmaker, Session
 from models import Base, ImageDetection, VideoDetection, LiveDetection, DetectionHistory, User, NumberPlateDetection
+from vehicle_detector import VehicleDetector
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
 from collections import defaultdict, deque
@@ -44,6 +46,52 @@ import backup_service
 from translations import get_translation, set_language
 from flask_mail import Mail, Message
 from alpr_detector import get_alpr_detector
+from two_factor_auth import TwoFactorAuthManager
+from email_service import EmailService
+
+# Global email service instance (initialized after Flask-Mail setup)
+_email_service = None
+
+def get_email_service():
+    """Get or create the global email service instance"""
+    global _email_service
+    if _email_service is None and hasattr(app, 'extensions') and 'mail' in app.extensions:
+        _email_service = EmailService(app.extensions['mail'])
+    return _email_service
+
+def send_detection_email_async(user_email, username, detection_type, vehicle_count):
+    """Send detection completion email asynchronously"""
+    import threading
+    def send():
+        try:
+            email_service = get_email_service()
+            if email_service:
+                email_service.send_detection_complete_email(
+                    to_email=user_email,
+                    username=username,
+                    detection_type=detection_type,
+                    vehicle_count=vehicle_count
+                )
+        except Exception as e:
+            logger.error(f"Failed to send detection email: {e}")
+    threading.Thread(target=send, daemon=True).start()
+
+def send_backup_email_async(user_email, backup_filename, file_size):
+    """Send backup completion email asynchronously"""
+    import threading
+    def send():
+        try:
+            email_service = get_email_service()
+            if email_service:
+                email_service.send_backup_complete_email(
+                    to_email=user_email,
+                    username=session.get('username', 'User'),
+                    backup_filename=backup_filename,
+                    file_size=file_size
+                )
+        except Exception as e:
+            logger.error(f"Failed to send backup email: {e}")
+    threading.Thread(target=send, daemon=True).start()
 
 # Initialize logger
 logger = setup_logger("vehicle_detection", log_level="INFO")
@@ -65,13 +113,20 @@ else:
     logger.info("Sentry error monitoring not enabled (no DSN or in testing mode)")
 
 # Initialize Rate Limiter
+app.config['RATELIMIT_ENABLED'] = True
 limiter = Limiter(
     app=app,
     key_func=get_remote_address,
-    default_limits=["200 per day", "50 per hour"],
-    storage_uri="memory://"  # Use memory storage (can be changed to Redis)
+    default_limits=["5000 per day", "1000 per hour"],
+    storage_uri="memory://"
 )
-logger.info("Rate limiting initialized with default limits: 200/day, 50/hour")
+
+@limiter.request_filter
+def exempt_scheduled_detection():
+    # Robust exemption for all scheduled detection API endpoints
+    return request.path.startswith('/api/scheduled_detection')
+
+logger.info("Rate limiting initialized with default limits: 5000/day, 1000/hour")
 
 # Initialize Cache
 cache_config = {
@@ -128,7 +183,7 @@ swagger_template = {
         },
         "version": "1.0.0"
     },
-    "host": "localhost:5000",
+    "host": "localhost:5050",
     "basePath": "/",
     "schemes": [
         "http",
@@ -153,6 +208,9 @@ swagger_template = {
 
 swagger = Swagger(app, config=swagger_config, template=swagger_template)
 
+# Initialize Socket.IO for real-time streaming
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
+
 # Override secret key if not set in config
 if not app.config.get('SECRET_KEY') or app.config['SECRET_KEY'] == 'dev-secret-key-change-in-production':
     app.secret_key = 'vehicle-detection-secret-key'
@@ -161,7 +219,7 @@ else:
 
 # Import authentication templates
 try:
-    from auth_templates import LOGIN_TEMPLATE, REGISTER_TEMPLATE
+    from auth_templates import LOGIN_TEMPLATE, REGISTER_TEMPLATE, FORGOT_PASSWORD_TEMPLATE, RESET_PASSWORD_TEMPLATE
 except ImportError:
     # Fallback templates with full design
     LOGIN_TEMPLATE = """
@@ -373,6 +431,44 @@ except ImportError:
 </body>
 </html>
 """
+    FORGOT_PASSWORD_TEMPLATE = """
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"/><title>Forgot Password</title></head>
+<body style="font-family:Arial;max-width:400px;margin:50px auto;padding:20px">
+    <h2>Forgot Password</h2>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}{% for category, message in messages %}
+            <div style="padding:10px;margin:10px 0;background:{% if category == 'error' %}#fee{% elif category == 'success' %}#efe{% else %}#eef{% endif %}">{{ message }}</div>
+        {% endfor %}{% endif %}
+    {% endwith %}
+    <form method="POST" action="/forgot-password">
+        <label>Email:</label><br>
+        <input type="email" name="email" required style="width:100%;padding:8px;margin:5px 0"><br>
+        <button type="submit" style="padding:10px 20px;margin-top:10px">Send Reset Link</button>
+    </form>
+    <p><a href="/login">Back to Login</a></p>
+</body></html>
+"""
+    RESET_PASSWORD_TEMPLATE = """
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"/><title>Reset Password</title></head>
+<body style="font-family:Arial;max-width:400px;margin:50px auto;padding:20px">
+    <h2>Reset Password</h2>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}{% for category, message in messages %}
+            <div style="padding:10px;margin:10px 0;background:{% if category == 'error' %}#fee{% elif category == 'success' %}#efe{% else %}#eef{% endif %}">{{ message }}</div>
+        {% endfor %}{% endif %}
+    {% endwith %}
+    <form method="POST" action="/reset-password/{{ token }}">
+        <label>New Password:</label><br>
+        <input type="password" name="new_password" required minlength="6" style="width:100%;padding:8px;margin:5px 0"><br>
+        <label>Confirm Password:</label><br>
+        <input type="password" name="confirm_password" required minlength="6" style="width:100%;padding:8px;margin:5px 0"><br>
+        <button type="submit" style="padding:10px 20px;margin-top:10px">Reset Password</button>
+    </form>
+    <p><a href="/login">Back to Login</a></p>
+</body></html>
+"""
 
 # Authentication decorator
 def login_required(f):
@@ -387,6 +483,69 @@ def login_required(f):
             return redirect(url_for('login'))
         return f(*args, **kwargs)
     return decorated_function
+
+
+# Role-based access control decorators
+def admin_required(f):
+    """Decorator to require admin role for protected routes"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json:
+                return {'success': False, 'error': 'Not logged in'}, 401
+            flash('Please login to access this page.', 'warning')
+            return redirect(url_for('login'))
+        
+        # Check user role
+        db = get_db()
+        if db is None:
+            flash('Database error', 'error')
+            return redirect(url_for('index'))
+        
+        try:
+            user = db.query(User).filter(User.id == session['user_id']).first()
+            if not user or user.role != 'admin':
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json:
+                    return {'success': False, 'error': 'Admin access required'}, 403
+                flash('Admin access required', 'error')
+                return redirect(url_for('index'))
+        finally:
+            db.close()
+        
+        return f(*args, **kwargs)
+    return decorated_function
+
+
+def role_required(*allowed_roles):
+    """Decorator to require specific roles for protected routes"""
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            if 'user_id' not in session:
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json:
+                    return {'success': False, 'error': 'Not logged in'}, 401
+                flash('Please login to access this page.', 'warning')
+                return redirect(url_for('login'))
+            
+            # Check user role
+            db = get_db()
+            if db is None:
+                flash('Database error', 'error')
+                return redirect(url_for('index'))
+            
+            try:
+                user = db.query(User).filter(User.id == session['user_id']).first()
+                if not user or user.role not in allowed_roles:
+                    if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json:
+                        return {'success': False, 'error': 'Access denied'}, 403
+                    flash('Access denied', 'error')
+                    return redirect(url_for('index'))
+            finally:
+                db.close()
+            
+            return f(*args, **kwargs)
+        return decorated_function
+    return decorator
 
 # Load environment variables
 load_dotenv()
@@ -439,11 +598,11 @@ def login():
     consumes:
       - application/x-www-form-urlencoded
     parameters:
-      - name: username
+      - name: email
         in: formData
         type: string
         required: true
-        description: Username
+        description: Email address
       - name: password
         in: formData
         type: string
@@ -459,33 +618,36 @@ def login():
         return redirect(url_for('index'))
         
     if request.method == 'POST':
-        username = request.form.get('username')
+        email = request.form.get('email')
         password = request.form.get('password')
         ip_address = request.remote_addr
         
         db = get_db()
         if not db:
-            log_auth_event(logger, 'login', username, False, ip_address)
-            log_error(logger, 'Database', 'Database connection failed during login', {'username': username})
+            log_auth_event(logger, 'login', email, False, ip_address)
+            log_error(logger, 'Database', 'Database connection failed during login', {'email': email})
             flash('Database connection error. Please try again.', 'error')
             return render_template_string(LOGIN_TEMPLATE)
         
         try:
-            user = db.query(User).filter(User.username == username).first()
+            user = db.query(User).filter(User.email == email).first()
             if user and check_password_hash(user.password_hash, password):
+                # 2FA bypassed/removed - complete login directly
+                
+                # No 2FA - complete login directly
                 session['user_id'] = user.id
                 session['username'] = user.username
-                log_auth_event(logger, 'login', username, True, ip_address)
-                logger.info(f"User {username} logged in successfully from {ip_address}")
+                log_auth_event(logger, 'login', email, True, ip_address)
+                logger.info(f"User {email} logged in successfully from {ip_address}")
                 flash('Login successful!', 'success')
                 return redirect(url_for('index'))
             else:
-                log_auth_event(logger, 'login', username, False, ip_address)
-                logger.warning(f"Failed login attempt for username: {username} from {ip_address}")
-                flash('Invalid username or password.', 'error')
+                log_auth_event(logger, 'login', email, False, ip_address)
+                logger.warning(f"Failed login attempt for email: {email} from {ip_address}")
+                flash('Invalid email or password.', 'error')
         except Exception as e:
-            log_auth_event(logger, 'login', username, False, ip_address)
-            log_error(logger, 'Authentication', f'Login error: {str(e)}', {'username': username})
+            log_auth_event(logger, 'login', email, False, ip_address)
+            log_error(logger, 'Authentication', f'Login error: {str(e)}', {'email': email})
             logger.error(f"[ERROR] Login error: {e}")
             flash('Login failed. Please try again.', 'error')
         finally:
@@ -618,7 +780,7 @@ def logout():
 
 @app.route('/forgot-password', methods=['GET', 'POST'])
 def forgot_password():
-    """Forgot password - send reset link"""
+    """Forgot password - send reset link via email"""
     if request.method == 'POST':
         email = request.form.get('email')
         
@@ -639,11 +801,58 @@ def forgot_password():
                 user.reset_token_expires = reset_token_expires
                 db.commit()
                 
-                # For now, show the reset link in the message (in production, send via email)
                 reset_link = url_for('reset_password', token=reset_token, _external=True)
-                logger.info(f"Password reset link for {email}: {reset_link}")
-                flash(f'Password reset link generated. In production, this would be sent to your email. Reset link: {reset_link}', 'success')
+                logger.info(f"Password reset link generated for {email}")
+                
+                # Try to send email with reset link
+                mail_enabled = app.config.get('MAIL_ENABLED', False)
+                if mail_enabled and app.config.get('MAIL_USERNAME'):
+                    try:
+                        from email_service import EmailService
+                        email_service = EmailService(mail)
+                        msg = Message(
+                            subject='Password Reset - Enterprise Vehicle Intelligence',
+                            recipients=[email],
+                            sender=app.config.get('MAIL_DEFAULT_SENDER', 'noreply@vehicledetection.com')
+                        )
+                        msg.html = f"""
+                        <html>
+                        <head><style>
+                            body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+                            .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+                            .header {{ background: #002542; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }}
+                            .content {{ padding: 20px; background: #f9f9f9; border-radius: 0 0 8px 8px; }}
+                            .button {{ display: inline-block; padding: 12px 24px; background: #002542; color: white; text-decoration: none; border-radius: 6px; margin: 15px 0; }}
+                            .footer {{ text-align: center; padding: 20px; color: #666; font-size: 12px; }}
+                        </style></head>
+                        <body>
+                            <div class="container">
+                                <div class="header"><h1>Password Reset Request</h1></div>
+                                <div class="content">
+                                    <p>Hello <strong>{user.username}</strong>,</p>
+                                    <p>You requested a password reset. Click the button below to reset your password:</p>
+                                    <p style="text-align:center;"><a href="{reset_link}" class="button">Reset Password</a></p>
+                                    <p>Or copy this link: <a href="{reset_link}">{reset_link}</a></p>
+                                    <p><small>This link expires in 1 hour. If you did not request this, ignore this email.</small></p>
+                                </div>
+                                <div class="footer"><p>This is an automated email. Please do not reply.</p></div>
+                            </div>
+                        </body></html>
+                        """
+                        mail.send(msg)
+                        logger.info(f"Password reset email sent to {email}")
+                        flash('A password reset link has been sent to your email address.', 'success')
+                    except Exception as email_err:
+                        logger.error(f"Failed to send reset email: {email_err}")
+                        # Fallback: show link in flash message for development
+                        from markupsafe import Markup
+                        flash(Markup(f'Email could not be sent. <a href="{reset_link}" class="underline font-semibold">Click here to reset password</a>'), 'info')
+                else:
+                    # Email not configured - show link directly (development mode)
+                    from markupsafe import Markup
+                    flash(Markup(f'Email not configured. <a href="{reset_link}" class="underline font-semibold">Click here to reset password</a>'), 'info')
             else:
+                # Don't reveal whether email exists (security best practice)
                 flash('If an account with that email exists, a reset link has been sent.', 'info')
         except Exception as e:
             logger.error(f"Forgot password error: {e}")
@@ -666,10 +875,19 @@ def reset_password(token):
         user = db.query(User).filter(User.reset_token == token).first()
         
         if not user:
+            logger.warning(f"Password reset attempted with invalid token")
             flash('Invalid or expired reset link.', 'error')
             return redirect(url_for('login'))
         
-        if user.reset_token_expires < datetime.utcnow():
+        expires = user.reset_token_expires
+        if expires.tzinfo:
+            expires = expires.replace(tzinfo=None)
+        if expires < datetime.utcnow():
+            logger.warning(f"Password reset attempted with expired token for user {user.username}")
+            # Clear expired token
+            user.reset_token = None
+            user.reset_token_expires = None
+            db.commit()
             flash('Reset link has expired. Please request a new one.', 'error')
             return redirect(url_for('login'))
         
@@ -691,6 +909,8 @@ def reset_password(token):
             user.reset_token_expires = None
             db.commit()
             
+            log_auth_event(logger, 'password_reset', user.username, True, request.remote_addr)
+            logger.info(f"Password reset successful for user {user.username}")
             flash('Password reset successfully! Please login with your new password.', 'success')
             return redirect(url_for('login'))
         
@@ -701,6 +921,1165 @@ def reset_password(token):
         return redirect(url_for('login'))
     finally:
         db.close()
+
+
+# Multi-Camera Detection Page Template
+MULTI_CAMERA_TEMPLATE = """
+<!DOCTYPE html>
+<html class="light" lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Multi-Camera Detection - Vehicle Intelligence</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+<style>
+    body { font-family: 'Inter', sans-serif; }
+    h1, h2, h3 { font-family: 'Manrope', sans-serif; }
+    .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400; }
+</style>
+<script>
+    tailwind.config = {
+        darkMode: "class",
+        theme: {
+            extend: {
+                colors: {
+                    primary: "#002542",
+                    "primary-container": "#1b3b5a",
+                    "on-primary": "#ffffff",
+                    secondary: "#545f6e",
+                    surface: "#faf9fc",
+                    "on-surface": "#1a1c1e",
+                    "surface-container": "#eeedf0",
+                    "surface-container-low": "#f4f3f6",
+                    "surface-container-lowest": "#ffffff",
+                    "outline-variant": "#c3c6ce",
+                    outline: "#73777e",
+                    error: "#ba1a1a",
+                }
+            }
+        }
+    }
+</script>
+</head>
+<body class="bg-surface min-h-screen">
+<!-- Header -->
+<header class="bg-white border-b border-outline-variant/30 sticky top-0 z-50">
+<div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+    <a href="/" class="flex items-center gap-3">
+        <span class="material-symbols-outlined text-primary text-3xl">radar</span>
+        <span class="text-lg font-extrabold text-primary">Vehicle Intelligence</span>
+    </a>
+    <div class="flex items-center gap-4">
+        <span class="text-sm font-semibold text-secondary">{{ username }}</span>
+        <a href="/logout" class="text-sm text-secondary hover:text-error transition-colors flex items-center gap-1">
+            <span class="material-symbols-outlined text-lg">logout</span>Logout
+        </a>
+    </div>
+</div>
+</header>
+
+<main class="max-w-6xl mx-auto px-6 py-12">
+    <div class="flex items-center gap-3 mb-8">
+        <a href="/" class="text-secondary hover:text-primary transition-colors">
+            <span class="material-symbols-outlined text-2xl">arrow_back</span>
+        </a>
+        <span class="material-symbols-outlined text-primary text-4xl">videocam</span>
+        <div>
+            <h1 class="text-2xl font-extrabold text-on-surface">Multi-Camera Detection</h1>
+            <p class="text-secondary text-sm">Monitor multiple cameras simultaneously</p>
+        </div>
+    </div>
+
+    <!-- Control Panel -->
+    <div class="bg-white rounded-xl border border-outline-variant/40 p-6 mb-6">
+        <div class="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
+            <div class="flex items-center gap-4">
+                <div>
+                    <label class="block text-xs font-semibold text-on-surface-variant mb-1">Number of Cameras</label>
+                    <select id="numCameras" class="px-3 py-2 rounded-lg border border-outline-variant/40 bg-surface-container-low focus:outline-none focus:ring-2 focus:ring-primary/30">
+                        <option value="1">1 Camera</option>
+                        <option value="2" selected>2 Cameras</option>
+                        <option value="3">3 Cameras</option>
+                        <option value="4">4 Cameras</option>
+                    </select>
+                </div>
+                <div id="cameraSources" class="flex gap-2">
+                    <div>
+                        <label class="block text-xs font-semibold text-on-surface-variant mb-1">Cam 1</label>
+                        <input type="number" id="source0" value="0" min="0" class="w-20 px-3 py-2 rounded-lg border border-outline-variant/40 bg-surface-container-low text-center">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-on-surface-variant mb-1">Cam 2</label>
+                        <input type="number" id="source1" value="1" min="0" class="w-20 px-3 py-2 rounded-lg border border-outline-variant/40 bg-surface-container-low text-center">
+                    </div>
+                </div>
+            </div>
+            <div class="flex gap-2">
+                <button id="startBtn" onclick="startMultiCamera()" class="px-5 py-2.5 bg-primary text-white font-bold rounded-lg hover:bg-primary-container transition-colors flex items-center gap-2">
+                    <span class="material-symbols-outlined text-lg">play_arrow</span>
+                    Start
+                </button>
+                <button id="stopBtn" onclick="stopMultiCamera()" disabled class="px-5 py-2.5 bg-error text-white font-bold rounded-lg hover:opacity-90 transition-colors flex items-center gap-2 opacity-50 cursor-not-allowed">
+                    <span class="material-symbols-outlined text-lg">stop</span>
+                    Stop
+                </button>
+            </div>
+        </div>
+        <div id="status" class="mt-4 flex items-center gap-2 text-sm">
+            <span class="material-symbols-outlined text-secondary">info</span>
+            <span class="text-secondary">Configure cameras and click Start</span>
+        </div>
+    </div>
+
+    <!-- Camera Grid -->
+    <div id="cameraGrid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- Camera feeds will be inserted here -->
+        <div class="bg-surface-container-low rounded-xl border-2 border-dashed border-outline-variant/40 p-8 text-center">
+            <span class="material-symbols-outlined text-4xl text-outline-variant mb-2">videocam_off</span>
+            <p class="text-secondary text-sm">Camera 1 - Not started</p>
+        </div>
+        <div class="bg-surface-container-low rounded-xl border-2 border-dashed border-outline-variant/40 p-8 text-center">
+            <span class="material-symbols-outlined text-4xl text-outline-variant mb-2">videocam_off</span>
+            <p class="text-secondary text-sm">Camera 2 - Not started</p>
+        </div>
+    </div>
+</main>
+
+<script>
+const socket = io();
+let isRunning = false;
+
+// Update camera source inputs when number changes
+document.getElementById('numCameras').addEventListener('change', function() {
+    const num = parseInt(this.value);
+    const container = document.getElementById('cameraSources');
+    container.innerHTML = '';
+    for (let i = 0; i < num; i++) {
+        container.innerHTML += `
+            <div>
+                <label class="block text-xs font-semibold text-on-surface-variant mb-1">Cam ${i+1}</label>
+                <input type="number" id="source${i}" value="${i}" min="0" class="w-20 px-3 py-2 rounded-lg border border-outline-variant/40 bg-surface-container-low text-center">
+            </div>
+        `;
+    }
+    // Update grid
+    updateGrid(num);
+});
+
+function updateGrid(num) {
+    const grid = document.getElementById('cameraGrid');
+    grid.innerHTML = '';
+    for (let i = 0; i < num; i++) {
+        grid.innerHTML += `
+            <div class="bg-surface-container-low rounded-xl border-2 border-dashed border-outline-variant/40 p-8 text-center camera-slot" data-camera="${i}">
+                <span class="material-symbols-outlined text-4xl text-outline-variant mb-2">videocam_off</span>
+                <p class="text-secondary text-sm">Camera ${i+1} - Not started</p>
+            </div>
+        `;
+    }
+}
+
+function startMultiCamera() {
+    const numCameras = parseInt(document.getElementById('numCameras').value);
+    const sources = [];
+    for (let i = 0; i < numCameras; i++) {
+        sources.push(parseInt(document.getElementById(`source${i}`).value));
+    }
+
+    fetch('/api/multi_camera/start', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({sources: sources})
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            isRunning = true;
+            document.getElementById('startBtn').disabled = true;
+            document.getElementById('startBtn').classList.add('opacity-50', 'cursor-not-allowed');
+            document.getElementById('stopBtn').disabled = false;
+            document.getElementById('stopBtn').classList.remove('opacity-50', 'cursor-not-allowed');
+            document.getElementById('status').innerHTML = `
+                <span class="material-symbols-outlined text-green-600">check_circle</span>
+                <span class="text-green-600">Multi-camera detection active (${data.cameras} cameras)</span>
+            `;
+            // Initialize camera slots
+            initCameraSlots(data.cameras);
+            // Start Socket.IO stream
+            socket.emit('start_multi_camera_stream', {});
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(err => alert('Network error'));
+}
+
+function stopMultiCamera() {
+    fetch('/api/multi_camera/stop', {method: 'POST'})
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            isRunning = false;
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('startBtn').classList.remove('opacity-50', 'cursor-not-allowed');
+            document.getElementById('stopBtn').disabled = true;
+            document.getElementById('stopBtn').classList.add('opacity-50', 'cursor-not-allowed');
+            document.getElementById('status').innerHTML = `
+                <span class="material-symbols-outlined text-secondary">info</span>
+                <span class="text-secondary">Detection stopped</span>
+            `;
+            // Reset grid
+            const num = parseInt(document.getElementById('numCameras').value);
+            updateGrid(num);
+        }
+    });
+}
+
+function initCameraSlots(num) {
+    const grid = document.getElementById('cameraGrid');
+    grid.innerHTML = '';
+    for (let i = 0; i < num; i++) {
+        grid.innerHTML += `
+            <div class="bg-black rounded-xl overflow-hidden relative camera-feed" data-camera="${i}">
+                <img id="feed${i}" class="w-full h-64 object-contain" src="" alt="Camera ${i+1}">
+                <div class="absolute top-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
+                    Camera ${i+1} - <span id="detectionCount${i}">0</span> vehicles
+                </div>
+            </div>
+        `;
+    }
+}
+
+// Socket.IO event handlers
+socket.on('multi_camera_frame', function(data) {
+    if (!isRunning) return;
+    const img = document.getElementById(`feed${data.camera_id}`);
+    if (img) {
+        img.src = 'data:image/jpeg;base64,' + data.frame;
+        document.getElementById(`detectionCount${data.camera_id}`).textContent = data.detections;
+    }
+});
+
+socket.on('multi_camera_stream_started', function(data) {
+    console.log('Stream started for', data.cameras, 'cameras');
+});
+
+socket.on('multi_camera_error', function(data) {
+    alert('Stream error: ' + data.error);
+});
+
+// Check status on page load
+fetch('/api/multi_camera/status')
+    .then(r => r.json())
+    .then(data => {
+        if (data.running) {
+            document.getElementById('status').innerHTML = `
+                <span class="material-symbols-outlined text-green-600">check_circle</span>
+                <span class="text-green-600">Multi-camera detection active (${data.cameras} cameras)</span>
+            `;
+            initCameraSlots(data.cameras);
+            socket.emit('start_multi_camera_stream', {});
+        }
+    });
+</script>
+</body>
+</html>
+"""
+
+
+# ===== Multi-Camera Detection Integration =====
+
+# Global multi-camera detector instance
+_multi_camera_detector = None
+
+
+def get_multi_camera_detector():
+    """Get or create the global multi-camera detector instance"""
+    global _multi_camera_detector
+    return _multi_camera_detector
+
+
+def set_multi_camera_detector(detector):
+    """Set the global multi-camera detector instance"""
+    global _multi_camera_detector
+    _multi_camera_detector = detector
+
+
+@app.route('/multi_camera')
+@login_required
+def multi_camera_page():
+    """
+    Multi-Camera Detection Page
+    ---
+    tags:
+      - Multi-Camera
+    security:
+      - Bearer: []
+    responses:
+      200:
+        description: Multi-camera detection page loaded
+    """
+    username = session.get('username', 'User')
+    return render_template_string(MULTI_CAMERA_TEMPLATE, username=username)
+
+
+@app.route('/api/multi_camera/start', methods=['POST'])
+@login_required
+def multi_camera_start():
+    """
+    Start multi-camera detection
+    ---
+    tags:
+      - Multi-Camera
+    parameters:
+      - name: sources
+        in: body
+        type: array
+        description: List of camera sources (e.g., [0, 1] for webcams)
+    responses:
+      200:
+        description: Multi-camera detection started
+    """
+    from multi_camera import MultiCameraDetector
+    import threading
+    
+    try:
+        data = request.get_json() or {}
+        sources = data.get('sources', [0])  # Default to webcam 0
+        num_cameras = len(sources)
+        
+        # Stop existing detector if running
+        existing = get_multi_camera_detector()
+        if existing and existing.is_running():
+            existing.stop()
+            time.sleep(0.5)
+        
+        # Create new detector
+        detector = MultiCameraDetector(
+            model_path='yolov8n.pt',
+            num_cameras=num_cameras,
+            conf_threshold=0.35
+        )
+        
+        # Start detection
+        detector.start(sources)
+        set_multi_camera_detector(detector)
+        
+        logger.info(f"Multi-camera detection started with {num_cameras} cameras: {sources}")
+        return jsonify({'success': True, 'cameras': num_cameras, 'sources': sources})
+    except Exception as e:
+        log_error(logger, 'Multi-Camera', f'Start error: {str(e)}')
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/multi_camera/stop', methods=['POST'])
+@login_required
+def multi_camera_stop():
+    """
+    Stop multi-camera detection
+    ---
+    tags:
+      - Multi-Camera
+    responses:
+      200:
+        description: Multi-camera detection stopped or was already stopped
+    """
+    try:
+        detector = get_multi_camera_detector()
+        if detector and detector.is_running():
+            detector.stop()
+            set_multi_camera_detector(None)
+            logger.info("Multi-camera detection stopped")
+            return jsonify({'success': True, 'message': 'Multi-camera detection stopped'})
+        # Already stopped - return success (idempotent)
+        return jsonify({'success': True, 'message': 'No active detection to stop', 'already_stopped': True})
+    except Exception as e:
+        log_error(logger, 'Multi-Camera', f'Stop error: {str(e)}')
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/multi_camera/status')
+@login_required
+def multi_camera_status():
+    """
+    Get multi-camera detection status
+    ---
+    tags:
+      - Multi-Camera
+    responses:
+      200:
+        description: Multi-camera status retrieved
+    """
+    detector = get_multi_camera_detector()
+    if detector:
+        return jsonify({
+            'success': True,
+            'running': detector.is_running(),
+            'cameras': detector.get_camera_count()
+        })
+    return jsonify({'success': True, 'running': False, 'cameras': 0})
+
+
+@app.route('/api/multi_camera/feed/<int:camera_id>')
+@login_required
+def multi_camera_feed(camera_id):
+    """
+    Get single camera frame (for polling-based UI)
+    ---
+    tags:
+      - Multi-Camera
+    parameters:
+      - name: camera_id
+        in: path
+        type: integer
+        description: Camera index
+    responses:
+      200:
+        description: Camera frame as JPEG
+    """
+    detector = get_multi_camera_detector()
+    if not detector or not detector.is_running():
+        return jsonify({'success': False, 'error': 'No active detection'}), 400
+    
+    try:
+        result = detector.get_detections(camera_id)
+        if result:
+            annotated_frame, detections = result
+            # Encode frame as JPEG
+            ret, buffer = cv2.imencode('.jpg', annotated_frame)
+            if ret:
+                return send_file(BytesIO(buffer.tobytes()), mimetype='image/jpeg')
+        return jsonify({'success': False, 'error': 'No frame available'}), 404
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+# Socket.IO event for multi-camera streaming
+@socketio.on('start_multi_camera_stream')
+def handle_start_multi_camera_stream(data):
+    """Start streaming multi-camera feeds via Socket.IO"""
+    detector = get_multi_camera_detector()
+    if not detector or not detector.is_running():
+        emit('multi_camera_error', {'error': 'No active multi-camera detection'})
+        return
+    
+    import base64
+    import threading
+    
+    def stream_frames():
+        while detector.is_running():
+            try:
+                for camera_id in range(detector.get_camera_count()):
+                    result = detector.get_detections(camera_id)
+                    if result:
+                        annotated_frame, detections = result
+                        ret, buffer = cv2.imencode('.jpg', annotated_frame, [cv2.IMWRITE_JPEG_QUALITY, 70])
+                        if ret:
+                            frame_data = base64.b64encode(buffer).decode('utf-8')
+                            socketio.emit('multi_camera_frame', {
+                                'camera_id': camera_id,
+                                'frame': frame_data,
+                                'detections': len(detections)
+                            })
+                socketio.sleep(0.1)  # ~10 FPS per camera
+            except Exception as e:
+                logger.error(f"Multi-camera stream error: {e}")
+                break
+    
+    # Start streaming in background
+    socketio.start_background_task(stream_frames)
+    emit('multi_camera_stream_started', {'cameras': detector.get_camera_count()})
+
+
+# ===== Scheduled Detection Integration =====
+
+# Global scheduled detection manager instance
+from scheduled_detection import get_scheduler as _get_sched_detection_manager, ScheduledDetectionManager
+_scheduled_detection_manager = _get_sched_detection_manager()
+
+
+def get_scheduled_detection_manager():
+    """Get the global scheduled detection manager instance"""
+    return _scheduled_detection_manager
+
+
+@app.route('/scheduled_detection')
+@login_required
+def scheduled_detection_page():
+    """
+    Scheduled Detection Management Page
+    ---
+    tags:
+      - Scheduled Detection
+    security:
+      - Bearer: []
+    responses:
+      200:
+        description: Scheduled detection page loaded
+    """
+    username = session.get('username', 'User')
+    return render_template_string(SCHEDULED_DETECTION_TEMPLATE, username=username)
+
+
+@app.route('/api/scheduled_detection/tasks', methods=['GET'])
+@limiter.limit("5000 per hour")  # Explicit high limit as fallback to exempt
+@limiter.exempt
+@login_required
+def get_scheduled_tasks():
+    """
+    Get all scheduled detection tasks
+    ---
+    tags:
+      - Scheduled Detection
+    responses:
+      200:
+        description: List of scheduled tasks
+    """
+    try:
+        manager = get_scheduled_detection_manager()
+        tasks = manager.get_all_tasks()
+        return jsonify({'success': True, 'tasks': tasks, 'running': manager.is_running()})
+    except Exception as e:
+        log_error(logger, 'Scheduled Detection', f'Get tasks error: {str(e)}')
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/scheduled_detection/tasks', methods=['POST'])
+@limiter.limit("1000 per hour")  # Explicit high limit as fallback to exempt
+@limiter.exempt
+@login_required
+def create_scheduled_task():
+    """
+    Create a new scheduled detection task
+    ---
+    tags:
+      - Scheduled Detection
+    parameters:
+      - name: task_id
+        in: formData
+        type: string
+        required: true
+      - name: interval_seconds
+        in: formData
+        type: integer
+        required: true
+      - name: source
+        in: formData
+        type: string
+        required: true
+      - name: task_type
+        in: formData
+        type: string
+        required: true
+        description: Type of detection (webcam, file)
+    responses:
+      200:
+        description: Task created successfully
+    """
+    try:
+        data = request.get_json() or request.form
+        task_id = data.get('task_id')
+        interval_seconds = int(data.get('interval_seconds', 60))
+        source = data.get('source', '0')
+        task_type = data.get('task_type', 'webcam')
+        
+        if not task_id:
+            return jsonify({'success': False, 'error': 'Task ID is required'}), 400
+        
+        manager = get_scheduled_detection_manager()
+        logger.info(f"Creating scheduled task: {task_id}, interval: {interval_seconds}s, source: {source}, type: {task_type}")
+        
+        # Create the detection function using the factory
+        detection_task = create_detection_task(task_id, source, task_type)
+        
+        success = manager.schedule_task(
+            task_id=task_id, 
+            task_func=detection_task, 
+            interval_seconds=interval_seconds,
+            source=source,
+            task_type=task_type,
+            start_immediately=True
+        )
+        
+        if success:
+            logger.info(f"Scheduled task created successfully: {task_id} (every {interval_seconds}s)")
+            logger.info(f"Task will first run at: {manager.get_task_status(task_id)['next_run']}")
+            return jsonify({
+                'success': True,
+                'task': {
+                    'task_id': task_id,
+                    'interval': interval_seconds,
+                    'source': source,
+                    'type': task_type,
+                    'enabled': True
+                }
+            })
+        else:
+            return jsonify({'success': False, 'error': 'Task ID already exists'}), 400
+    except Exception as e:
+        log_error(logger, 'Scheduled Detection', f'Create task error: {str(e)}')
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/scheduled_detection/tasks/<task_id>', methods=['DELETE'])
+@limiter.exempt
+@login_required
+def delete_scheduled_task(task_id):
+    """
+    Delete a scheduled detection task
+    ---
+    tags:
+      - Scheduled Detection
+    parameters:
+      - name: task_id
+        in: path
+        type: string
+        required: true
+    responses:
+      200:
+        description: Task deleted successfully
+    """
+    try:
+        manager = get_scheduled_detection_manager()
+        success = manager.unschedule_task(task_id)
+        if success:
+            logger.info(f"Scheduled task deleted: {task_id}")
+            return jsonify({'success': True, 'message': f'Task {task_id} deleted'})
+        return jsonify({'success': False, 'error': 'Task not found'}), 404
+    except Exception as e:
+        log_error(logger, 'Scheduled Detection', f'Delete task error: {str(e)}')
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/scheduled_detection/tasks/<task_id>/enable', methods=['POST'])
+@limiter.exempt
+@login_required
+def enable_scheduled_task(task_id):
+    """Enable a scheduled task"""
+    try:
+        manager = get_scheduled_detection_manager()
+        if manager.enable_task(task_id):
+            return jsonify({'success': True, 'message': f'Task {task_id} enabled'})
+        return jsonify({'success': False, 'error': 'Task not found'}), 404
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/scheduled_detection/tasks/<task_id>/disable', methods=['POST'])
+@limiter.exempt
+@login_required
+def disable_scheduled_task(task_id):
+    """Disable a scheduled task"""
+    try:
+        manager = get_scheduled_detection_manager()
+        if manager.disable_task(task_id):
+            return jsonify({'success': True, 'message': f'Task {task_id} disabled'})
+        return jsonify({'success': False, 'error': 'Task not found'}), 404
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+# Scheduled Detection Page Template
+SCHEDULED_DETECTION_TEMPLATE = """
+<!DOCTYPE html>
+<html class="light" lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Scheduled Detection - Vehicle Intelligence</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+<style>
+    body { font-family: 'Inter', sans-serif; }
+    h1, h2, h3 { font-family: 'Manrope', sans-serif; }
+    .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400; }
+</style>
+<script>
+    tailwind.config = {
+        darkMode: "class",
+        theme: {
+            extend: {
+                colors: {
+                    primary: "#002542",
+                    "primary-container": "#1b3b5a",
+                    "on-primary": "#ffffff",
+                    secondary: "#545f6e",
+                    surface: "#faf9fc",
+                    "on-surface": "#1a1c1e",
+                    "surface-container": "#eeedf0",
+                    "surface-container-low": "#f4f3f6",
+                    "surface-container-lowest": "#ffffff",
+                    "outline-variant": "#c3c6ce",
+                    outline: "#73777e",
+                    error: "#ba1a1a",
+                }
+            }
+        }
+    }
+</script>
+</head>
+<body class="bg-surface min-h-screen">
+<!-- Header -->
+<header class="bg-white border-b border-outline-variant/30 sticky top-0 z-50">
+<div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+    <a href="/" class="flex items-center gap-3">
+        <span class="material-symbols-outlined text-primary text-3xl">radar</span>
+        <span class="text-lg font-extrabold text-primary">Vehicle Intelligence</span>
+    </a>
+    <div class="flex items-center gap-4">
+        <span class="text-sm font-semibold text-secondary">{{ username }}</span>
+        <a href="/logout" class="text-sm text-secondary hover:text-error transition-colors flex items-center gap-1">
+            <span class="material-symbols-outlined text-lg">logout</span>Logout
+        </a>
+    </div>
+</div>
+</header>
+
+<main class="max-w-4xl mx-auto px-6 py-12">
+    <div class="flex items-center gap-3 mb-8">
+        <a href="/" class="text-secondary hover:text-primary transition-colors">
+            <span class="material-symbols-outlined text-2xl">arrow_back</span>
+        </a>
+        <span class="material-symbols-outlined text-primary text-4xl">schedule</span>
+        <div>
+            <h1 class="text-2xl font-extrabold text-on-surface">Scheduled Detection</h1>
+            <p class="text-secondary text-sm">Automated periodic vehicle detection</p>
+        </div>
+    </div>
+
+    <!-- Automated Monitor (Real-time Feedback) -->
+    <div id="livePreviewContainer" class="bg-white rounded-2xl border border-outline-variant/40 overflow-hidden mb-8 shadow-sm">
+        <div class="px-6 py-4 border-b border-outline-variant/30 bg-surface-container-lowest flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-2.5 h-2.5 bg-secondary rounded-full" id="statusDot"></div>
+                <h2 class="text-sm font-bold text-on-surface">Automated Monitor</h2>
+                <span id="activeBadge" class="hidden flex items-center gap-1.5 px-2 py-0.5 bg-error/10 text-error text-[10px] font-extrabold rounded-full animate-pulse">
+                    <span class="w-1.5 h-1.5 bg-error rounded-full"></span>
+                    CAMERA ACTIVE
+                </span>
+            </div>
+            <div class="flex items-center gap-4 text-[10px] font-bold text-secondary uppercase tracking-wider">
+                <span id="previewTaskId">Waiting for trigger...</span>
+                <span id="previewTime" class="opacity-60">--:--:--</span>
+            </div>
+        </div>
+        
+        <div class="relative bg-black aspect-video flex items-center justify-center overflow-hidden">
+            <!-- Placeholder -->
+            <div id="previewPlaceholder" class="flex flex-col items-center gap-4 text-white/20">
+                <span class="material-symbols-outlined text-6xl">videocam_off</span>
+                <p class="text-xs font-bold uppercase tracking-widest">No Active Detection</p>
+            </div>
+            
+            <!-- Snapshot Image -->
+            <img id="previewImage" src="" class="hidden w-full h-full object-cover">
+            
+            <!-- Overlay Stats -->
+            <div id="previewStatsOverlay" class="hidden absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none">
+                <div class="absolute bottom-6 left-6 right-6 flex items-end justify-between">
+                    <div class="flex flex-col gap-1">
+                        <div class="flex items-center gap-2 mb-1">
+                            <span class="px-2 py-1 bg-primary text-white text-[10px] font-black rounded uppercase">AI Detection Active</span>
+                            <span class="px-2 py-1 bg-white/20 backdrop-blur text-white text-[10px] font-black rounded uppercase">YOLOv8s</span>
+                        </div>
+                        <div id="previewBreakdown" class="flex flex-wrap gap-2">
+                            <!-- Vehicle badges added here -->
+                        </div>
+                    </div>
+                    <div class="bg-white/10 backdrop-blur p-4 rounded-xl border border-white/20 flex flex-col items-center min-w-[100px]">
+                        <span class="text-[10px] font-bold text-white/60 uppercase">Total Vehicles</span>
+                        <span id="previewCount" class="text-4xl font-extrabold text-white leading-none mt-1">0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add New Task -->
+    <div class="bg-white rounded-xl border border-outline-variant/40 p-6 mb-6">
+        <h2 class="text-lg font-bold text-on-surface mb-4">Add New Scheduled Task</h2>
+        <form id="taskForm" class="space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-semibold text-on-surface-variant mb-1">Task Name</label>
+                    <input type="text" id="taskId" required placeholder="e.g., hourly-check"
+                        class="w-full px-3 py-2 rounded-lg border border-outline-variant/40 bg-surface-container-low focus:outline-none focus:ring-2 focus:ring-primary/30">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-on-surface-variant mb-1">Interval</label>
+                    <select id="interval" class="w-full px-3 py-2 rounded-lg border border-outline-variant/40 bg-surface-container-low focus:outline-none focus:ring-2 focus:ring-primary/30">
+                        <option value="30">Every 30 seconds</option>
+                        <option value="60" selected>Every 1 minute</option>
+                        <option value="300">Every 5 minutes</option>
+                        <option value="600">Every 10 minutes</option>
+                        <option value="1800">Every 30 minutes</option>
+                        <option value="3600">Every 1 hour</option>
+                    </select>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-semibold text-on-surface-variant mb-1">Source Type</label>
+                    <select id="taskType" class="w-full px-3 py-2 rounded-lg border border-outline-variant/40 bg-surface-container-low focus:outline-none focus:ring-2 focus:ring-primary/30">
+                        <option value="webcam">Webcam</option>
+                        <option value="file">Video File (future)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-on-surface-variant mb-1">Source (0 for default webcam)</label>
+                    <input type="text" id="source" value="0"
+                        class="w-full px-3 py-2 rounded-lg border border-outline-variant/40 bg-surface-container-low focus:outline-none focus:ring-2 focus:ring-primary/30">
+                </div>
+            </div>
+            <div id="formError" class="hidden bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm"></div>
+            <button type="submit" class="px-5 py-2.5 bg-primary text-white font-bold rounded-lg hover:bg-primary-container transition-colors flex items-center gap-2">
+                <span class="material-symbols-outlined text-lg">add</span>
+                Add Task
+            </button>
+        </form>
+    </div>
+
+    <!-- Task List -->
+    <div class="bg-white rounded-xl border border-outline-variant/40 p-6">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-bold text-on-surface">Scheduled Tasks</h2>
+            <span id="taskCount" class="text-sm text-secondary">Loading...</span>
+        </div>
+        <div id="taskList" class="space-y-3">
+            <!-- Tasks will be loaded here -->
+        </div>
+    </div>
+</main>
+
+<script>
+// Load tasks on page load
+loadTasks();
+
+function loadTasks() {
+    fetch('/api/scheduled_detection/tasks')
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                const taskCount = data.tasks ? Object.keys(data.tasks).length : 0;
+                document.getElementById('taskCount').textContent = `${taskCount} task${taskCount !== 1 ? 's' : ''}`;
+                
+                const list = document.getElementById('taskList');
+                if (taskCount === 0) {
+                    list.innerHTML = `
+                        <div class="text-center py-8 text-secondary">
+                            <span class="material-symbols-outlined text-4xl mb-2">schedule</span>
+                            <p>No scheduled tasks</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                list.innerHTML = '';
+                Object.entries(data.tasks).forEach(([taskId, task]) => {
+                    const isEnabled = task.enabled;
+                    const lastRun = task.last_run ? new Date(task.last_run).toLocaleString() : 'Never';
+                    const nextRun = task.next_run ? new Date(task.next_run).toLocaleString() : 'Pending';
+                    
+                    list.innerHTML += `
+                        <div class="flex items-center justify-between p-4 bg-surface-container-low rounded-lg">
+                            <div>
+                                <div class="flex items-center gap-2">
+                                    <span class="material-symbols-outlined text-primary">schedule</span>
+                                    <span class="font-bold text-on-surface">${taskId}</span>
+                                    <span class="text-xs px-2 py-0.5 rounded-full ${isEnabled ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}">
+                                        ${isEnabled ? 'Enabled' : 'Disabled'}
+                                    </span>
+                                </div>
+                                <div class="text-xs text-secondary mt-1">
+                                    Interval: ${task.interval}s | Last: ${lastRun} | Next: ${nextRun}
+                                </div>
+                            </div>
+                            <div class="flex gap-2">
+                                <button onclick="toggleTask('${taskId}', ${!isEnabled})" 
+                                    class="p-2 rounded-lg ${isEnabled ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200' : 'bg-green-100 text-green-700 hover:bg-green-200'} transition-colors"
+                                    title="${isEnabled ? 'Disable' : 'Enable'}">
+                                    <span class="material-symbols-outlined text-lg">${isEnabled ? 'pause' : 'play_arrow'}</span>
+                                </button>
+                                <button onclick="deleteTask('${taskId}')" 
+                                    class="p-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors"
+                                    title="Delete">
+                                    <span class="material-symbols-outlined text-lg">delete</span>
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+        })
+        .catch(err => {
+            console.error('Error loading tasks:', err);
+        });
+}
+
+// Add new task
+document.getElementById('taskForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const errorDiv = document.getElementById('formError');
+    errorDiv.classList.add('hidden');
+    
+    const data = {
+        task_id: document.getElementById('taskId').value,
+        interval_seconds: parseInt(document.getElementById('interval').value),
+        task_type: document.getElementById('taskType').value,
+        source: document.getElementById('source').value
+    };
+    
+    fetch('/api/scheduled_detection/tasks', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(data)
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            document.getElementById('taskForm').reset();
+            loadTasks();
+        } else {
+            errorDiv.textContent = data.error || 'Failed to create task';
+            errorDiv.classList.remove('hidden');
+        }
+    })
+    .catch(err => {
+        errorDiv.textContent = 'Network error';
+        errorDiv.classList.remove('hidden');
+    });
+});
+
+// SocketIO for Real-time Updates
+const socket = io();
+socket.on('scheduled_detection_result', (data) => {
+    console.log('Received scheduled detection:', data);
+    const previewTaskId = document.getElementById('previewTaskId');
+    const previewTime = document.getElementById('previewTime');
+    const previewImage = document.getElementById('previewImage');
+    const previewCount = document.getElementById('previewCount');
+    const placeholder = document.getElementById('previewPlaceholder');
+    const statsOverlay = document.getElementById('previewStatsOverlay');
+    const breakdown = document.getElementById('previewBreakdown');
+    const statusDot = document.getElementById('statusDot');
+    
+    previewTaskId.textContent = 'Task: ' + data.task_id;
+    previewTime.textContent = data.timestamp;
+    previewImage.src = data.image;
+    previewCount.textContent = data.count;
+    
+    // Hide placeholder, show image and overlay
+    placeholder.classList.add('hidden');
+    previewImage.classList.remove('hidden');
+    statsOverlay.classList.remove('hidden');
+    
+    // Update status dot
+    statusDot.classList.remove('bg-secondary', 'bg-error');
+    statusDot.classList.add('bg-green-500');
+    
+    // Update breakdown
+    breakdown.innerHTML = '';
+    if (data.stats && data.stats.vehicle_counts) {
+        Object.entries(data.stats.vehicle_counts).forEach(([vType, count]) => {
+            const badge = document.createElement('span');
+            badge.className = 'px-3 py-1.5 bg-white/10 backdrop-blur border border-white/20 text-white text-xs font-bold rounded-lg flex items-center gap-2 capitalize';
+            badge.innerHTML = `<span class="material-symbols-outlined text-sm">${getIconForVehicle(vType)}</span>${count} ${vType}`;
+            breakdown.appendChild(badge);
+        });
+    }
+    
+    document.getElementById('activeBadge').classList.add('hidden');
+});
+
+function getIconForVehicle(type) {
+    type = type.toLowerCase();
+    if (type.includes('car')) return 'directions_car';
+    if (type.includes('motorcycle') || type.includes('bike')) return 'motorcycle';
+    if (type.includes('bus')) return 'directions_bus';
+    if (type.includes('truck')) return 'local_shipping';
+    return 'commute';
+}
+
+socket.on('scheduled_task_status', (data) => {
+    console.log('Task status update:', data);
+    const badge = document.getElementById('activeBadge');
+    const statusDot = document.getElementById('statusDot');
+    const previewTaskId = document.getElementById('previewTaskId');
+    
+    if (data.status === 'capturing') {
+        badge.classList.remove('hidden');
+        statusDot.classList.remove('bg-secondary', 'bg-green-500');
+        statusDot.classList.add('bg-error');
+        previewTaskId.textContent = data.task_id + ' (Opening Camera...)';
+    }
+});
+
+function toggleTask(taskId, enable) {
+    const url = enable 
+        ? `/api/scheduled_detection/tasks/${taskId}/enable`
+        : `/api/scheduled_detection/tasks/${taskId}/disable`;
+    
+    fetch(url, {method: 'POST'})
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) loadTasks();
+        });
+}
+
+function deleteTask(taskId) {
+    if (!confirm(`Delete task "${taskId}"?`)) return;
+    
+    fetch(`/api/scheduled_detection/tasks/${taskId}`, {method: 'DELETE'})
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) loadTasks();
+        });
+}
+
+// Auto-refresh task list every 10 seconds
+setInterval(loadTasks, 10000);
+</script>
+</body>
+</html>
+"""
+
+
+def create_detection_task(task_id, source, task_type):
+    """Factory to create the actual detection task function for the scheduler"""
+    def detection_task():
+        # Import inside the closure to avoid NameError in background threads
+        from vehicle_detector import VehicleDetector
+        msg = f"[{time.strftime('%H:%M:%S')}] [Scheduled Task {task_id}] STARTING - Type: {task_type}, Source: {source}"
+        print(msg)
+        logger.info(msg)
+        cap = None
+        try:
+            # Notify UI that camera is opening
+            socketio.emit('scheduled_task_status', {'task_id': task_id, 'status': 'capturing'})
+            
+            # For webcam scheduled detection
+            if task_type == 'webcam':
+                logger.info(f"[Scheduled Task {task_id}] Opening webcam {source}")
+                
+                # Parse source as integer index if possible
+                try:
+                    cam_source = int(source)
+                except (ValueError, TypeError):
+                    cam_source = source
+                
+                # Attempt to open camera with compatibility backends on Windows
+                if os.name == 'nt' and isinstance(cam_source, int):
+                    cap = cv2.VideoCapture(cam_source, cv2.CAP_DSHOW)
+                else:
+                    cap = cv2.VideoCapture(cam_source)
+                
+                # Check if opened, retry without specific backend if needed
+                if not cap or not cap.isOpened():
+                    if os.name == 'nt' and isinstance(cam_source, int):
+                        logger.warning(f"[Scheduled Task {task_id}] Retrying webcam {source} without DSHOW...")
+                        if cap: cap.release()
+                        cap = cv2.VideoCapture(cam_source)
+                
+                if not cap or not cap.isOpened():
+                    logger.error(f"[Scheduled Task {task_id}] Failed to open webcam {source}. If you have only one camera, try index 0.")
+                    return
+                
+                # Warm up camera (10 frames for better exposure)
+                logger.info(f"[Scheduled Task {task_id}] Warming up camera...")
+                for _ in range(10):
+                    cap.read()
+                    time.sleep(0.05)
+                
+                ret, frame = cap.read()
+                msg = f"[Scheduled Task {task_id}] Frame captured: {ret}"
+                print(msg)
+                logger.info(msg)
+                
+                if ret and frame is not None:
+                    logger.info(f"[Scheduled Task {task_id}] Running detection...")
+                    # Using a lower confidence and disabling enhancement for better snapshot detection
+                    # Enhancement sometimes blurs small vehicles in static snapshots
+                    detector = VehicleDetector('yolov8s.pt', conf_threshold=0.20, enable_enhancement=False)
+                    logger.info(f"[Scheduled Task {task_id}] Detector ready with YOLOv8s (Conf: 0.20, Enhancement: OFF)")
+                    annotated, detections = detector.detect(frame)
+                    count = len(detections)
+                    timestamp = time.strftime('%Y-%m-%d %H:%M:%S')
+                    msg = f"[Scheduled Task {task_id}] Detection complete: {count} vehicles"
+                    print(msg)
+                    logger.info(msg)
+                    
+                    # Save to database for history tracking
+                    try:
+                        # Encode annotated frame
+                        _, buffer = cv2.imencode('.jpg', annotated)
+                        image_b64 = base64.b64encode(buffer).decode('utf-8')
+                        
+                        # Create stats
+                        vehicle_counts = {}
+                        for det in detections:
+                            cls_name = det.get('class_name', 'vehicle')
+                            vehicle_counts[cls_name] = vehicle_counts.get(cls_name, 0) + 1
+                        
+                        stats = {
+                            'total_vehicles': count,
+                            'vehicle_counts': vehicle_counts,
+                            'processing_time': 'scheduled',
+                            'confidence': 0.35
+                        }
+                        
+                        # Save to database
+                        report_id = f"SCHED_{task_id}_{int(time.time())}"
+                        
+                        save_detection_to_db(
+                            report_id=report_id,
+                            timestamp=timestamp,
+                            input_type='scheduled_webcam',
+                            message=f"Scheduled detection: {task_id} - {count} vehicles",
+                            stats=stats,
+                            image_data=image_b64,
+                            video_path=None,
+                            conf_threshold=0.35
+                        )
+                        # Emit real-time result via SocketIO
+                        try:
+                            socketio.emit('scheduled_detection_result', {
+                                'task_id': task_id,
+                                'count': count,
+                                'timestamp': timestamp,
+                                'image': f"data:image/jpeg;base64,{image_b64}",
+                                'stats': stats
+                            })
+                            print(f"[DEBUG] Emitted scheduled detection result for {task_id}")
+                        except Exception as emit_err:
+                            logger.error(f"SocketIO emit error: {emit_err}")
+
+                        logger.info(f"[Scheduled Task {task_id}] ✅ Saved to history: {report_id}")
+                    except Exception as save_err:
+                        logger.error(f"[Scheduled Task {task_id}] Save error: {save_err}")
+                        import traceback
+                        logger.error(traceback.format_exc())
+                else:
+                    logger.warning(f"[Scheduled Task {task_id}] No frame captured from webcam")
+                
+        except Exception as e:
+            logger.error(f"[Scheduled Task {task_id}] ERROR: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
+        finally:
+            if cap:
+                cap.release()
+                logger.info(f"[Scheduled Task {task_id}] Webcam released")
+            # Notify UI that task is done
+            socketio.emit('scheduled_task_status', {'task_id': task_id, 'status': 'idle'})
+            logger.info(f"[Scheduled Task {task_id}] COMPLETED")
+            
+    return detection_task
+
 
 def save_detection_to_db(report_id, timestamp, input_type, message, stats, image_data, video_path, conf_threshold):
     """Save detection result to database using SQLAlchemy"""
@@ -713,7 +2092,14 @@ def save_detection_to_db(report_id, timestamp, input_type, message, stats, image
         return False
 
     try:
-        user_id = session.get('user_id')
+        # Safely get user_id even if outside request context (scheduled tasks)
+        user_id = None
+        try:
+            from flask import session
+            user_id = session.get('user_id')
+        except RuntimeError:
+            # Outside request context
+            pass
         # Ensure stats is a dict
         if isinstance(stats, str):
             try:
@@ -801,7 +2187,7 @@ def save_detection_to_db(report_id, timestamp, input_type, message, stats, image
             existing_history.processing_time = processing_time
             existing_history.confidence_threshold = conf_threshold
             existing_history.breakdown = breakdown_str
-            existing_history.image_data = image_data if input_type == 'image' else None
+            existing_history.image_data = image_data
             existing_history.video_path = video_path if input_type == 'video' else None
             existing_history.user_id = user_id
         else:
@@ -813,7 +2199,7 @@ def save_detection_to_db(report_id, timestamp, input_type, message, stats, image
                 processing_time=processing_time,
                 confidence_threshold=conf_threshold,
                 breakdown=breakdown_str,
-                image_data=image_data if input_type == 'image' else None,
+                image_data=image_data,
                 video_path=video_path if input_type == 'video' else None,
                 user_id=user_id
             )
@@ -822,6 +2208,20 @@ def save_detection_to_db(report_id, timestamp, input_type, message, stats, image
         db.commit()
         log_database_operation(logger, 'INSERT' if not existing else 'UPDATE', 'detection_history', report_id, True)
         logger.info(f"Detection saved to database: {report_id}, type={input_type}, count={vehicle_count}")
+        
+        # Send email notification
+        try:
+            user = db.query(User).filter(User.id == user_id).first()
+            if user and user.email:
+                send_detection_email_async(
+                    user_email=user.email,
+                    username=user.username,
+                    detection_type=input_type,
+                    vehicle_count=vehicle_count
+                )
+        except Exception as e:
+            logger.error(f"Failed to send detection email: {e}")
+        
         return True
     except Exception as e:
         log_error(logger, 'Database', f'Failed to save detection: {str(e)}', {'report_id': report_id, 'type': input_type})
@@ -1263,6 +2663,10 @@ HTML_TEMPLATE = """
 <span class="material-symbols-outlined text-lg">account_circle</span>
 Profile
 </a>
+<a href="/scheduled_detection" class="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-blue-600">
+<span class="material-symbols-outlined text-lg">schedule</span>
+Scheduled
+</a>
 <a href="/logout" class="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-red-600">
 <span class="material-symbols-outlined text-lg">logout</span>
 Logout
@@ -1312,6 +2716,37 @@ Logout
                     </p>
 </div>
 </section>
+
+<!-- New Features Section -->
+<section class="bg-primary-container/30 rounded-xl p-6 space-y-4 border border-primary/20">
+<h3 class="text-label-md font-bold text-primary uppercase tracking-wider mb-2 flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">new_releases</span>
+                        New Features
+                    </h3>
+<div class="space-y-3">
+<a href="/multi_camera" class="flex items-center gap-3 p-3 bg-white rounded-lg hover:bg-primary/5 transition-colors border border-primary/10">
+<span class="material-symbols-outlined text-primary">video_camera_front</span>
+<div>
+<p class="font-semibold text-sm text-primary">Multi-Camera</p>
+<p class="text-xs text-secondary">Monitor up to 4 cameras</p>
+</div>
+</a>
+<a href="/scheduled_detection" class="flex items-center gap-3 p-3 bg-white rounded-lg hover:bg-primary/5 transition-colors border border-primary/10">
+<span class="material-symbols-outlined text-primary">schedule</span>
+<div>
+<p class="font-semibold text-sm text-primary">Scheduled Detection</p>
+<p class="text-xs text-secondary">Auto-capture at intervals</p>
+</div>
+</a>
+<a href="/dashboard" class="flex items-center gap-3 p-3 bg-white rounded-lg hover:bg-primary/5 transition-colors border border-primary/10">
+<span class="material-symbols-outlined text-primary">analytics</span>
+<div>
+<p class="font-semibold text-sm text-primary">Analytics Dashboard</p>
+<p class="text-xs text-secondary">View trends & insights</p>
+</div>
+</a>
+</div>
+</section>
 </div>
 <!-- Right Column: Testing Interface -->
 <div class="lg:col-span-8 space-y-6 text-center">
@@ -1339,6 +2774,14 @@ Logout
 <button type="button" class="flex items-center gap-2 px-6 py-2.5 bg-surface-container-high text-primary font-semibold rounded-lg hover:bg-surface-variant transition-colors" id="webcamBtn" onclick="window.location.href='/live'">
 <span class="material-symbols-outlined text-xl">videocam</span>
                             Live Webcam
+                        </button>
+<button type="button" class="flex items-center gap-2 px-6 py-2.5 bg-surface-container-high text-primary font-semibold rounded-lg hover:bg-surface-variant transition-colors" onclick="window.location.href='/multi_camera'">
+<span class="material-symbols-outlined text-xl">video_camera_front</span>
+                            Multi-Camera
+                        </button>
+<button type="button" class="flex items-center gap-2 px-6 py-2.5 bg-surface-container-high text-primary font-semibold rounded-lg hover:bg-surface-variant transition-colors" onclick="window.location.href='/scheduled_detection'">
+<span class="material-symbols-outlined text-xl">schedule</span>
+                            Scheduled
                         </button>
 </div>
 <p id="pasteInstructions" style="color: #2196F3; font-size: 14px; display: none; margin-top: 10px; text-align: center;">
@@ -1432,6 +2875,8 @@ Your browser does not support the video tag.
 <nav class="hidden md:flex gap-6">
 <a class="text-slate-500 hover:bg-blue-50 transition-colors px-3 py-1 rounded-lg text-sm" href="/">Upload</a>
 <a class="text-slate-500 hover:bg-blue-50 transition-colors px-3 py-1 rounded-lg text-sm" href="/live">Real-time</a>
+<a class="text-slate-500 hover:bg-blue-50 transition-colors px-3 py-1 rounded-lg text-sm" href="/multi_camera">Multi-Cam</a>
+<a class="text-slate-500 hover:bg-blue-50 transition-colors px-3 py-1 rounded-lg text-sm" href="/scheduled_detection">Scheduled</a>
 <a class="text-slate-500 hover:bg-blue-50 transition-colors px-3 py-1 rounded-lg text-sm" href="/history">History</a>
 </nav>
 </div>
@@ -2764,6 +4209,8 @@ def index():
 
 
 @app.route('/debug')
+@login_required
+@admin_required
 def debug_status():
     """Debug route to check database and session status"""
     user_id = session.get('user_id')
@@ -4043,6 +5490,10 @@ LIVE_DETECTION_TEMPLATE = """
 <span class="material-symbols-outlined text-lg">account_circle</span>
 Profile
 </a>
+<a href="/scheduled_detection" class="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-blue-600">
+<span class="material-symbols-outlined text-lg">schedule</span>
+Scheduled
+</a>
 <a href="/logout" class="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-red-600">
 <span class="material-symbols-outlined text-lg">logout</span>
 Logout
@@ -4928,6 +6379,8 @@ def test_route():
 
 
 @app.route('/debug_session')
+@login_required
+@admin_required
 def debug_session():
     """Debug route to check session and user data"""
     import json
@@ -5043,6 +6496,10 @@ Back to History
 <a href="#" onclick="openProfileModal(); return false;" class="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-blue-600">
 <span class="material-symbols-outlined text-lg">account_circle</span>
 Profile
+</a>
+<a href="/scheduled_detection" class="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-blue-600">
+<span class="material-symbols-outlined text-lg">schedule</span>
+Scheduled
 </a>
 <a href="/logout" class="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-red-600">
 <span class="material-symbols-outlined text-lg">logout</span>
@@ -5329,6 +6786,10 @@ HISTORY_TEMPLATE = """
 <span class="material-symbols-outlined text-lg">account_circle</span>
 Profile
 </a>
+<a href="/scheduled_detection" class="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-blue-600">
+<span class="material-symbols-outlined text-lg">schedule</span>
+Scheduled
+</a>
 <a href="/logout" class="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-red-600">
 <span class="material-symbols-outlined text-lg">logout</span>
 Logout
@@ -5347,8 +6808,67 @@ Logout
 <p class="text-on-surface-variant mt-2">View your vehicle detection history</p>
 </div>
 <div class="text-sm text-slate-500">
-<span id="totalCount">0</span> detections
+<span id="totalCount">{{ history|length }}</span> detections
 </div>
+</div>
+
+<!-- Search & Filter Bar -->
+<div class="bg-surface-container-lowest rounded-xl p-5 shadow-sm border border-outline-variant/10 mb-6">
+<form id="filterForm" method="GET" action="/history" class="space-y-4">
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+    <!-- Detection Type -->
+    <div>
+        <label class="block text-xs font-semibold text-on-surface-variant mb-1">Detection Type</label>
+        <select name="detection_type" class="w-full px-3 py-2 rounded-lg border border-outline-variant/40 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-primary/30">
+            <option value="">All Types</option>
+            <option value="image" {{ 'selected' if active_filters.detection_type == 'image' else '' }}>Image</option>
+            <option value="video" {{ 'selected' if active_filters.detection_type == 'video' else '' }}>Video</option>
+            <option value="live" {{ 'selected' if active_filters.detection_type == 'live' else '' }}>Live</option>
+        </select>
+    </div>
+    <!-- Date From -->
+    <div>
+        <label class="block text-xs font-semibold text-on-surface-variant mb-1">Date From</label>
+        <input type="date" name="date_from" value="{{ active_filters.date_from }}" class="w-full px-3 py-2 rounded-lg border border-outline-variant/40 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-primary/30">
+    </div>
+    <!-- Date To -->
+    <div>
+        <label class="block text-xs font-semibold text-on-surface-variant mb-1">Date To</label>
+        <input type="date" name="date_to" value="{{ active_filters.date_to }}" class="w-full px-3 py-2 rounded-lg border border-outline-variant/40 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-primary/30">
+    </div>
+    <!-- Vehicle Type -->
+    <div>
+        <label class="block text-xs font-semibold text-on-surface-variant mb-1">Vehicle Type</label>
+        <select name="vehicle_type" class="w-full px-3 py-2 rounded-lg border border-outline-variant/40 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-primary/30">
+            <option value="">All Vehicles</option>
+            <option value="car" {{ 'selected' if active_filters.vehicle_type == 'car' else '' }}>Car</option>
+            <option value="motorcycle" {{ 'selected' if active_filters.vehicle_type == 'motorcycle' else '' }}>Motorcycle</option>
+            <option value="bus" {{ 'selected' if active_filters.vehicle_type == 'bus' else '' }}>Bus</option>
+            <option value="truck" {{ 'selected' if active_filters.vehicle_type == 'truck' else '' }}>Truck</option>
+        </select>
+    </div>
+</div>
+<div class="flex flex-col md:flex-row gap-4 items-end">
+    <!-- Text Search -->
+    <div class="flex-1">
+        <label class="block text-xs font-semibold text-on-surface-variant mb-1">Search</label>
+        <div class="relative">
+            <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg">search</span>
+            <input type="text" name="search_text" value="{{ active_filters.search_text }}" placeholder="Search detections..." class="w-full pl-10 pr-4 py-2 rounded-lg border border-outline-variant/40 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-primary/30">
+        </div>
+    </div>
+    <div class="flex gap-2">
+        <button type="submit" class="px-5 py-2 bg-primary text-white font-semibold rounded-lg hover:bg-primary-container transition-colors flex items-center gap-2 text-sm">
+            <span class="material-symbols-outlined text-lg">filter_list</span>
+            Apply Filters
+        </button>
+        <a href="/history" class="px-5 py-2 bg-surface-container text-on-surface-variant font-semibold rounded-lg hover:bg-outline-variant/30 transition-colors flex items-center gap-2 text-sm">
+            <span class="material-symbols-outlined text-lg">clear_all</span>
+            Clear
+        </a>
+    </div>
+</div>
+</form>
 </div>
 
 <!-- History List -->
@@ -6130,6 +7650,14 @@ NUMBER_PLATE_DETECTION_TEMPLATE = """
 <span class="material-symbols-outlined text-slate-600 text-sm">expand_more</span>
 </button>
 <div id="userDropdown" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-[9999]">
+<a href="#" onclick="openProfileModal(); return false;" class="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-blue-600">
+<span class="material-symbols-outlined text-lg">account_circle</span>
+Profile
+</a>
+<a href="/scheduled_detection" class="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-blue-600">
+<span class="material-symbols-outlined text-lg">schedule</span>
+Scheduled
+</a>
 <a href="/logout" class="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-red-600">
 <span class="material-symbols-outlined text-lg">logout</span>
 Logout
@@ -6466,7 +7994,104 @@ function showExistingPlates(reportId) {
         platesList.innerHTML = '<p class="text-red-500 text-center py-4">Error: ' + error + '</p>';
     });
 }
+
+// Open profile modal
+function openProfileModal() {
+    const modal = document.getElementById('profileModal');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    toggleDropdown();
+
+    fetch('/api/user/profile')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('profileUsername').value = data.user.username;
+                document.getElementById('profileEmail').value = data.user.email;
+                document.getElementById('profileTheme').value = data.user.theme || 'light';
+            }
+        })
+        .catch(error => console.error('Error loading profile:', error));
+}
+
+// Close profile modal
+function closeProfileModal() {
+    const modal = document.getElementById('profileModal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+}
+
+// Handle profile form submission
+const profileForm = document.getElementById('profileForm');
+if (profileForm) {
+    profileForm.addEventListener('submit', function(e) {
+    e.preventDefault();
+
+    const formData = {
+        username: document.getElementById('profileUsername').value,
+        email: document.getElementById('profileEmail').value,
+        password: document.getElementById('profilePassword').value,
+        theme: document.getElementById('profileTheme').value
+    };
+
+    fetch('/api/user/profile', {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(formData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Profile updated successfully!');
+            closeProfileModal();
+            location.reload();
+        } else {
+            alert('Error updating profile: ' + data.error);
+        }
+    })
+    .catch(error => {
+        alert('Error: ' + error);
+    });
+    });
+}
 </script>
+
+<!-- Profile Modal -->
+<div id="profileModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden items-center justify-center z-50">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
+        <div class="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
+            <h3 class="text-xl font-bold text-white">Edit Profile</h3>
+        </div>
+        <form id="profileForm" class="p-6 space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Username</label>
+                <input type="text" id="profileUsername" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Email</label>
+                <input type="email" id="profileEmail" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">New Password (leave blank to keep current)</label>
+                <input type="password" id="profilePassword" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Enter new password">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Theme</label>
+                <select id="profileTheme" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <option value="light">Light</option>
+                    <option value="dark">Dark</option>
+                </select>
+            </div>
+            <div class="flex gap-3 pt-4">
+                <button type="button" onclick="closeProfileModal()" class="flex-1 px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 font-medium">Cancel</button>
+                <button type="submit" class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 </body>
 </html>
 """
@@ -6655,29 +8280,99 @@ def history_page():
       - Detection
     security:
       - Bearer: []
+    parameters:
+      - name: detection_type
+        in: query
+        type: string
+        description: Filter by type (image, video, live)
+      - name: date_from
+        in: query
+        type: string
+        description: Start date (YYYY-MM-DD)
+      - name: date_to
+        in: query
+        type: string
+        description: End date (YYYY-MM-DD)
+      - name: search_text
+        in: query
+        type: string
+        description: Text search in breakdown
+      - name: vehicle_type
+        in: query
+        type: string
+        description: Filter by vehicle type (car, motorcycle, bus, truck)
     responses:
       200:
         description: Detection history retrieved successfully
       401:
         description: Not authenticated
     """
-    """Render the history page with all past detections"""
+    """Render the history page with all past detections, with optional filters"""
     print("[DEBUG] History route accessed")
-    history = get_detection_history_from_db(limit=50)
+    
+    # Check if any filter parameters are provided
+    has_filters = any([
+        request.args.get('detection_type'),
+        request.args.get('date_from'),
+        request.args.get('date_to'),
+        request.args.get('search_text'),
+        request.args.get('vehicle_type'),
+        request.args.get('min_vehicles'),
+        request.args.get('max_vehicles')
+    ])
+    
+    if has_filters:
+        # Use SearchService for filtered results
+        db = get_db()
+        if db:
+            try:
+                from search_service import SearchService
+                search = SearchService(db)
+                filters = {
+                    'detection_type': request.args.get('detection_type'),
+                    'date_from': request.args.get('date_from'),
+                    'date_to': request.args.get('date_to'),
+                    'search_text': request.args.get('search_text'),
+                    'vehicle_type': request.args.get('vehicle_type'),
+                    'min_vehicles': request.args.get('min_vehicles'),
+                    'max_vehicles': request.args.get('max_vehicles'),
+                    'limit': request.args.get('limit', 50, type=int),
+                    'offset': request.args.get('offset', 0, type=int)
+                }
+                # Remove None values
+                filters = {k: v for k, v in filters.items() if v is not None}
+                history = search.search_detections(user_id=session.get('user_id'), filters=filters)
+                print(f"[DEBUG] Filtered history entries: {len(history)}")
+            except Exception as e:
+                print(f"[ERROR] Search filter error: {e}")
+                history = get_detection_history_from_db(limit=50)
+            finally:
+                db.close()
+        else:
+            history = get_detection_history_from_db(limit=50)
+    else:
+        # No filters - get all history
+        history = get_detection_history_from_db(limit=50)
+    
     print(f"[DEBUG] History entries: {len(history)}")
     
     # Debug: Check first entry data
     if history:
         print(f"[DEBUG] First entry keys: {history[0].keys()}")
-        print(f"[DEBUG] First entry has image_data: {'image_data' in history[0]}")
-        print(f"[DEBUG] First entry image_data length: {len(history[0].get('image_data', '')) if history[0].get('image_data') else 0}")
-        print(f"[DEBUG] First entry has video_path: {'video_path' in history[0]}")
-        print(f"[DEBUG] First entry video_path: {history[0].get('video_path')}")
     
     # Get username from session
     username = session.get('username', 'User')
     
-    return render_template_string(HISTORY_TEMPLATE, history=history, username=username)
+    # Pass current filter values to template for form state
+    active_filters = {
+        'detection_type': request.args.get('detection_type', ''),
+        'date_from': request.args.get('date_from', ''),
+        'date_to': request.args.get('date_to', ''),
+        'search_text': request.args.get('search_text', ''),
+        'vehicle_type': request.args.get('vehicle_type', ''),
+    }
+    
+    return render_template_string(HISTORY_TEMPLATE, history=history, username=username, active_filters=active_filters)
 
 
 @app.route('/number_plate_detection')
@@ -7494,7 +9189,8 @@ def get_user_profile():
             'user': {
                 'username': user.username,
                 'email': user.email,
-                'theme': getattr(user, 'theme', 'light')
+                'theme': getattr(user, 'theme', 'light'),
+                'two_factor_enabled': bool(getattr(user, 'two_factor_enabled', 0))
             }
         })
     except Exception as e:
@@ -7848,6 +9544,20 @@ def create_backup():
             log_database_operation(logger, 'BACKUP', 'database', None, True)
             logger.info(f"Backup created: {message}")
             flash(message, 'success')
+            
+            # Send email notification
+            try:
+                import os
+                file_size = os.path.getsize(backup_path) if backup_path and os.path.exists(backup_path) else 0
+                # Get user email from session
+                db = get_db()
+                if db:
+                    user = db.query(User).filter(User.id == session.get('user_id')).first()
+                    if user and user.email:
+                        send_backup_email_async(user.email, os.path.basename(backup_path), file_size)
+                    db.close()
+            except Exception as e:
+                logger.error(f"Failed to send backup email: {e}")
         else:
             log_error(logger, 'Backup', message)
             logger.error(f"[ERROR] Backup failed: {message}")
@@ -7894,6 +9604,167 @@ def list_backups():
             'success': False,
             'error': str(e)
         }), 500
+
+
+@app.route('/admin/dashboard')
+@login_required
+@admin_required
+def admin_dashboard():
+    """
+    Admin-only dashboard
+    ---
+    tags:
+      - Admin
+    security:
+      - Bearer: []
+    responses:
+      200:
+        description: Admin dashboard
+      401:
+        description: Not authenticated
+      403:
+        description: Not authorized (admin required)
+    """
+    db = get_db()
+    if db is None:
+        flash('Database error', 'error')
+        return redirect(url_for('index'))
+    
+    try:
+        # Get all users
+        users = db.query(User).all()
+        total_users = len(users)
+        
+        # Get detection statistics
+        total_image_detections = db.query(ImageDetection).count()
+        total_video_detections = db.query(VideoDetection).count()
+        total_live_detections = db.query(LiveDetection).count()
+        
+        stats = {
+            'total_users': total_users,
+            'total_image_detections': total_image_detections,
+            'total_video_detections': total_video_detections,
+            'total_live_detections': total_live_detections,
+        }
+        
+        return render_template_string(f"""
+        <html>
+        <head><title>Admin Dashboard</title></head>
+        <body style="font-family: Arial; padding: 20px;">
+            <h1>Admin Dashboard</h1>
+            <p>Welcome, Admin!</p>
+            <h2>Statistics</h2>
+            <ul>
+                <li>Total Users: {stats['total_users']}</li>
+                <li>Total Image Detections: {stats['total_image_detections']}</li>
+                <li>Total Video Detections: {stats['total_video_detections']}</li>
+                <li>Total Live Detections: {stats['total_live_detections']}</li>
+            </ul>
+            <h2>Users</h2>
+            <table border="1" cellpadding="10">
+                <tr><th>ID</th><th>Username</th><th>Email</th><th>Role</th><th>Created At</th></tr>
+                {''.join(f'<tr><td>{u.id}</td><td>{u.username}</td><td>{u.email}</td><td>{u.role}</td><td>{u.created_at}</td></tr>' for u in users)}
+            </table>
+            <p><a href="/index">Back to Home</a></p>
+        </body>
+        </html>
+        """, stats=stats, users=users)
+    finally:
+        db.close()
+
+
+@app.route('/admin/users/<int:user_id>/promote', methods=['POST'])
+@login_required
+@admin_required
+def promote_user(user_id):
+    """
+    Promote a user to admin
+    ---
+    tags:
+      - Admin
+    security:
+      - Bearer: []
+    parameters:
+      - name: user_id
+        in: path
+        type: integer
+        required: true
+    responses:
+      200:
+        description: User promoted successfully
+      401:
+        description: Not authenticated
+      403:
+        description: Not authorized (admin required)
+      404:
+        description: User not found
+    """
+    db = get_db()
+    if db is None:
+        return jsonify({'success': False, 'error': 'Database error'}), 500
+    
+    try:
+        user = db.query(User).filter(User.id == user_id).first()
+        if not user:
+            return jsonify({'success': False, 'error': 'User not found'}), 404
+        
+        user.role = 'admin'
+        db.commit()
+        log_database_operation(logger, 'USER', 'users', user_id, True)
+        logger.info(f"User {user_id} promoted to admin by user {session.get('user_id')}")
+        
+        return jsonify({'success': True, 'message': f'User {user.username} promoted to admin'})
+    finally:
+        db.close()
+
+
+@app.route('/admin/users/<int:user_id>/demote', methods=['POST'])
+@login_required
+@admin_required
+def demote_user(user_id):
+    """
+    Demote an admin to user
+    ---
+    tags:
+      - Admin
+    security:
+      - Bearer: []
+    parameters:
+      - name: user_id
+        in: path
+        type: integer
+        required: true
+    responses:
+      200:
+        description: User demoted successfully
+      401:
+        description: Not authenticated
+      403:
+        description: Not authorized (admin required)
+      404:
+        description: User not found
+    """
+    db = get_db()
+    if db is None:
+        return jsonify({'success': False, 'error': 'Database error'}), 500
+    
+    try:
+        user = db.query(User).filter(User.id == user_id).first()
+        if not user:
+            return jsonify({'success': False, 'error': 'User not found'}), 404
+        
+        # Prevent demoting yourself
+        if user.id == session.get('user_id'):
+            return jsonify({'success': False, 'error': 'Cannot demote yourself'}), 400
+        
+        user.role = 'user'
+        db.commit()
+        log_database_operation(logger, 'USER', 'users', user_id, True)
+        logger.info(f"User {user_id} demoted to user by user {session.get('user_id')}")
+        
+        return jsonify({'success': True, 'message': f'User {user.username} demoted to user'})
+    finally:
+        db.close()
 
 
 @app.route('/backup/restore/<path:filename>')
@@ -8051,17 +9922,75 @@ def backup_info():
         }), 500
 
 
+# ===== Socket.IO Event Handlers for Real-time Streaming =====
+
+@socketio.on('connect')
+def handle_connect():
+    """Handle client connection"""
+    logger.info(f"Client connected: {request.sid}")
+    emit('connected', {'status': 'connected', 'sid': request.sid})
+
+
+@socketio.on('disconnect')
+def handle_disconnect():
+    """Handle client disconnection"""
+    logger.info(f"Client disconnected: {request.sid}")
+
+
+@socketio.on('start_detection')
+def handle_start_detection(data):
+    """Handle start detection request from client"""
+    logger.info(f"Start detection request from {request.sid}: {data}")
+    # This would trigger a background detection task
+    emit('detection_started', {'status': 'started'})
+
+
+@socketio.on('stop_detection')
+def handle_stop_detection():
+    """Handle stop detection request from client"""
+    logger.info(f"Stop detection request from {request.sid}")
+    emit('detection_stopped', {'status': 'stopped'})
+
+
+# ===== Socket.IO Helper Functions =====
+
+def broadcast_detection_result(detection_data):
+    """
+    Broadcast detection result to all connected clients
+    
+    Args:
+        detection_data: Dictionary containing detection results
+    """
+    socketio.emit('detection_result', detection_data)
+    logger.debug(f"Broadcast detection result to all clients")
+
+
+def broadcast_alert(alert_data):
+    """
+    Broadcast alert to all connected clients
+    
+    Args:
+        alert_data: Dictionary containing alert information
+    """
+    socketio.emit('alert', alert_data)
+    logger.warning(f"Broadcast alert: {alert_data.get('type')}")
+
+
 def main():
     # Initialize database connection and tables
     init_db()
 
+    # Configure scheduled detection manager with DB persistence
+    manager = get_scheduled_detection_manager()
+    manager.configure(db_session_factory=get_db, task_factory=create_detection_task)
+
     print("="*50)
     print("Vehicle Detection Web App")
     print("="*50)
-    print("Open your browser and go to: http://localhost:5000")
+    print("Open your browser and go to: http://localhost:5050")
     print("Press Ctrl+C to stop the server")
     print("="*50)
-    app.run(host='0.0.0.0', port=5000, debug=False)
+    socketio.run(app, host='0.0.0.0', port=5050, debug=False, allow_unsafe_werkzeug=True)
 
 
 if __name__ == '__main__':

@@ -41,3 +41,6 @@ flask-caching>=2.1.0
 
 # Email
 flask-mail>=0.9.1
+
+# WebSocket Support
+flask-socketio>=5.3.0

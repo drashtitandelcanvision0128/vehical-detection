@@ -1,6 +1,10 @@
 """
 Authentication Routes
 Contains login, register, and logout route logic
+
+DEPRECATED: This module is NOT used by the application.
+All auth routes are defined inline in web_test_app.py.
+This file is kept for reference only.
 """
 from flask import render_template_string, request, flash, redirect, session, url_for
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -47,7 +51,7 @@ def login():
         return redirect(url_for('index'))
         
     if request.method == 'POST':
-        username = request.form.get('username')
+        email = request.form.get('email')
         password = request.form.get('password')
         
         db = _get_db_func()
@@ -56,14 +60,14 @@ def login():
             return render_template_string(LOGIN_TEMPLATE)
         
         try:
-            user = db.query(User).filter(User.username == username).first()
+            user = db.query(User).filter(User.email == email).first()
             if user and check_password_hash(user.password_hash, password):
                 session['user_id'] = user.id
                 session['username'] = user.username
                 flash('Login successful!', 'success')
                 return redirect(url_for('index'))
             else:
-                flash('Invalid username or password.', 'error')
+                flash('Invalid email or password.', 'error')
         except Exception as e:
             print(f"[ERROR] Login error: {e}")
             flash('Login failed. Please try again.', 'error')

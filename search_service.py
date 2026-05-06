@@ -3,7 +3,7 @@ Search and Filter Service for Vehicle Detection App
 Handles advanced search and filtering of detection history
 """
 from datetime import datetime, timedelta
-from sqlalchemy import and_, or_
+from sqlalchemy import and_
 
 
 class SearchService:
@@ -83,15 +83,10 @@ class SearchService:
             except ValueError:
                 pass
         
-        # Text search filter
+        # Text search filter (only breakdown column - message column was removed)
         if filters.get('search_text'):
             search_text = f"%{filters['search_text']}%"
-            query = query.filter(
-                or_(
-                    DetectionHistory.message.like(search_text),
-                    DetectionHistory.breakdown.like(search_text)
-                )
-            )
+            query = query.filter(DetectionHistory.breakdown.like(search_text))
         
         # Vehicle type specific filter (in breakdown)
         if filters.get('vehicle_type'):
@@ -129,7 +124,6 @@ class SearchService:
                 'processing_time': d.processing_time,
                 'confidence_threshold': d.confidence_threshold,
                 'breakdown': d.breakdown,
-                'message': d.message,
                 'user_id': d.user_id
             })
         

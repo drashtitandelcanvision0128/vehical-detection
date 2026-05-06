@@ -24,3 +24,6 @@ screenshot_*.jpg
 # Temporary webcam videos
 live_live_*.webm
 tmp*.mp4
+
+# Environment variables (contains sensitive credentials)
+.env

@@ -17,8 +17,11 @@ class User(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     is_active = Column(Integer, default=1)
     theme = Column(String(10), default='light')
+    role = Column(String(20), default='user')  # 'user' or 'admin'
     reset_token = Column(String(255), nullable=True)
     reset_token_expires = Column(DateTime, nullable=True)
+    two_factor_enabled = Column(Integer, default=0)  # 0=disabled, 1=enabled
+    two_factor_secret = Column(String(255), nullable=True)  # TOTP secret key
 
     # Relationships
     image_detections = relationship("ImageDetection", back_populates="user")
@@ -41,6 +44,8 @@ class ImageDetection(Base):
     image_data = Column(Text)  # Base64 encoded image
     stats = Column(JSON)  # Detection statistics as JSON
     breakdown = Column(Text)  # Vehicle breakdown text
+    latitude = Column(Float, nullable=True)  # Geolocation
+    longitude = Column(Float, nullable=True)  # Geolocation
 
     # Relationship
     user = relationship("User", back_populates="image_detections")
@@ -61,6 +66,8 @@ class VideoDetection(Base):
     video_path = Column(String(255))
     stats = Column(JSON)  # Detection statistics as JSON
     breakdown = Column(Text)  # Vehicle breakdown text
+    latitude = Column(Float, nullable=True)  # Geolocation
+    longitude = Column(Float, nullable=True)  # Geolocation
 
     # Relationship
     user = relationship("User", back_populates="video_detections")
@@ -80,6 +87,8 @@ class LiveDetection(Base):
     confidence_threshold = Column(Float, default=0.4)
     stats = Column(JSON)  # Detection statistics as JSON
     breakdown = Column(Text)  # Vehicle breakdown text
+    latitude = Column(Float, nullable=True)  # Geolocation
+    longitude = Column(Float, nullable=True)  # Geolocation
 
     # Relationship
     user = relationship("User", back_populates="live_detections")
@@ -127,3 +136,18 @@ class NumberPlateDetection(Base):
     
     # Relationship
     detection_history = relationship("DetectionHistory", backref="number_plates")
+
+
+class ScheduledTask(Base):
+    """Model for storing scheduled detection tasks"""
+    __tablename__ = 'scheduled_tasks'
+
+    id = Column(Integer, primary_key=True)
+    task_id = Column(String(50), unique=True, nullable=False)
+    interval_seconds = Column(Integer, nullable=False)
+    source = Column(String(255), nullable=False)
+    task_type = Column(String(50), default='webcam')
+    enabled = Column(Integer, default=1)  # 1=enabled, 0=disabled
+    created_at = Column(DateTime, default=datetime.utcnow)
+    last_run = Column(DateTime, nullable=True)
+    next_run = Column(DateTime, nullable=True)

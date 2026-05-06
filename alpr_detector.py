@@ -21,7 +21,16 @@ class ALPRDetector:
     def __init__(self):
         """Initialize ALPR detector"""
         self.alpr = None
+        self.blacklist = set()
+        self.whitelist = set()
         self._initialize_alpr()
+        
+        # Initialize telegram if available
+        try:
+            from telegram_service import TelegramService
+            self.telegram = TelegramService()
+        except ImportError:
+            self.telegram = None
     
     def _initialize_alpr(self):
         """Initialize fast-alpr with default settings"""
@@ -201,6 +210,47 @@ class ALPRDetector:
         except Exception as e:
             print(f"[ERROR] Failed to process base64 image: {e}")
             return []
+
+
+    def set_blacklist(self, plates: list):
+        """Set blacklist of plate numbers"""
+        self.blacklist = set(p.upper().strip() for p in plates)
+        print(f"[INFO] ALPR Blacklist updated: {len(self.blacklist)} plates")
+
+    def set_whitelist(self, plates: list):
+        """Set whitelist of plate numbers"""
+        self.whitelist = set(p.upper().strip() for p in plates)
+        print(f"[INFO] ALPR Whitelist updated: {len(self.whitelist)} plates")
+
+    def check_plate(self, plate_text: str):
+        """
+        Check if a plate is blacklisted or whitelisted
+        
+        Returns:
+            str: 'blacklisted', 'whitelisted', or 'neutral'
+        """
+        plate_text = plate_text.upper().strip()
+        if plate_text in self.blacklist:
+            return 'blacklisted'
+        if plate_text in self.whitelist:
+            return 'whitelisted'
+        return 'neutral'
+
+    def process_detections(self, plates: list):
+        """
+        Process a list of detected plates for alerts
+        """
+        for plate in plates:
+            status = self.check_plate(plate['text'])
+            plate['status'] = status
+            
+            if status == 'blacklisted' and self.telegram:
+                self.telegram.send_alert('blacklist', {
+                    'Plate': plate['text'],
+                    'Confidence': f"{plate['confidence']*100:.1f}%",
+                    'Region': plate.get('region', 'Unknown')
+                })
+        return plates
 
 
 # Global instance

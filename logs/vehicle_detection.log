@@ -343,3 +343,1551 @@ LINE 1: ..., confidence, bbox_x1, bbox_y1, bbox_x2, bbox_y2, region, ti...
 2026-04-27 19:18:44 | INFO     | vehicle_detection | <module>:97 | Flask-Mail initialized
 2026-04-27 19:18:44 | INFO     | vehicle_detection | init_db:412 | Database connection established: postgresql://postgres:admin@localhost:5432/vehical_detections
 2026-04-27 19:18:44 | INFO     | vehicle_detection | init_db:413 | Tables created successfully
+2026-04-28 12:57:45 | INFO     | vehicle_detection | <module>:65 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-04-28 12:57:45 | INFO     | vehicle_detection | <module>:74 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-04-28 12:57:45 | INFO     | vehicle_detection | <module>:83 | Cache initialized with type: simple
+2026-04-28 12:57:45 | INFO     | vehicle_detection | <module>:97 | Flask-Mail initialized
+2026-04-28 12:57:45 | INFO     | vehicle_detection | init_db:412 | Database connection established: postgresql://postgres:admin@localhost:5432/vehical_detections
+2026-04-28 12:57:45 | INFO     | vehicle_detection | init_db:413 | Tables created successfully
+2026-04-28 15:25:45 | INFO     | vehicle_detection | <module>:65 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-04-28 15:25:45 | INFO     | vehicle_detection | <module>:74 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-04-28 15:25:45 | INFO     | vehicle_detection | <module>:83 | Cache initialized with type: simple
+2026-04-28 15:25:45 | INFO     | vehicle_detection | <module>:97 | Flask-Mail initialized
+2026-04-28 15:25:46 | INFO     | vehicle_detection | init_db:412 | Database connection established: postgresql://postgres:admin@localhost:5432/vehical_detections
+2026-04-28 15:25:46 | INFO     | vehicle_detection | init_db:413 | Tables created successfully
+2026-04-28 15:25:50 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:test | SUCCESS | IP:127.0.0.1
+2026-04-28 15:25:50 | INFO     | vehicle_detection | login:479 | User test logged in successfully from 127.0.0.1
+2026-04-28 16:57:10 | INFO     | vehicle_detection | <module>:65 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-04-28 16:57:10 | INFO     | vehicle_detection | <module>:74 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-04-28 16:57:10 | INFO     | vehicle_detection | <module>:83 | Cache initialized with type: simple
+2026-04-28 16:57:10 | INFO     | vehicle_detection | <module>:97 | Flask-Mail initialized
+2026-04-28 16:57:10 | INFO     | vehicle_detection | init_db:412 | Database connection established: postgresql://postgres:admin@localhost:5432/vehical_detections
+2026-04-28 16:57:10 | INFO     | vehicle_detection | init_db:413 | Tables created successfully
+2026-04-28 16:57:14 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:test | SUCCESS | IP:127.0.0.1
+2026-04-28 16:57:14 | INFO     | vehicle_detection | login:479 | User test logged in successfully from 127.0.0.1
+2026-04-28 18:49:00 | INFO     | vehicle_detection | <module>:65 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-04-28 18:49:00 | INFO     | vehicle_detection | <module>:74 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-04-28 18:49:00 | INFO     | vehicle_detection | <module>:83 | Cache initialized with type: simple
+2026-04-28 18:49:00 | INFO     | vehicle_detection | <module>:97 | Flask-Mail initialized
+2026-04-28 18:49:00 | INFO     | vehicle_detection | init_db:412 | Database connection established: postgresql://postgres:admin@localhost:5432/vehical_detections
+2026-04-28 18:49:00 | INFO     | vehicle_detection | init_db:413 | Tables created successfully
+2026-04-28 18:49:20 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:test | SUCCESS | IP:127.0.0.1
+2026-04-28 18:49:20 | INFO     | vehicle_detection | login:479 | User test logged in successfully from 127.0.0.1
+2026-04-28 18:52:04 | INFO     | vehicle_detection | <module>:65 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-04-28 18:52:04 | INFO     | vehicle_detection | <module>:74 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-04-28 18:52:04 | INFO     | vehicle_detection | <module>:83 | Cache initialized with type: simple
+2026-04-28 18:52:04 | INFO     | vehicle_detection | <module>:97 | Flask-Mail initialized
+2026-04-28 18:52:04 | INFO     | vehicle_detection | init_db:412 | Database connection established: postgresql://postgres:admin@localhost:5432/vehical_detections
+2026-04-28 18:52:04 | INFO     | vehicle_detection | init_db:413 | Tables created successfully
+2026-04-28 18:53:07 | INFO     | vehicle_detection | <module>:65 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-04-28 18:53:07 | INFO     | vehicle_detection | <module>:74 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-04-28 18:53:07 | INFO     | vehicle_detection | <module>:83 | Cache initialized with type: simple
+2026-04-28 18:53:07 | INFO     | vehicle_detection | <module>:97 | Flask-Mail initialized
+2026-04-28 18:53:07 | INFO     | vehicle_detection | init_db:412 | Database connection established: postgresql://postgres:admin@localhost:5432/vehical_detections
+2026-04-28 18:53:07 | INFO     | vehicle_detection | init_db:413 | Tables created successfully
+2026-04-28 18:53:16 | INFO     | vehicle_detection | detect_vehicles_image:2214 | Image detection started | Resolution: 400x299 | Confidence: 0.25
+2026-04-28 18:53:16 | INFO     | vehicle_detection | log_detection:111 | DETECTION | Type:image | Vehicles:3 | Time:0.384s | Confidence:0.25 | User:2
+2026-04-28 18:53:16 | INFO     | vehicle_detection | detect_vehicles_image:2271 | Image detection complete | Vehicles: 3 | Time: 0.384s | Breakdown: Truck: 1, Car: 1, Motorcycle/Scooty: 1
+2026-04-28 19:20:21 | INFO     | vehicle_detection | <module>:65 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-04-28 19:20:21 | INFO     | vehicle_detection | <module>:74 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-04-28 19:20:21 | INFO     | vehicle_detection | <module>:83 | Cache initialized with type: simple
+2026-04-28 19:20:21 | INFO     | vehicle_detection | <module>:97 | Flask-Mail initialized
+2026-04-28 19:20:21 | INFO     | vehicle_detection | init_db:412 | Database connection established: postgresql://postgres:admin@localhost:5432/vehical_detections
+2026-04-28 19:20:21 | INFO     | vehicle_detection | init_db:413 | Tables created successfully
+2026-04-28 19:22:19 | INFO     | vehicle_detection | <module>:65 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-04-28 19:22:19 | INFO     | vehicle_detection | <module>:74 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-04-28 19:22:19 | INFO     | vehicle_detection | <module>:83 | Cache initialized with type: simple
+2026-04-28 19:22:19 | INFO     | vehicle_detection | <module>:97 | Flask-Mail initialized
+2026-04-28 19:22:19 | INFO     | vehicle_detection | init_db:412 | Database connection established: postgresql://postgres:admin@localhost:5432/vehical_detections
+2026-04-28 19:22:19 | INFO     | vehicle_detection | init_db:413 | Tables created successfully
+2026-04-28 19:22:33 | INFO     | vehicle_detection | detect_vehicles_image:2214 | Image detection started | Resolution: 400x268 | Confidence: 0.25
+2026-04-28 19:22:33 | INFO     | vehicle_detection | log_detection:111 | DETECTION | Type:image | Vehicles:2 | Time:0.284s | Confidence:0.25 | User:2
+2026-04-28 19:22:33 | INFO     | vehicle_detection | detect_vehicles_image:2271 | Image detection complete | Vehicles: 2 | Time: 0.284s | Breakdown: Car: 2
+2026-04-28 19:22:39 | INFO     | vehicle_detection | save_detection_to_db:824 | Detection saved to database: dab604ab, type=image, count=2
+2026-04-28 19:23:10 | INFO     | vehicle_detection | detect_vehicles_image:2214 | Image detection started | Resolution: 553x275 | Confidence: 0.25
+2026-04-28 19:23:10 | INFO     | vehicle_detection | log_detection:111 | DETECTION | Type:image | Vehicles:1 | Time:0.161s | Confidence:0.25 | User:2
+2026-04-28 19:23:10 | INFO     | vehicle_detection | detect_vehicles_image:2271 | Image detection complete | Vehicles: 1 | Time: 0.161s | Breakdown: Car: 1
+2026-04-28 19:23:27 | INFO     | vehicle_detection | detect_vehicles_image:2214 | Image detection started | Resolution: 553x275 | Confidence: 0.25
+2026-04-28 19:23:27 | INFO     | vehicle_detection | log_detection:111 | DETECTION | Type:image | Vehicles:1 | Time:0.197s | Confidence:0.25 | User:2
+2026-04-28 19:23:27 | INFO     | vehicle_detection | detect_vehicles_image:2271 | Image detection complete | Vehicles: 1 | Time: 0.197s | Breakdown: Car: 1
+2026-04-28 19:23:30 | INFO     | vehicle_detection | save_detection_to_db:824 | Detection saved to database: 8cab2459, type=image, count=1
+2026-04-28 19:23:53 | INFO     | vehicle_detection | detect_vehicles_image:2214 | Image detection started | Resolution: 400x279 | Confidence: 0.25
+2026-04-28 19:23:53 | INFO     | vehicle_detection | log_detection:111 | DETECTION | Type:image | Vehicles:1 | Time:0.172s | Confidence:0.25 | User:2
+2026-04-28 19:23:53 | INFO     | vehicle_detection | detect_vehicles_image:2271 | Image detection complete | Vehicles: 1 | Time: 0.172s | Breakdown: Car: 1
+2026-04-28 19:23:54 | INFO     | vehicle_detection | save_detection_to_db:824 | Detection saved to database: 166d55b0, type=image, count=1
+2026-04-29 10:23:06 | INFO     | vehicle_detection | <module>:65 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-04-29 10:23:06 | INFO     | vehicle_detection | <module>:74 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-04-29 10:23:06 | INFO     | vehicle_detection | <module>:83 | Cache initialized with type: simple
+2026-04-29 10:23:06 | INFO     | vehicle_detection | <module>:97 | Flask-Mail initialized
+2026-04-29 10:23:06 | INFO     | vehicle_detection | init_db:412 | Database connection established: postgresql://postgres:admin@localhost:5432/vehical_detections
+2026-04-29 10:23:06 | INFO     | vehicle_detection | init_db:413 | Tables created successfully
+2026-04-29 10:23:11 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:test | SUCCESS | IP:127.0.0.1
+2026-04-29 10:23:11 | INFO     | vehicle_detection | login:479 | User test logged in successfully from 127.0.0.1
+2026-04-29 10:23:17 | INFO     | vehicle_detection | detect_vehicles_image:2214 | Image detection started | Resolution: 400x268 | Confidence: 0.25
+2026-04-29 10:23:17 | INFO     | vehicle_detection | log_detection:111 | DETECTION | Type:image | Vehicles:2 | Time:0.717s | Confidence:0.25 | User:2
+2026-04-29 10:23:17 | INFO     | vehicle_detection | detect_vehicles_image:2271 | Image detection complete | Vehicles: 2 | Time: 0.717s | Breakdown: Car: 2
+2026-04-29 10:23:20 | INFO     | vehicle_detection | save_detection_to_db:824 | Detection saved to database: a58bc8a9, type=image, count=2
+2026-04-29 10:25:40 | INFO     | vehicle_detection | detect_vehicles_image:2214 | Image detection started | Resolution: 500x232 | Confidence: 0.25
+2026-04-29 10:25:40 | INFO     | vehicle_detection | log_detection:111 | DETECTION | Type:image | Vehicles:1 | Time:0.203s | Confidence:0.25 | User:2
+2026-04-29 10:25:40 | INFO     | vehicle_detection | detect_vehicles_image:2271 | Image detection complete | Vehicles: 1 | Time: 0.203s | Breakdown: Car: 1
+2026-04-29 10:26:07 | INFO     | vehicle_detection | <module>:65 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-04-29 10:26:07 | INFO     | vehicle_detection | <module>:74 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-04-29 10:26:07 | INFO     | vehicle_detection | <module>:83 | Cache initialized with type: simple
+2026-04-29 10:26:07 | INFO     | vehicle_detection | <module>:97 | Flask-Mail initialized
+2026-04-29 10:26:07 | INFO     | vehicle_detection | init_db:412 | Database connection established: postgresql://postgres:admin@localhost:5432/vehical_detections
+2026-04-29 10:26:07 | INFO     | vehicle_detection | init_db:413 | Tables created successfully
+2026-04-29 10:26:17 | INFO     | vehicle_detection | detect_vehicles_image:2214 | Image detection started | Resolution: 400x300 | Confidence: 0.25
+2026-04-29 10:26:17 | INFO     | vehicle_detection | log_detection:111 | DETECTION | Type:image | Vehicles:1 | Time:0.376s | Confidence:0.25 | User:2
+2026-04-29 10:26:17 | INFO     | vehicle_detection | detect_vehicles_image:2271 | Image detection complete | Vehicles: 1 | Time: 0.376s | Breakdown: Car: 1
+2026-04-29 10:26:17 | INFO     | vehicle_detection | save_detection_to_db:824 | Detection saved to database: ba12c93d, type=image, count=1
+2026-04-29 10:28:34 | INFO     | vehicle_detection | <module>:65 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-04-29 10:28:34 | INFO     | vehicle_detection | <module>:74 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-04-29 10:28:34 | INFO     | vehicle_detection | <module>:83 | Cache initialized with type: simple
+2026-04-29 10:28:34 | INFO     | vehicle_detection | <module>:97 | Flask-Mail initialized
+2026-04-29 10:28:34 | INFO     | vehicle_detection | init_db:412 | Database connection established: postgresql://postgres:admin@localhost:5432/vehical_detections
+2026-04-29 10:28:34 | INFO     | vehicle_detection | init_db:413 | Tables created successfully
+2026-04-29 10:36:16 | INFO     | vehicle_detection | <module>:65 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-04-29 10:36:16 | INFO     | vehicle_detection | <module>:74 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-04-29 10:36:16 | INFO     | vehicle_detection | <module>:83 | Cache initialized with type: simple
+2026-04-29 10:36:16 | INFO     | vehicle_detection | <module>:97 | Flask-Mail initialized
+2026-04-29 10:36:36 | INFO     | vehicle_detection | <module>:65 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-04-29 10:36:36 | INFO     | vehicle_detection | <module>:74 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-04-29 10:36:36 | INFO     | vehicle_detection | <module>:83 | Cache initialized with type: simple
+2026-04-29 10:36:36 | INFO     | vehicle_detection | <module>:97 | Flask-Mail initialized
+2026-04-29 10:36:36 | INFO     | vehicle_detection | init_db:412 | Database connection established: postgresql://postgres:admin@localhost:5432/vehical_detections
+2026-04-29 10:36:36 | INFO     | vehicle_detection | init_db:413 | Tables created successfully
+2026-04-29 11:06:24 | INFO     | vehicle_detection | detect_vehicles_image:2225 | Image detection started | Resolution: 400x267 | Confidence: 0.25
+2026-04-29 11:06:25 | INFO     | vehicle_detection | log_detection:111 | DETECTION | Type:image | Vehicles:1 | Time:0.556s | Confidence:0.25 | User:2
+2026-04-29 11:06:25 | INFO     | vehicle_detection | detect_vehicles_image:2282 | Image detection complete | Vehicles: 1 | Time: 0.556s | Breakdown: Car: 1
+2026-04-29 11:06:25 | INFO     | vehicle_detection | save_detection_to_db:824 | Detection saved to database: e52bb7f3, type=image, count=1
+2026-04-29 11:13:12 | INFO     | vehicle_detection | <module>:65 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-04-29 11:13:12 | INFO     | vehicle_detection | <module>:74 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-04-29 11:13:12 | INFO     | vehicle_detection | <module>:83 | Cache initialized with type: simple
+2026-04-29 11:13:12 | INFO     | vehicle_detection | <module>:97 | Flask-Mail initialized
+2026-04-29 11:16:27 | INFO     | vehicle_detection | <module>:65 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-04-29 11:16:27 | INFO     | vehicle_detection | <module>:74 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-04-29 11:16:27 | INFO     | vehicle_detection | <module>:83 | Cache initialized with type: simple
+2026-04-29 11:16:27 | INFO     | vehicle_detection | <module>:97 | Flask-Mail initialized
+2026-04-29 11:16:27 | INFO     | vehicle_detection | init_db:412 | Database connection established: postgresql://postgres:admin@localhost:5432/vehical_detections
+2026-04-29 11:16:27 | INFO     | vehicle_detection | init_db:413 | Tables created successfully
+2026-04-29 11:17:03 | INFO     | vehicle_detection | detect_vehicles_image:2225 | Image detection started | Resolution: 553x275 | Confidence: 0.25
+2026-04-29 11:17:03 | INFO     | vehicle_detection | log_detection:111 | DETECTION | Type:image | Vehicles:1 | Time:0.338s | Confidence:0.25 | User:2
+2026-04-29 11:17:03 | INFO     | vehicle_detection | detect_vehicles_image:2282 | Image detection complete | Vehicles: 1 | Time: 0.338s | Breakdown: Car: 1
+2026-04-29 11:17:03 | INFO     | vehicle_detection | save_detection_to_db:824 | Detection saved to database: dfd52a12, type=image, count=1
+2026-04-29 12:45:42 | INFO     | vehicle_detection | <module>:65 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-04-29 12:45:42 | INFO     | vehicle_detection | <module>:74 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-04-29 12:45:42 | INFO     | vehicle_detection | <module>:83 | Cache initialized with type: simple
+2026-04-29 12:45:42 | INFO     | vehicle_detection | <module>:97 | Flask-Mail initialized
+2026-04-29 12:45:43 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | REGISTER | User:newuser | SUCCESS | IP:127.0.0.1
+2026-04-29 12:45:43 | INFO     | vehicle_detection | register:629 | New user registered: newuser (newuser@example.com) from 127.0.0.1
+2026-04-29 12:45:43 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | REGISTER | User:newuser | FAILED | IP:127.0.0.1
+2026-04-29 12:45:43 | WARNING  | vehicle_detection | register:591 | Password mismatch during registration for newuser from 127.0.0.1
+2026-04-29 12:45:43 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | REGISTER | User:newuser | FAILED | IP:127.0.0.1
+2026-04-29 12:45:43 | WARNING  | vehicle_detection | register:597 | Password too short for newuser from 127.0.0.1
+2026-04-29 12:45:43 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | REGISTER | User:newuser | FAILED | IP:127.0.0.1
+2026-04-29 12:45:43 | WARNING  | vehicle_detection | register:585 | Registration attempt with missing fields from 127.0.0.1
+2026-04-29 12:45:43 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:testuser | SUCCESS | IP:127.0.0.1
+2026-04-29 12:45:43 | INFO     | vehicle_detection | login:517 | User testuser logged in successfully from 127.0.0.1
+2026-04-29 12:45:43 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:testuser | FAILED | IP:127.0.0.1
+2026-04-29 12:45:43 | WARNING  | vehicle_detection | login:522 | Failed login attempt for username: testuser from 127.0.0.1
+2026-04-29 12:45:43 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGOUT | User:testuser | SUCCESS | IP:127.0.0.1
+2026-04-29 12:45:43 | INFO     | vehicle_detection | logout:651 | User testuser logged out from 127.0.0.1
+2026-04-29 12:45:43 | INFO     | vehicle_detection | forgot_password:681 | Password reset link generated for test@example.com
+2026-04-29 12:45:44 | INFO     | vehicle_detection | forgot_password:681 | Password reset link generated for test@example.com
+2026-04-29 12:45:44 | WARNING  | vehicle_detection | reset_password:752 | Password reset attempted with invalid token
+2026-04-29 12:45:44 | WARNING  | vehicle_detection | reset_password:757 | Password reset attempted with expired token for user testuser
+2026-04-29 12:45:44 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | PASSWORD_RESET | User:testuser | SUCCESS | IP:127.0.0.1
+2026-04-29 12:45:44 | INFO     | vehicle_detection | reset_password:784 | Password reset successful for user testuser
+2026-04-29 12:45:44 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:testuser | SUCCESS | IP:127.0.0.1
+2026-04-29 12:45:44 | INFO     | vehicle_detection | login:517 | User testuser logged in successfully from 127.0.0.1
+2026-04-29 12:46:01 | INFO     | vehicle_detection | <module>:65 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-04-29 12:46:01 | INFO     | vehicle_detection | <module>:74 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-04-29 12:46:01 | INFO     | vehicle_detection | <module>:83 | Cache initialized with type: simple
+2026-04-29 12:46:01 | INFO     | vehicle_detection | <module>:97 | Flask-Mail initialized
+2026-04-29 12:46:01 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | REGISTER | User:newuser | SUCCESS | IP:127.0.0.1
+2026-04-29 12:46:01 | INFO     | vehicle_detection | register:629 | New user registered: newuser (newuser@example.com) from 127.0.0.1
+2026-04-29 12:46:01 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | REGISTER | User:newuser | FAILED | IP:127.0.0.1
+2026-04-29 12:46:01 | WARNING  | vehicle_detection | register:591 | Password mismatch during registration for newuser from 127.0.0.1
+2026-04-29 12:46:01 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | REGISTER | User:newuser | FAILED | IP:127.0.0.1
+2026-04-29 12:46:01 | WARNING  | vehicle_detection | register:597 | Password too short for newuser from 127.0.0.1
+2026-04-29 12:46:01 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | REGISTER | User:newuser | FAILED | IP:127.0.0.1
+2026-04-29 12:46:01 | WARNING  | vehicle_detection | register:585 | Registration attempt with missing fields from 127.0.0.1
+2026-04-29 12:46:01 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:testuser | SUCCESS | IP:127.0.0.1
+2026-04-29 12:46:01 | INFO     | vehicle_detection | login:517 | User testuser logged in successfully from 127.0.0.1
+2026-04-29 12:46:02 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:testuser | FAILED | IP:127.0.0.1
+2026-04-29 12:46:02 | WARNING  | vehicle_detection | login:522 | Failed login attempt for username: testuser from 127.0.0.1
+2026-04-29 12:46:02 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGOUT | User:testuser | SUCCESS | IP:127.0.0.1
+2026-04-29 12:46:02 | INFO     | vehicle_detection | logout:651 | User testuser logged out from 127.0.0.1
+2026-04-29 12:46:02 | INFO     | vehicle_detection | forgot_password:681 | Password reset link generated for test@example.com
+2026-04-29 12:46:02 | INFO     | vehicle_detection | forgot_password:681 | Password reset link generated for test@example.com
+2026-04-29 12:46:02 | WARNING  | vehicle_detection | reset_password:752 | Password reset attempted with invalid token
+2026-04-29 12:46:02 | WARNING  | vehicle_detection | reset_password:757 | Password reset attempted with expired token for user testuser
+2026-04-29 12:46:02 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | PASSWORD_RESET | User:testuser | SUCCESS | IP:127.0.0.1
+2026-04-29 12:46:02 | INFO     | vehicle_detection | reset_password:784 | Password reset successful for user testuser
+2026-04-29 12:46:03 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:testuser | SUCCESS | IP:127.0.0.1
+2026-04-29 12:46:03 | INFO     | vehicle_detection | login:517 | User testuser logged in successfully from 127.0.0.1
+2026-04-29 12:46:27 | INFO     | vehicle_detection | <module>:65 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-04-29 12:46:27 | INFO     | vehicle_detection | <module>:74 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-04-29 12:46:27 | INFO     | vehicle_detection | <module>:83 | Cache initialized with type: simple
+2026-04-29 12:46:27 | INFO     | vehicle_detection | <module>:97 | Flask-Mail initialized
+2026-04-29 12:46:28 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | REGISTER | User:newuser | SUCCESS | IP:127.0.0.1
+2026-04-29 12:46:28 | INFO     | vehicle_detection | register:629 | New user registered: newuser (newuser@example.com) from 127.0.0.1
+2026-04-29 12:46:28 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | REGISTER | User:newuser | FAILED | IP:127.0.0.1
+2026-04-29 12:46:28 | WARNING  | vehicle_detection | register:591 | Password mismatch during registration for newuser from 127.0.0.1
+2026-04-29 12:46:28 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | REGISTER | User:newuser | FAILED | IP:127.0.0.1
+2026-04-29 12:46:28 | WARNING  | vehicle_detection | register:597 | Password too short for newuser from 127.0.0.1
+2026-04-29 12:46:28 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | REGISTER | User:newuser | FAILED | IP:127.0.0.1
+2026-04-29 12:46:28 | WARNING  | vehicle_detection | register:585 | Registration attempt with missing fields from 127.0.0.1
+2026-04-29 12:46:28 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:testuser | SUCCESS | IP:127.0.0.1
+2026-04-29 12:46:28 | INFO     | vehicle_detection | login:517 | User testuser logged in successfully from 127.0.0.1
+2026-04-29 12:46:28 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:testuser | FAILED | IP:127.0.0.1
+2026-04-29 12:46:28 | WARNING  | vehicle_detection | login:522 | Failed login attempt for username: testuser from 127.0.0.1
+2026-04-29 12:46:28 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGOUT | User:testuser | SUCCESS | IP:127.0.0.1
+2026-04-29 12:46:28 | INFO     | vehicle_detection | logout:651 | User testuser logged out from 127.0.0.1
+2026-04-29 12:46:28 | INFO     | vehicle_detection | forgot_password:681 | Password reset link generated for test@example.com
+2026-04-29 12:46:28 | INFO     | vehicle_detection | forgot_password:681 | Password reset link generated for test@example.com
+2026-04-29 12:46:28 | WARNING  | vehicle_detection | reset_password:752 | Password reset attempted with invalid token
+2026-04-29 12:46:29 | WARNING  | vehicle_detection | reset_password:757 | Password reset attempted with expired token for user testuser
+2026-04-29 12:46:29 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | PASSWORD_RESET | User:testuser | SUCCESS | IP:127.0.0.1
+2026-04-29 12:46:29 | INFO     | vehicle_detection | reset_password:784 | Password reset successful for user testuser
+2026-04-29 12:46:29 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:testuser | SUCCESS | IP:127.0.0.1
+2026-04-29 12:46:29 | INFO     | vehicle_detection | login:517 | User testuser logged in successfully from 127.0.0.1
+2026-04-29 12:46:46 | INFO     | vehicle_detection | <module>:65 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-04-29 12:46:46 | INFO     | vehicle_detection | <module>:74 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-04-29 12:46:46 | INFO     | vehicle_detection | <module>:83 | Cache initialized with type: simple
+2026-04-29 12:46:46 | INFO     | vehicle_detection | <module>:97 | Flask-Mail initialized
+2026-04-29 12:46:46 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | REGISTER | User:newuser | SUCCESS | IP:127.0.0.1
+2026-04-29 12:46:46 | INFO     | vehicle_detection | register:629 | New user registered: newuser (newuser@example.com) from 127.0.0.1
+2026-04-29 12:46:46 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | REGISTER | User:newuser | FAILED | IP:127.0.0.1
+2026-04-29 12:46:46 | WARNING  | vehicle_detection | register:591 | Password mismatch during registration for newuser from 127.0.0.1
+2026-04-29 12:46:46 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | REGISTER | User:newuser | FAILED | IP:127.0.0.1
+2026-04-29 12:46:46 | WARNING  | vehicle_detection | register:597 | Password too short for newuser from 127.0.0.1
+2026-04-29 12:46:46 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | REGISTER | User:newuser | FAILED | IP:127.0.0.1
+2026-04-29 12:46:46 | WARNING  | vehicle_detection | register:585 | Registration attempt with missing fields from 127.0.0.1
+2026-04-29 12:46:47 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:testuser | SUCCESS | IP:127.0.0.1
+2026-04-29 12:46:47 | INFO     | vehicle_detection | login:517 | User testuser logged in successfully from 127.0.0.1
+2026-04-29 12:46:47 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:testuser | FAILED | IP:127.0.0.1
+2026-04-29 12:46:47 | WARNING  | vehicle_detection | login:522 | Failed login attempt for username: testuser from 127.0.0.1
+2026-04-29 12:46:47 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGOUT | User:testuser | SUCCESS | IP:127.0.0.1
+2026-04-29 12:46:47 | INFO     | vehicle_detection | logout:651 | User testuser logged out from 127.0.0.1
+2026-04-29 12:46:47 | INFO     | vehicle_detection | forgot_password:681 | Password reset link generated for test@example.com
+2026-04-29 12:46:47 | INFO     | vehicle_detection | forgot_password:681 | Password reset link generated for test@example.com
+2026-04-29 12:46:47 | WARNING  | vehicle_detection | reset_password:752 | Password reset attempted with invalid token
+2026-04-29 12:46:47 | WARNING  | vehicle_detection | reset_password:757 | Password reset attempted with expired token for user testuser
+2026-04-29 12:46:47 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | PASSWORD_RESET | User:testuser | SUCCESS | IP:127.0.0.1
+2026-04-29 12:46:47 | INFO     | vehicle_detection | reset_password:784 | Password reset successful for user testuser
+2026-04-29 12:46:48 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:testuser | SUCCESS | IP:127.0.0.1
+2026-04-29 12:46:48 | INFO     | vehicle_detection | login:517 | User testuser logged in successfully from 127.0.0.1
+2026-04-29 12:48:22 | INFO     | vehicle_detection | <module>:65 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-04-29 12:48:22 | INFO     | vehicle_detection | <module>:74 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-04-29 12:48:22 | INFO     | vehicle_detection | <module>:83 | Cache initialized with type: simple
+2026-04-29 12:48:22 | INFO     | vehicle_detection | <module>:97 | Flask-Mail initialized
+2026-04-29 12:48:22 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | REGISTER | User:newuser | SUCCESS | IP:127.0.0.1
+2026-04-29 12:48:22 | INFO     | vehicle_detection | register:629 | New user registered: newuser (newuser@example.com) from 127.0.0.1
+2026-04-29 12:48:22 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | REGISTER | User:newuser | FAILED | IP:127.0.0.1
+2026-04-29 12:48:22 | WARNING  | vehicle_detection | register:591 | Password mismatch during registration for newuser from 127.0.0.1
+2026-04-29 12:48:23 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | REGISTER | User:newuser | FAILED | IP:127.0.0.1
+2026-04-29 12:48:23 | WARNING  | vehicle_detection | register:597 | Password too short for newuser from 127.0.0.1
+2026-04-29 12:48:23 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | REGISTER | User:newuser | FAILED | IP:127.0.0.1
+2026-04-29 12:48:23 | WARNING  | vehicle_detection | register:585 | Registration attempt with missing fields from 127.0.0.1
+2026-04-29 12:48:23 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:testuser | SUCCESS | IP:127.0.0.1
+2026-04-29 12:48:23 | INFO     | vehicle_detection | login:517 | User testuser logged in successfully from 127.0.0.1
+2026-04-29 12:48:23 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:testuser | FAILED | IP:127.0.0.1
+2026-04-29 12:48:23 | WARNING  | vehicle_detection | login:522 | Failed login attempt for username: testuser from 127.0.0.1
+2026-04-29 12:48:23 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGOUT | User:testuser | SUCCESS | IP:127.0.0.1
+2026-04-29 12:48:23 | INFO     | vehicle_detection | logout:651 | User testuser logged out from 127.0.0.1
+2026-04-29 12:48:23 | INFO     | vehicle_detection | forgot_password:681 | Password reset link generated for test@example.com
+2026-04-29 12:48:23 | INFO     | vehicle_detection | forgot_password:681 | Password reset link generated for test@example.com
+2026-04-29 12:48:23 | WARNING  | vehicle_detection | reset_password:752 | Password reset attempted with invalid token
+2026-04-29 12:48:24 | WARNING  | vehicle_detection | reset_password:757 | Password reset attempted with expired token for user testuser
+2026-04-29 12:48:24 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | PASSWORD_RESET | User:testuser | SUCCESS | IP:127.0.0.1
+2026-04-29 12:48:24 | INFO     | vehicle_detection | reset_password:784 | Password reset successful for user testuser
+2026-04-29 12:48:24 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:testuser | SUCCESS | IP:127.0.0.1
+2026-04-29 12:48:24 | INFO     | vehicle_detection | login:517 | User testuser logged in successfully from 127.0.0.1
+2026-04-29 12:49:01 | INFO     | vehicle_detection | <module>:65 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-04-29 12:49:01 | INFO     | vehicle_detection | <module>:74 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-04-29 12:49:01 | INFO     | vehicle_detection | <module>:83 | Cache initialized with type: simple
+2026-04-29 12:49:01 | INFO     | vehicle_detection | <module>:97 | Flask-Mail initialized
+2026-04-29 12:49:01 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | REGISTER | User:newuser | SUCCESS | IP:127.0.0.1
+2026-04-29 12:49:01 | INFO     | vehicle_detection | register:629 | New user registered: newuser (newuser@example.com) from 127.0.0.1
+2026-04-29 12:49:01 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | REGISTER | User:newuser | FAILED | IP:127.0.0.1
+2026-04-29 12:49:01 | WARNING  | vehicle_detection | register:591 | Password mismatch during registration for newuser from 127.0.0.1
+2026-04-29 12:49:01 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | REGISTER | User:newuser | FAILED | IP:127.0.0.1
+2026-04-29 12:49:01 | WARNING  | vehicle_detection | register:597 | Password too short for newuser from 127.0.0.1
+2026-04-29 12:49:01 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | REGISTER | User:newuser | FAILED | IP:127.0.0.1
+2026-04-29 12:49:01 | WARNING  | vehicle_detection | register:585 | Registration attempt with missing fields from 127.0.0.1
+2026-04-29 12:49:01 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:testuser | SUCCESS | IP:127.0.0.1
+2026-04-29 12:49:01 | INFO     | vehicle_detection | login:517 | User testuser logged in successfully from 127.0.0.1
+2026-04-29 12:49:01 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:testuser | FAILED | IP:127.0.0.1
+2026-04-29 12:49:01 | WARNING  | vehicle_detection | login:522 | Failed login attempt for username: testuser from 127.0.0.1
+2026-04-29 12:49:01 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGOUT | User:testuser | SUCCESS | IP:127.0.0.1
+2026-04-29 12:49:01 | INFO     | vehicle_detection | logout:651 | User testuser logged out from 127.0.0.1
+2026-04-29 12:49:02 | INFO     | vehicle_detection | forgot_password:681 | Password reset link generated for test@example.com
+2026-04-29 12:49:02 | INFO     | vehicle_detection | forgot_password:681 | Password reset link generated for test@example.com
+2026-04-29 12:49:02 | WARNING  | vehicle_detection | reset_password:752 | Password reset attempted with invalid token
+2026-04-29 12:49:02 | WARNING  | vehicle_detection | reset_password:757 | Password reset attempted with expired token for user testuser
+2026-04-29 12:49:02 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | PASSWORD_RESET | User:testuser | SUCCESS | IP:127.0.0.1
+2026-04-29 12:49:02 | INFO     | vehicle_detection | reset_password:784 | Password reset successful for user testuser
+2026-04-29 12:49:02 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:testuser | SUCCESS | IP:127.0.0.1
+2026-04-29 12:49:02 | INFO     | vehicle_detection | login:517 | User testuser logged in successfully from 127.0.0.1
+2026-04-29 14:27:03 | INFO     | vehicle_detection | <module>:66 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-04-29 14:27:03 | INFO     | vehicle_detection | <module>:75 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-04-29 14:27:03 | INFO     | vehicle_detection | <module>:84 | Cache initialized with type: simple
+2026-04-29 14:27:03 | INFO     | vehicle_detection | <module>:98 | Flask-Mail initialized
+2026-04-29 14:27:03 | WARNING  | vehicle_detection | broadcast_alert:8200 | Broadcast alert: speed_exceeded
+2026-04-29 14:27:45 | INFO     | vehicle_detection | <module>:66 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-04-29 14:27:45 | INFO     | vehicle_detection | <module>:75 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-04-29 14:27:45 | INFO     | vehicle_detection | <module>:84 | Cache initialized with type: simple
+2026-04-29 14:27:45 | INFO     | vehicle_detection | <module>:98 | Flask-Mail initialized
+2026-04-29 14:27:45 | WARNING  | vehicle_detection | broadcast_alert:8200 | Broadcast alert: speed_exceeded
+2026-04-29 14:32:44 | INFO     | vehicle_detection | <module>:66 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-04-29 14:32:44 | INFO     | vehicle_detection | <module>:75 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-04-29 14:32:44 | INFO     | vehicle_detection | <module>:84 | Cache initialized with type: simple
+2026-04-29 14:32:44 | INFO     | vehicle_detection | <module>:98 | Flask-Mail initialized
+2026-04-29 14:33:06 | INFO     | vehicle_detection | <module>:66 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-04-29 14:33:06 | INFO     | vehicle_detection | <module>:75 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-04-29 14:33:06 | INFO     | vehicle_detection | <module>:84 | Cache initialized with type: simple
+2026-04-29 14:33:06 | INFO     | vehicle_detection | <module>:98 | Flask-Mail initialized
+2026-04-29 14:35:20 | INFO     | vehicle_detection | <module>:66 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-04-29 14:35:20 | INFO     | vehicle_detection | <module>:75 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-04-29 14:35:20 | INFO     | vehicle_detection | <module>:84 | Cache initialized with type: simple
+2026-04-29 14:35:20 | INFO     | vehicle_detection | <module>:98 | Flask-Mail initialized
+2026-04-29 14:35:21 | INFO     | vehicle_detection | <module>:66 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-04-29 14:35:21 | INFO     | vehicle_detection | <module>:75 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-04-29 14:35:21 | INFO     | vehicle_detection | <module>:84 | Cache initialized with type: simple
+2026-04-29 14:35:21 | INFO     | vehicle_detection | <module>:98 | Flask-Mail initialized
+2026-04-29 14:35:21 | INFO     | vehicle_detection | <module>:66 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-04-29 14:35:21 | INFO     | vehicle_detection | <module>:75 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-04-29 14:35:21 | INFO     | vehicle_detection | <module>:84 | Cache initialized with type: simple
+2026-04-29 14:35:21 | INFO     | vehicle_detection | <module>:98 | Flask-Mail initialized
+2026-04-29 14:36:03 | INFO     | vehicle_detection | <module>:66 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-04-29 14:36:03 | INFO     | vehicle_detection | <module>:75 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-04-29 14:36:03 | INFO     | vehicle_detection | <module>:84 | Cache initialized with type: simple
+2026-04-29 14:36:03 | INFO     | vehicle_detection | <module>:98 | Flask-Mail initialized
+2026-04-29 14:36:24 | INFO     | vehicle_detection | <module>:66 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-04-29 14:36:24 | INFO     | vehicle_detection | <module>:75 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-04-29 14:36:24 | INFO     | vehicle_detection | <module>:84 | Cache initialized with type: simple
+2026-04-29 14:36:24 | INFO     | vehicle_detection | <module>:98 | Flask-Mail initialized
+2026-04-29 14:36:24 | INFO     | vehicle_detection | toggle_theme:7391 | Theme toggled to: dark
+2026-04-29 14:36:24 | INFO     | vehicle_detection | toggle_theme:7391 | Theme toggled to: dark
+2026-04-29 15:05:56 | INFO     | vehicle_detection | <module>:66 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-04-29 15:05:56 | INFO     | vehicle_detection | <module>:75 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-04-29 15:05:56 | INFO     | vehicle_detection | <module>:84 | Cache initialized with type: simple
+2026-04-29 15:05:56 | INFO     | vehicle_detection | <module>:98 | Flask-Mail initialized
+2026-04-29 15:05:56 | INFO     | vehicle_detection | init_db:517 | Database connection established: postgresql://postgres:admin@localhost:5432/vehical_detections
+2026-04-29 15:05:56 | INFO     | vehicle_detection | init_db:518 | Tables created successfully
+2026-04-29 15:06:00 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:test | FAILED | IP:127.0.0.1
+2026-04-29 15:06:00 | ERROR    | vehicle_detection | log_error:133 | ERROR | Type:Authentication | Login error: (psycopg2.errors.UndefinedColumn) column users.role does not exist
+LINE 1: ...e AS users_is_active, users.theme AS users_theme, users.role...
+                                                             ^
+
+[SQL: SELECT users.id AS users_id, users.username AS users_username, users.email AS users_email, users.password_hash AS users_password_hash, users.created_at AS users_created_at, users.is_active AS users_is_active, users.theme AS users_theme, users.role AS users_role, users.reset_token AS users_reset_token, users.reset_token_expires AS users_reset_token_expires, users.two_factor_enabled AS users_two_factor_enabled, users.two_factor_secret AS users_two_factor_secret 
+FROM users 
+WHERE users.username = %(username_1)s 
+ LIMIT %(param_1)s]
+[parameters: {'username_1': 'test', 'param_1': 1}]
+(Background on this error at: https://sqlalche.me/e/20/f405) | Anonymous | Details:{'username': 'test'}
+2026-04-29 15:06:00 | ERROR    | vehicle_detection | login:594 | [ERROR] Login error: (psycopg2.errors.UndefinedColumn) column users.role does not exist
+LINE 1: ...e AS users_is_active, users.theme AS users_theme, users.role...
+                                                             ^
+
+[SQL: SELECT users.id AS users_id, users.username AS users_username, users.email AS users_email, users.password_hash AS users_password_hash, users.created_at AS users_created_at, users.is_active AS users_is_active, users.theme AS users_theme, users.role AS users_role, users.reset_token AS users_reset_token, users.reset_token_expires AS users_reset_token_expires, users.two_factor_enabled AS users_two_factor_enabled, users.two_factor_secret AS users_two_factor_secret 
+FROM users 
+WHERE users.username = %(username_1)s 
+ LIMIT %(param_1)s]
+[parameters: {'username_1': 'test', 'param_1': 1}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+2026-04-29 15:06:02 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:test | FAILED | IP:127.0.0.1
+2026-04-29 15:06:02 | ERROR    | vehicle_detection | log_error:133 | ERROR | Type:Authentication | Login error: (psycopg2.errors.UndefinedColumn) column users.role does not exist
+LINE 1: ...e AS users_is_active, users.theme AS users_theme, users.role...
+                                                             ^
+
+[SQL: SELECT users.id AS users_id, users.username AS users_username, users.email AS users_email, users.password_hash AS users_password_hash, users.created_at AS users_created_at, users.is_active AS users_is_active, users.theme AS users_theme, users.role AS users_role, users.reset_token AS users_reset_token, users.reset_token_expires AS users_reset_token_expires, users.two_factor_enabled AS users_two_factor_enabled, users.two_factor_secret AS users_two_factor_secret 
+FROM users 
+WHERE users.username = %(username_1)s 
+ LIMIT %(param_1)s]
+[parameters: {'username_1': 'test', 'param_1': 1}]
+(Background on this error at: https://sqlalche.me/e/20/f405) | Anonymous | Details:{'username': 'test'}
+2026-04-29 15:06:02 | ERROR    | vehicle_detection | login:594 | [ERROR] Login error: (psycopg2.errors.UndefinedColumn) column users.role does not exist
+LINE 1: ...e AS users_is_active, users.theme AS users_theme, users.role...
+                                                             ^
+
+[SQL: SELECT users.id AS users_id, users.username AS users_username, users.email AS users_email, users.password_hash AS users_password_hash, users.created_at AS users_created_at, users.is_active AS users_is_active, users.theme AS users_theme, users.role AS users_role, users.reset_token AS users_reset_token, users.reset_token_expires AS users_reset_token_expires, users.two_factor_enabled AS users_two_factor_enabled, users.two_factor_secret AS users_two_factor_secret 
+FROM users 
+WHERE users.username = %(username_1)s 
+ LIMIT %(param_1)s]
+[parameters: {'username_1': 'test', 'param_1': 1}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+2026-04-29 15:06:03 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:test | FAILED | IP:127.0.0.1
+2026-04-29 15:06:03 | ERROR    | vehicle_detection | log_error:133 | ERROR | Type:Authentication | Login error: (psycopg2.errors.UndefinedColumn) column users.role does not exist
+LINE 1: ...e AS users_is_active, users.theme AS users_theme, users.role...
+                                                             ^
+
+[SQL: SELECT users.id AS users_id, users.username AS users_username, users.email AS users_email, users.password_hash AS users_password_hash, users.created_at AS users_created_at, users.is_active AS users_is_active, users.theme AS users_theme, users.role AS users_role, users.reset_token AS users_reset_token, users.reset_token_expires AS users_reset_token_expires, users.two_factor_enabled AS users_two_factor_enabled, users.two_factor_secret AS users_two_factor_secret 
+FROM users 
+WHERE users.username = %(username_1)s 
+ LIMIT %(param_1)s]
+[parameters: {'username_1': 'test', 'param_1': 1}]
+(Background on this error at: https://sqlalche.me/e/20/f405) | Anonymous | Details:{'username': 'test'}
+2026-04-29 15:06:03 | ERROR    | vehicle_detection | login:594 | [ERROR] Login error: (psycopg2.errors.UndefinedColumn) column users.role does not exist
+LINE 1: ...e AS users_is_active, users.theme AS users_theme, users.role...
+                                                             ^
+
+[SQL: SELECT users.id AS users_id, users.username AS users_username, users.email AS users_email, users.password_hash AS users_password_hash, users.created_at AS users_created_at, users.is_active AS users_is_active, users.theme AS users_theme, users.role AS users_role, users.reset_token AS users_reset_token, users.reset_token_expires AS users_reset_token_expires, users.two_factor_enabled AS users_two_factor_enabled, users.two_factor_secret AS users_two_factor_secret 
+FROM users 
+WHERE users.username = %(username_1)s 
+ LIMIT %(param_1)s]
+[parameters: {'username_1': 'test', 'param_1': 1}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+2026-04-29 15:06:05 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:test | FAILED | IP:127.0.0.1
+2026-04-29 15:06:05 | ERROR    | vehicle_detection | log_error:133 | ERROR | Type:Authentication | Login error: (psycopg2.errors.UndefinedColumn) column users.role does not exist
+LINE 1: ...e AS users_is_active, users.theme AS users_theme, users.role...
+                                                             ^
+
+[SQL: SELECT users.id AS users_id, users.username AS users_username, users.email AS users_email, users.password_hash AS users_password_hash, users.created_at AS users_created_at, users.is_active AS users_is_active, users.theme AS users_theme, users.role AS users_role, users.reset_token AS users_reset_token, users.reset_token_expires AS users_reset_token_expires, users.two_factor_enabled AS users_two_factor_enabled, users.two_factor_secret AS users_two_factor_secret 
+FROM users 
+WHERE users.username = %(username_1)s 
+ LIMIT %(param_1)s]
+[parameters: {'username_1': 'test', 'param_1': 1}]
+(Background on this error at: https://sqlalche.me/e/20/f405) | Anonymous | Details:{'username': 'test'}
+2026-04-29 15:06:05 | ERROR    | vehicle_detection | login:594 | [ERROR] Login error: (psycopg2.errors.UndefinedColumn) column users.role does not exist
+LINE 1: ...e AS users_is_active, users.theme AS users_theme, users.role...
+                                                             ^
+
+[SQL: SELECT users.id AS users_id, users.username AS users_username, users.email AS users_email, users.password_hash AS users_password_hash, users.created_at AS users_created_at, users.is_active AS users_is_active, users.theme AS users_theme, users.role AS users_role, users.reset_token AS users_reset_token, users.reset_token_expires AS users_reset_token_expires, users.two_factor_enabled AS users_two_factor_enabled, users.two_factor_secret AS users_two_factor_secret 
+FROM users 
+WHERE users.username = %(username_1)s 
+ LIMIT %(param_1)s]
+[parameters: {'username_1': 'test', 'param_1': 1}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+2026-04-29 15:06:05 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:test | FAILED | IP:127.0.0.1
+2026-04-29 15:06:05 | ERROR    | vehicle_detection | log_error:133 | ERROR | Type:Authentication | Login error: (psycopg2.errors.UndefinedColumn) column users.role does not exist
+LINE 1: ...e AS users_is_active, users.theme AS users_theme, users.role...
+                                                             ^
+
+[SQL: SELECT users.id AS users_id, users.username AS users_username, users.email AS users_email, users.password_hash AS users_password_hash, users.created_at AS users_created_at, users.is_active AS users_is_active, users.theme AS users_theme, users.role AS users_role, users.reset_token AS users_reset_token, users.reset_token_expires AS users_reset_token_expires, users.two_factor_enabled AS users_two_factor_enabled, users.two_factor_secret AS users_two_factor_secret 
+FROM users 
+WHERE users.username = %(username_1)s 
+ LIMIT %(param_1)s]
+[parameters: {'username_1': 'test', 'param_1': 1}]
+(Background on this error at: https://sqlalche.me/e/20/f405) | Anonymous | Details:{'username': 'test'}
+2026-04-29 15:06:05 | ERROR    | vehicle_detection | login:594 | [ERROR] Login error: (psycopg2.errors.UndefinedColumn) column users.role does not exist
+LINE 1: ...e AS users_is_active, users.theme AS users_theme, users.role...
+                                                             ^
+
+[SQL: SELECT users.id AS users_id, users.username AS users_username, users.email AS users_email, users.password_hash AS users_password_hash, users.created_at AS users_created_at, users.is_active AS users_is_active, users.theme AS users_theme, users.role AS users_role, users.reset_token AS users_reset_token, users.reset_token_expires AS users_reset_token_expires, users.two_factor_enabled AS users_two_factor_enabled, users.two_factor_secret AS users_two_factor_secret 
+FROM users 
+WHERE users.username = %(username_1)s 
+ LIMIT %(param_1)s]
+[parameters: {'username_1': 'test', 'param_1': 1}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+2026-04-29 15:06:05 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:test | FAILED | IP:127.0.0.1
+2026-04-29 15:06:05 | ERROR    | vehicle_detection | log_error:133 | ERROR | Type:Authentication | Login error: (psycopg2.errors.UndefinedColumn) column users.role does not exist
+LINE 1: ...e AS users_is_active, users.theme AS users_theme, users.role...
+                                                             ^
+
+[SQL: SELECT users.id AS users_id, users.username AS users_username, users.email AS users_email, users.password_hash AS users_password_hash, users.created_at AS users_created_at, users.is_active AS users_is_active, users.theme AS users_theme, users.role AS users_role, users.reset_token AS users_reset_token, users.reset_token_expires AS users_reset_token_expires, users.two_factor_enabled AS users_two_factor_enabled, users.two_factor_secret AS users_two_factor_secret 
+FROM users 
+WHERE users.username = %(username_1)s 
+ LIMIT %(param_1)s]
+[parameters: {'username_1': 'test', 'param_1': 1}]
+(Background on this error at: https://sqlalche.me/e/20/f405) | Anonymous | Details:{'username': 'test'}
+2026-04-29 15:06:05 | ERROR    | vehicle_detection | login:594 | [ERROR] Login error: (psycopg2.errors.UndefinedColumn) column users.role does not exist
+LINE 1: ...e AS users_is_active, users.theme AS users_theme, users.role...
+                                                             ^
+
+[SQL: SELECT users.id AS users_id, users.username AS users_username, users.email AS users_email, users.password_hash AS users_password_hash, users.created_at AS users_created_at, users.is_active AS users_is_active, users.theme AS users_theme, users.role AS users_role, users.reset_token AS users_reset_token, users.reset_token_expires AS users_reset_token_expires, users.two_factor_enabled AS users_two_factor_enabled, users.two_factor_secret AS users_two_factor_secret 
+FROM users 
+WHERE users.username = %(username_1)s 
+ LIMIT %(param_1)s]
+[parameters: {'username_1': 'test', 'param_1': 1}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+2026-04-29 15:11:33 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:test | FAILED | IP:127.0.0.1
+2026-04-29 15:11:33 | ERROR    | vehicle_detection | log_error:133 | ERROR | Type:Authentication | Login error: (psycopg2.errors.UndefinedColumn) column users.role does not exist
+LINE 1: ...e AS users_is_active, users.theme AS users_theme, users.role...
+                                                             ^
+
+[SQL: SELECT users.id AS users_id, users.username AS users_username, users.email AS users_email, users.password_hash AS users_password_hash, users.created_at AS users_created_at, users.is_active AS users_is_active, users.theme AS users_theme, users.role AS users_role, users.reset_token AS users_reset_token, users.reset_token_expires AS users_reset_token_expires, users.two_factor_enabled AS users_two_factor_enabled, users.two_factor_secret AS users_two_factor_secret 
+FROM users 
+WHERE users.username = %(username_1)s 
+ LIMIT %(param_1)s]
+[parameters: {'username_1': 'test', 'param_1': 1}]
+(Background on this error at: https://sqlalche.me/e/20/f405) | Anonymous | Details:{'username': 'test'}
+2026-04-29 15:11:33 | ERROR    | vehicle_detection | login:594 | [ERROR] Login error: (psycopg2.errors.UndefinedColumn) column users.role does not exist
+LINE 1: ...e AS users_is_active, users.theme AS users_theme, users.role...
+                                                             ^
+
+[SQL: SELECT users.id AS users_id, users.username AS users_username, users.email AS users_email, users.password_hash AS users_password_hash, users.created_at AS users_created_at, users.is_active AS users_is_active, users.theme AS users_theme, users.role AS users_role, users.reset_token AS users_reset_token, users.reset_token_expires AS users_reset_token_expires, users.two_factor_enabled AS users_two_factor_enabled, users.two_factor_secret AS users_two_factor_secret 
+FROM users 
+WHERE users.username = %(username_1)s 
+ LIMIT %(param_1)s]
+[parameters: {'username_1': 'test', 'param_1': 1}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+2026-04-29 15:11:36 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:test | FAILED | IP:127.0.0.1
+2026-04-29 15:11:36 | ERROR    | vehicle_detection | log_error:133 | ERROR | Type:Authentication | Login error: (psycopg2.errors.UndefinedColumn) column users.role does not exist
+LINE 1: ...e AS users_is_active, users.theme AS users_theme, users.role...
+                                                             ^
+
+[SQL: SELECT users.id AS users_id, users.username AS users_username, users.email AS users_email, users.password_hash AS users_password_hash, users.created_at AS users_created_at, users.is_active AS users_is_active, users.theme AS users_theme, users.role AS users_role, users.reset_token AS users_reset_token, users.reset_token_expires AS users_reset_token_expires, users.two_factor_enabled AS users_two_factor_enabled, users.two_factor_secret AS users_two_factor_secret 
+FROM users 
+WHERE users.username = %(username_1)s 
+ LIMIT %(param_1)s]
+[parameters: {'username_1': 'test', 'param_1': 1}]
+(Background on this error at: https://sqlalche.me/e/20/f405) | Anonymous | Details:{'username': 'test'}
+2026-04-29 15:11:36 | ERROR    | vehicle_detection | login:594 | [ERROR] Login error: (psycopg2.errors.UndefinedColumn) column users.role does not exist
+LINE 1: ...e AS users_is_active, users.theme AS users_theme, users.role...
+                                                             ^
+
+[SQL: SELECT users.id AS users_id, users.username AS users_username, users.email AS users_email, users.password_hash AS users_password_hash, users.created_at AS users_created_at, users.is_active AS users_is_active, users.theme AS users_theme, users.role AS users_role, users.reset_token AS users_reset_token, users.reset_token_expires AS users_reset_token_expires, users.two_factor_enabled AS users_two_factor_enabled, users.two_factor_secret AS users_two_factor_secret 
+FROM users 
+WHERE users.username = %(username_1)s 
+ LIMIT %(param_1)s]
+[parameters: {'username_1': 'test', 'param_1': 1}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+2026-04-29 15:11:41 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:test | FAILED | IP:127.0.0.1
+2026-04-29 15:11:41 | ERROR    | vehicle_detection | log_error:133 | ERROR | Type:Authentication | Login error: (psycopg2.errors.UndefinedColumn) column users.role does not exist
+LINE 1: ...e AS users_is_active, users.theme AS users_theme, users.role...
+                                                             ^
+
+[SQL: SELECT users.id AS users_id, users.username AS users_username, users.email AS users_email, users.password_hash AS users_password_hash, users.created_at AS users_created_at, users.is_active AS users_is_active, users.theme AS users_theme, users.role AS users_role, users.reset_token AS users_reset_token, users.reset_token_expires AS users_reset_token_expires, users.two_factor_enabled AS users_two_factor_enabled, users.two_factor_secret AS users_two_factor_secret 
+FROM users 
+WHERE users.username = %(username_1)s 
+ LIMIT %(param_1)s]
+[parameters: {'username_1': 'test', 'param_1': 1}]
+(Background on this error at: https://sqlalche.me/e/20/f405) | Anonymous | Details:{'username': 'test'}
+2026-04-29 15:11:41 | ERROR    | vehicle_detection | login:594 | [ERROR] Login error: (psycopg2.errors.UndefinedColumn) column users.role does not exist
+LINE 1: ...e AS users_is_active, users.theme AS users_theme, users.role...
+                                                             ^
+
+[SQL: SELECT users.id AS users_id, users.username AS users_username, users.email AS users_email, users.password_hash AS users_password_hash, users.created_at AS users_created_at, users.is_active AS users_is_active, users.theme AS users_theme, users.role AS users_role, users.reset_token AS users_reset_token, users.reset_token_expires AS users_reset_token_expires, users.two_factor_enabled AS users_two_factor_enabled, users.two_factor_secret AS users_two_factor_secret 
+FROM users 
+WHERE users.username = %(username_1)s 
+ LIMIT %(param_1)s]
+[parameters: {'username_1': 'test', 'param_1': 1}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+2026-04-29 15:11:42 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:test | FAILED | IP:127.0.0.1
+2026-04-29 15:11:42 | ERROR    | vehicle_detection | log_error:133 | ERROR | Type:Authentication | Login error: (psycopg2.errors.UndefinedColumn) column users.role does not exist
+LINE 1: ...e AS users_is_active, users.theme AS users_theme, users.role...
+                                                             ^
+
+[SQL: SELECT users.id AS users_id, users.username AS users_username, users.email AS users_email, users.password_hash AS users_password_hash, users.created_at AS users_created_at, users.is_active AS users_is_active, users.theme AS users_theme, users.role AS users_role, users.reset_token AS users_reset_token, users.reset_token_expires AS users_reset_token_expires, users.two_factor_enabled AS users_two_factor_enabled, users.two_factor_secret AS users_two_factor_secret 
+FROM users 
+WHERE users.username = %(username_1)s 
+ LIMIT %(param_1)s]
+[parameters: {'username_1': 'test', 'param_1': 1}]
+(Background on this error at: https://sqlalche.me/e/20/f405) | Anonymous | Details:{'username': 'test'}
+2026-04-29 15:11:42 | ERROR    | vehicle_detection | login:594 | [ERROR] Login error: (psycopg2.errors.UndefinedColumn) column users.role does not exist
+LINE 1: ...e AS users_is_active, users.theme AS users_theme, users.role...
+                                                             ^
+
+[SQL: SELECT users.id AS users_id, users.username AS users_username, users.email AS users_email, users.password_hash AS users_password_hash, users.created_at AS users_created_at, users.is_active AS users_is_active, users.theme AS users_theme, users.role AS users_role, users.reset_token AS users_reset_token, users.reset_token_expires AS users_reset_token_expires, users.two_factor_enabled AS users_two_factor_enabled, users.two_factor_secret AS users_two_factor_secret 
+FROM users 
+WHERE users.username = %(username_1)s 
+ LIMIT %(param_1)s]
+[parameters: {'username_1': 'test', 'param_1': 1}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+2026-04-29 15:14:09 | INFO     | vehicle_detection | <module>:66 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-04-29 15:14:09 | INFO     | vehicle_detection | <module>:75 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-04-29 15:14:09 | INFO     | vehicle_detection | <module>:84 | Cache initialized with type: simple
+2026-04-29 15:14:09 | INFO     | vehicle_detection | <module>:98 | Flask-Mail initialized
+2026-04-29 15:14:09 | INFO     | vehicle_detection | init_db:517 | Database connection established: postgresql://postgres:admin@localhost:5432/vehical_detections
+2026-04-29 15:14:09 | INFO     | vehicle_detection | init_db:518 | Tables created successfully
+2026-04-29 15:14:16 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:test | FAILED | IP:127.0.0.1
+2026-04-29 15:14:16 | ERROR    | vehicle_detection | log_error:133 | ERROR | Type:Authentication | Login error: (psycopg2.errors.UndefinedColumn) column users.role does not exist
+LINE 1: ...e AS users_is_active, users.theme AS users_theme, users.role...
+                                                             ^
+
+[SQL: SELECT users.id AS users_id, users.username AS users_username, users.email AS users_email, users.password_hash AS users_password_hash, users.created_at AS users_created_at, users.is_active AS users_is_active, users.theme AS users_theme, users.role AS users_role, users.reset_token AS users_reset_token, users.reset_token_expires AS users_reset_token_expires, users.two_factor_enabled AS users_two_factor_enabled, users.two_factor_secret AS users_two_factor_secret 
+FROM users 
+WHERE users.username = %(username_1)s 
+ LIMIT %(param_1)s]
+[parameters: {'username_1': 'test', 'param_1': 1}]
+(Background on this error at: https://sqlalche.me/e/20/f405) | Anonymous | Details:{'username': 'test'}
+2026-04-29 15:14:16 | ERROR    | vehicle_detection | login:594 | [ERROR] Login error: (psycopg2.errors.UndefinedColumn) column users.role does not exist
+LINE 1: ...e AS users_is_active, users.theme AS users_theme, users.role...
+                                                             ^
+
+[SQL: SELECT users.id AS users_id, users.username AS users_username, users.email AS users_email, users.password_hash AS users_password_hash, users.created_at AS users_created_at, users.is_active AS users_is_active, users.theme AS users_theme, users.role AS users_role, users.reset_token AS users_reset_token, users.reset_token_expires AS users_reset_token_expires, users.two_factor_enabled AS users_two_factor_enabled, users.two_factor_secret AS users_two_factor_secret 
+FROM users 
+WHERE users.username = %(username_1)s 
+ LIMIT %(param_1)s]
+[parameters: {'username_1': 'test', 'param_1': 1}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+2026-04-29 15:14:23 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:test | FAILED | IP:127.0.0.1
+2026-04-29 15:14:23 | ERROR    | vehicle_detection | log_error:133 | ERROR | Type:Authentication | Login error: (psycopg2.errors.UndefinedColumn) column users.role does not exist
+LINE 1: ...e AS users_is_active, users.theme AS users_theme, users.role...
+                                                             ^
+
+[SQL: SELECT users.id AS users_id, users.username AS users_username, users.email AS users_email, users.password_hash AS users_password_hash, users.created_at AS users_created_at, users.is_active AS users_is_active, users.theme AS users_theme, users.role AS users_role, users.reset_token AS users_reset_token, users.reset_token_expires AS users_reset_token_expires, users.two_factor_enabled AS users_two_factor_enabled, users.two_factor_secret AS users_two_factor_secret 
+FROM users 
+WHERE users.username = %(username_1)s 
+ LIMIT %(param_1)s]
+[parameters: {'username_1': 'test', 'param_1': 1}]
+(Background on this error at: https://sqlalche.me/e/20/f405) | Anonymous | Details:{'username': 'test'}
+2026-04-29 15:14:23 | ERROR    | vehicle_detection | login:594 | [ERROR] Login error: (psycopg2.errors.UndefinedColumn) column users.role does not exist
+LINE 1: ...e AS users_is_active, users.theme AS users_theme, users.role...
+                                                             ^
+
+[SQL: SELECT users.id AS users_id, users.username AS users_username, users.email AS users_email, users.password_hash AS users_password_hash, users.created_at AS users_created_at, users.is_active AS users_is_active, users.theme AS users_theme, users.role AS users_role, users.reset_token AS users_reset_token, users.reset_token_expires AS users_reset_token_expires, users.two_factor_enabled AS users_two_factor_enabled, users.two_factor_secret AS users_two_factor_secret 
+FROM users 
+WHERE users.username = %(username_1)s 
+ LIMIT %(param_1)s]
+[parameters: {'username_1': 'test', 'param_1': 1}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+2026-04-29 15:14:39 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | REGISTER | User:dwdx | FAILED | IP:127.0.0.1
+2026-04-29 15:14:39 | ERROR    | vehicle_detection | log_error:133 | ERROR | Type:Database | Registration error: (psycopg2.errors.UndefinedColumn) column users.role does not exist
+LINE 1: ...e AS users_is_active, users.theme AS users_theme, users.role...
+                                                             ^
+
+[SQL: SELECT users.id AS users_id, users.username AS users_username, users.email AS users_email, users.password_hash AS users_password_hash, users.created_at AS users_created_at, users.is_active AS users_is_active, users.theme AS users_theme, users.role AS users_role, users.reset_token AS users_reset_token, users.reset_token_expires AS users_reset_token_expires, users.two_factor_enabled AS users_two_factor_enabled, users.two_factor_secret AS users_two_factor_secret 
+FROM users 
+WHERE users.username = %(username_1)s OR users.email = %(email_1)s 
+ LIMIT %(param_1)s]
+[parameters: {'username_1': 'dwdx', 'email_1': 'dxdx@gmail.com', 'param_1': 1}]
+(Background on this error at: https://sqlalche.me/e/20/f405) | Anonymous | Details:{'username': 'dwdx', 'email': 'dxdx@gmail.com'}
+2026-04-29 15:14:39 | ERROR    | vehicle_detection | register:703 | [ERROR] Registration error: (psycopg2.errors.UndefinedColumn) column users.role does not exist
+LINE 1: ...e AS users_is_active, users.theme AS users_theme, users.role...
+                                                             ^
+
+[SQL: SELECT users.id AS users_id, users.username AS users_username, users.email AS users_email, users.password_hash AS users_password_hash, users.created_at AS users_created_at, users.is_active AS users_is_active, users.theme AS users_theme, users.role AS users_role, users.reset_token AS users_reset_token, users.reset_token_expires AS users_reset_token_expires, users.two_factor_enabled AS users_two_factor_enabled, users.two_factor_secret AS users_two_factor_secret 
+FROM users 
+WHERE users.username = %(username_1)s OR users.email = %(email_1)s 
+ LIMIT %(param_1)s]
+[parameters: {'username_1': 'dwdx', 'email_1': 'dxdx@gmail.com', 'param_1': 1}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+2026-04-29 15:28:32 | INFO     | vehicle_detection | <module>:66 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-04-29 15:28:32 | INFO     | vehicle_detection | <module>:75 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-04-29 15:28:32 | INFO     | vehicle_detection | <module>:84 | Cache initialized with type: simple
+2026-04-29 15:28:32 | INFO     | vehicle_detection | <module>:98 | Flask-Mail initialized
+2026-04-29 15:28:32 | INFO     | vehicle_detection | init_db:517 | Database connection established: postgresql://postgres:admin@localhost:5432/vehical_detections
+2026-04-29 15:28:32 | INFO     | vehicle_detection | init_db:518 | Tables created successfully
+2026-04-29 15:28:40 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:test | SUCCESS | IP:127.0.0.1
+2026-04-29 15:28:40 | INFO     | vehicle_detection | login:584 | User test logged in successfully from 127.0.0.1
+2026-04-29 15:29:51 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGOUT | User:test | SUCCESS | IP:127.0.0.1
+2026-04-29 15:29:51 | INFO     | vehicle_detection | logout:718 | User test logged out from 127.0.0.1
+2026-04-29 15:30:01 | INFO     | vehicle_detection | forgot_password:748 | Password reset link generated for hellothere@gmail.com
+2026-04-29 15:30:15 | INFO     | vehicle_detection | forgot_password:748 | Password reset link generated for hellothere@gmail.com
+2026-04-29 15:33:23 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:dcdsc | SUCCESS | IP:127.0.0.1
+2026-04-29 15:33:23 | INFO     | vehicle_detection | login:584 | User dcdsc logged in successfully from 127.0.0.1
+2026-04-29 15:33:49 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | PROFILE_UPDATE | User:dcdsc | SUCCESS | IP:127.0.0.1
+2026-04-29 15:35:57 | INFO     | vehicle_detection | <module>:66 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-04-29 15:35:57 | INFO     | vehicle_detection | <module>:75 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-04-29 15:35:57 | INFO     | vehicle_detection | <module>:84 | Cache initialized with type: simple
+2026-04-29 15:35:57 | INFO     | vehicle_detection | <module>:98 | Flask-Mail initialized
+2026-04-29 15:35:58 | INFO     | vehicle_detection | init_db:517 | Database connection established: postgresql://postgres:admin@localhost:5432/vehical_detections
+2026-04-29 15:35:58 | INFO     | vehicle_detection | init_db:518 | Tables created successfully
+2026-04-29 15:36:11 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGOUT | User:dcdsc | SUCCESS | IP:127.0.0.1
+2026-04-29 15:36:11 | INFO     | vehicle_detection | logout:718 | User dcdsc logged out from 127.0.0.1
+2026-04-29 15:36:18 | INFO     | vehicle_detection | forgot_password:748 | Password reset link generated for hellothere@gmail.com
+2026-04-29 15:37:57 | INFO     | vehicle_detection | <module>:66 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-04-29 15:37:57 | INFO     | vehicle_detection | <module>:75 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-04-29 15:37:57 | INFO     | vehicle_detection | <module>:84 | Cache initialized with type: simple
+2026-04-29 15:37:57 | INFO     | vehicle_detection | <module>:98 | Flask-Mail initialized
+2026-04-29 15:37:58 | INFO     | vehicle_detection | init_db:517 | Database connection established: postgresql://postgres:admin@localhost:5432/vehical_detections
+2026-04-29 15:37:58 | INFO     | vehicle_detection | init_db:518 | Tables created successfully
+2026-04-29 15:38:07 | ERROR    | vehicle_detection | forgot_password:799 | Forgot password error: type object 'datetime.datetime' has no attribute 'UTC'
+2026-04-29 15:38:14 | ERROR    | vehicle_detection | forgot_password:799 | Forgot password error: type object 'datetime.datetime' has no attribute 'UTC'
+2026-04-29 15:41:55 | INFO     | vehicle_detection | <module>:66 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-04-29 15:41:55 | INFO     | vehicle_detection | <module>:75 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-04-29 15:41:55 | INFO     | vehicle_detection | <module>:84 | Cache initialized with type: simple
+2026-04-29 15:41:55 | INFO     | vehicle_detection | <module>:98 | Flask-Mail initialized
+2026-04-29 15:41:55 | INFO     | vehicle_detection | init_db:517 | Database connection established: postgresql://postgres:admin@localhost:5432/vehical_detections
+2026-04-29 15:41:55 | INFO     | vehicle_detection | init_db:518 | Tables created successfully
+2026-04-29 15:42:14 | INFO     | vehicle_detection | forgot_password:748 | Password reset link generated for test@gmail.com
+2026-04-29 15:42:40 | INFO     | vehicle_detection | forgot_password:748 | Password reset link generated for test@gmail.com
+2026-04-29 15:45:15 | INFO     | vehicle_detection | <module>:66 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-04-29 15:45:15 | INFO     | vehicle_detection | <module>:75 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-04-29 15:45:15 | INFO     | vehicle_detection | <module>:84 | Cache initialized with type: simple
+2026-04-29 15:45:15 | INFO     | vehicle_detection | <module>:98 | Flask-Mail initialized
+2026-04-29 15:45:15 | INFO     | vehicle_detection | init_db:517 | Database connection established: postgresql://postgres:admin@localhost:5432/vehical_detections
+2026-04-29 15:45:15 | INFO     | vehicle_detection | init_db:518 | Tables created successfully
+2026-04-29 15:45:28 | INFO     | vehicle_detection | forgot_password:748 | Password reset link generated for test@gmail.com
+2026-04-29 15:49:04 | INFO     | vehicle_detection | <module>:66 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-04-29 15:49:04 | INFO     | vehicle_detection | <module>:75 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-04-29 15:49:04 | INFO     | vehicle_detection | <module>:84 | Cache initialized with type: simple
+2026-04-29 15:49:04 | INFO     | vehicle_detection | <module>:98 | Flask-Mail initialized
+2026-04-29 15:49:05 | INFO     | vehicle_detection | init_db:517 | Database connection established: postgresql://postgres:admin@localhost:5432/vehical_detections
+2026-04-29 15:49:05 | INFO     | vehicle_detection | init_db:518 | Tables created successfully
+2026-04-29 15:49:15 | INFO     | vehicle_detection | forgot_password:748 | Password reset link generated for test@gmail.com
+2026-04-29 15:49:18 | INFO     | vehicle_detection | forgot_password:786 | Password reset email sent to test@gmail.com
+2026-04-29 16:05:23 | INFO     | vehicle_detection | <module>:66 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-04-29 16:05:23 | INFO     | vehicle_detection | <module>:75 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-04-29 16:05:23 | INFO     | vehicle_detection | <module>:84 | Cache initialized with type: simple
+2026-04-29 16:05:23 | INFO     | vehicle_detection | <module>:98 | Flask-Mail initialized
+2026-04-29 16:05:23 | INFO     | vehicle_detection | init_db:517 | Database connection established: postgresql://postgres:admin@localhost:5432/vehical_detections
+2026-04-29 16:05:23 | INFO     | vehicle_detection | init_db:518 | Tables created successfully
+2026-04-29 16:05:33 | INFO     | vehicle_detection | forgot_password:748 | Password reset link generated for test@gmail.com
+2026-04-29 16:05:36 | INFO     | vehicle_detection | forgot_password:786 | Password reset email sent to test@gmail.com
+2026-04-29 16:05:44 | ERROR    | vehicle_detection | reset_password:859 | Reset password error: can't compare offset-naive and offset-aware datetimes
+2026-04-29 16:05:56 | ERROR    | vehicle_detection | reset_password:859 | Reset password error: can't compare offset-naive and offset-aware datetimes
+2026-04-29 16:06:05 | ERROR    | vehicle_detection | reset_password:859 | Reset password error: can't compare offset-naive and offset-aware datetimes
+2026-04-29 16:06:20 | ERROR    | vehicle_detection | reset_password:859 | Reset password error: can't compare offset-naive and offset-aware datetimes
+2026-04-29 16:06:24 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:hello | SUCCESS | IP:127.0.0.1
+2026-04-29 16:06:24 | INFO     | vehicle_detection | login:584 | User hello logged in successfully from 127.0.0.1
+2026-04-29 16:09:52 | INFO     | vehicle_detection | <module>:66 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-04-29 16:09:52 | INFO     | vehicle_detection | <module>:75 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-04-29 16:09:52 | INFO     | vehicle_detection | <module>:84 | Cache initialized with type: simple
+2026-04-29 16:09:52 | INFO     | vehicle_detection | <module>:98 | Flask-Mail initialized
+2026-04-29 16:09:52 | INFO     | vehicle_detection | init_db:517 | Database connection established: postgresql://postgres:admin@localhost:5432/vehical_detections
+2026-04-29 16:09:52 | INFO     | vehicle_detection | init_db:518 | Tables created successfully
+2026-04-29 16:10:04 | INFO     | vehicle_detection | forgot_password:748 | Password reset link generated for hellothere@gmail.com
+2026-04-29 16:10:08 | INFO     | vehicle_detection | forgot_password:786 | Password reset email sent to hellothere@gmail.com
+2026-04-29 16:10:41 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | PASSWORD_RESET | User:hello | SUCCESS | IP:127.0.0.1
+2026-04-29 16:10:41 | INFO     | vehicle_detection | reset_password:856 | Password reset successful for user hello
+2026-04-29 16:11:08 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGOUT | User:hello | SUCCESS | IP:127.0.0.1
+2026-04-29 16:11:08 | INFO     | vehicle_detection | logout:718 | User hello logged out from 127.0.0.1
+2026-04-29 16:11:14 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:hello | FAILED | IP:127.0.0.1
+2026-04-29 16:11:14 | WARNING  | vehicle_detection | login:589 | Failed login attempt for username: hello from 127.0.0.1
+2026-04-29 16:11:23 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:hello | SUCCESS | IP:127.0.0.1
+2026-04-29 16:11:23 | INFO     | vehicle_detection | login:584 | User hello logged in successfully from 127.0.0.1
+2026-04-29 16:31:19 | INFO     | vehicle_detection | <module>:66 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-04-29 16:31:19 | INFO     | vehicle_detection | <module>:75 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-04-29 16:31:19 | INFO     | vehicle_detection | <module>:84 | Cache initialized with type: simple
+2026-04-29 16:31:19 | INFO     | vehicle_detection | <module>:98 | Flask-Mail initialized
+2026-04-29 16:31:19 | INFO     | vehicle_detection | init_db:517 | Database connection established: postgresql://postgres:admin@localhost:5432/vehical_detections
+2026-04-29 16:31:19 | INFO     | vehicle_detection | init_db:518 | Tables created successfully
+2026-04-29 16:31:37 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:test | SUCCESS | IP:127.0.0.1
+2026-04-29 16:31:37 | INFO     | vehicle_detection | login:584 | User test logged in successfully from 127.0.0.1
+2026-04-29 17:52:05 | INFO     | vehicle_detection | <module>:66 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-04-29 17:52:05 | INFO     | vehicle_detection | <module>:75 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-04-29 17:52:05 | INFO     | vehicle_detection | <module>:84 | Cache initialized with type: simple
+2026-04-29 17:52:05 | INFO     | vehicle_detection | <module>:98 | Flask-Mail initialized
+2026-04-29 17:52:05 | INFO     | vehicle_detection | init_db:517 | Database connection established: postgresql://postgres:admin@localhost:5432/vehical_detections
+2026-04-29 17:52:05 | INFO     | vehicle_detection | init_db:518 | Tables created successfully
+2026-04-29 17:52:11 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:test | SUCCESS | IP:127.0.0.1
+2026-04-29 17:52:11 | INFO     | vehicle_detection | login:584 | User test logged in successfully from 127.0.0.1
+2026-04-29 17:57:26 | INFO     | vehicle_detection | <module>:66 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-04-29 17:57:26 | INFO     | vehicle_detection | <module>:75 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-04-29 17:57:26 | INFO     | vehicle_detection | <module>:84 | Cache initialized with type: simple
+2026-04-29 17:57:26 | INFO     | vehicle_detection | <module>:98 | Flask-Mail initialized
+2026-04-29 17:57:26 | INFO     | vehicle_detection | init_db:517 | Database connection established: postgresql://postgres:admin@localhost:5432/vehical_detections
+2026-04-29 17:57:26 | INFO     | vehicle_detection | init_db:518 | Tables created successfully
+2026-04-29 18:15:36 | INFO     | vehicle_detection | <module>:66 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-04-29 18:15:36 | INFO     | vehicle_detection | <module>:75 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-04-29 18:15:36 | INFO     | vehicle_detection | <module>:84 | Cache initialized with type: simple
+2026-04-29 18:15:36 | INFO     | vehicle_detection | <module>:98 | Flask-Mail initialized
+2026-04-29 18:15:36 | INFO     | vehicle_detection | init_db:517 | Database connection established: postgresql://postgres:admin@localhost:5432/vehical_detections
+2026-04-29 18:15:36 | INFO     | vehicle_detection | init_db:518 | Tables created successfully
+2026-04-30 11:50:59 | INFO     | vehicle_detection | <module>:66 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-04-30 11:50:59 | INFO     | vehicle_detection | <module>:75 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-04-30 11:50:59 | INFO     | vehicle_detection | <module>:84 | Cache initialized with type: simple
+2026-04-30 11:50:59 | INFO     | vehicle_detection | <module>:98 | Flask-Mail initialized
+2026-04-30 11:50:59 | INFO     | vehicle_detection | init_db:517 | Database connection established: postgresql://postgres:admin@localhost:5432/vehical_detections
+2026-04-30 11:50:59 | INFO     | vehicle_detection | init_db:518 | Tables created successfully
+2026-04-30 11:51:07 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:test | SUCCESS | IP:127.0.0.1
+2026-04-30 11:51:07 | INFO     | vehicle_detection | login:584 | User test logged in successfully from 127.0.0.1
+2026-05-04 11:19:03 | INFO     | vehicle_detection | <module>:66 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-05-04 11:19:03 | INFO     | vehicle_detection | <module>:75 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-05-04 11:19:03 | INFO     | vehicle_detection | <module>:84 | Cache initialized with type: simple
+2026-05-04 11:19:03 | INFO     | vehicle_detection | <module>:98 | Flask-Mail initialized
+2026-05-04 11:19:07 | INFO     | vehicle_detection | init_db:517 | Database connection established: postgresql://postgres:admin@localhost:5432/vehical_detections
+2026-05-04 11:19:07 | INFO     | vehicle_detection | init_db:518 | Tables created successfully
+2026-05-04 11:19:20 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:test | FAILED | IP:127.0.0.1
+2026-05-04 11:19:20 | WARNING  | vehicle_detection | login:589 | Failed login attempt for username: test from 127.0.0.1
+2026-05-04 11:19:28 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:test | FAILED | IP:127.0.0.1
+2026-05-04 11:19:28 | WARNING  | vehicle_detection | login:589 | Failed login attempt for username: test from 127.0.0.1
+2026-05-04 11:19:39 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:hellothere | FAILED | IP:127.0.0.1
+2026-05-04 11:19:39 | WARNING  | vehicle_detection | login:589 | Failed login attempt for username: hellothere from 127.0.0.1
+2026-05-04 11:22:52 | INFO     | vehicle_detection | <module>:66 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-05-04 11:22:52 | INFO     | vehicle_detection | <module>:75 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-05-04 11:22:52 | INFO     | vehicle_detection | <module>:84 | Cache initialized with type: simple
+2026-05-04 11:22:52 | INFO     | vehicle_detection | <module>:98 | Flask-Mail initialized
+2026-05-04 11:22:52 | INFO     | vehicle_detection | init_db:517 | Database connection established: postgresql://postgres:admin@localhost:5432/vehical_detections
+2026-05-04 11:22:52 | INFO     | vehicle_detection | init_db:518 | Tables created successfully
+2026-05-04 11:24:15 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:drashti@gmail.com | SUCCESS | IP:127.0.0.1
+2026-05-04 11:24:15 | INFO     | vehicle_detection | login:584 | User drashti@gmail.com logged in successfully from 127.0.0.1
+2026-05-04 12:06:42 | INFO     | vehicle_detection | <module>:112 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-05-04 12:06:42 | INFO     | vehicle_detection | <module>:121 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-05-04 12:06:42 | INFO     | vehicle_detection | <module>:130 | Cache initialized with type: simple
+2026-05-04 12:06:42 | INFO     | vehicle_detection | <module>:144 | Flask-Mail initialized
+2026-05-04 12:06:43 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | REGISTER | User:newuser | SUCCESS | IP:127.0.0.1
+2026-05-04 12:06:43 | INFO     | vehicle_detection | register:752 | New user registered: newuser (newuser@example.com) from 127.0.0.1
+2026-05-04 12:06:43 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | REGISTER | User:newuser | FAILED | IP:127.0.0.1
+2026-05-04 12:06:43 | WARNING  | vehicle_detection | register:714 | Password mismatch during registration for newuser from 127.0.0.1
+2026-05-04 12:06:43 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | REGISTER | User:newuser | FAILED | IP:127.0.0.1
+2026-05-04 12:06:43 | WARNING  | vehicle_detection | register:720 | Password too short for newuser from 127.0.0.1
+2026-05-04 12:06:43 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | REGISTER | User:newuser | FAILED | IP:127.0.0.1
+2026-05-04 12:06:43 | WARNING  | vehicle_detection | register:708 | Registration attempt with missing fields from 127.0.0.1
+2026-05-04 12:06:43 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:None | FAILED | IP:127.0.0.1
+2026-05-04 12:06:43 | WARNING  | vehicle_detection | login:645 | Failed login attempt for email: None from 127.0.0.1
+2026-05-04 12:06:43 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:None | FAILED | IP:127.0.0.1
+2026-05-04 12:06:43 | WARNING  | vehicle_detection | login:645 | Failed login attempt for email: None from 127.0.0.1
+2026-05-04 12:06:43 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGOUT | User:testuser | SUCCESS | IP:127.0.0.1
+2026-05-04 12:06:43 | INFO     | vehicle_detection | logout:774 | User testuser logged out from 127.0.0.1
+2026-05-04 12:06:43 | INFO     | vehicle_detection | forgot_password:804 | Password reset link generated for test@example.com
+2026-05-04 12:06:48 | INFO     | vehicle_detection | forgot_password:842 | Password reset email sent to test@example.com
+2026-05-04 12:06:49 | INFO     | vehicle_detection | forgot_password:804 | Password reset link generated for test@example.com
+2026-05-04 12:06:52 | ERROR    | vehicle_detection | forgot_password:845 | Failed to send reset email: (550, b'5.7.0 Too many emails per second. Please upgrade your plan https://mailtrap.io/billing/plans/testing')
+2026-05-04 12:06:52 | WARNING  | vehicle_detection | reset_password:877 | Password reset attempted with invalid token
+2026-05-04 12:06:52 | WARNING  | vehicle_detection | reset_password:885 | Password reset attempted with expired token for user testuser
+2026-05-04 12:06:52 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | PASSWORD_RESET | User:testuser | SUCCESS | IP:127.0.0.1
+2026-05-04 12:06:52 | INFO     | vehicle_detection | reset_password:912 | Password reset successful for user testuser
+2026-05-04 12:06:52 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:None | FAILED | IP:127.0.0.1
+2026-05-04 12:06:52 | WARNING  | vehicle_detection | login:645 | Failed login attempt for email: None from 127.0.0.1
+2026-05-04 12:06:52 | INFO     | vehicle_detection | toggle_theme:9301 | Theme toggled to: dark
+2026-05-04 12:06:52 | INFO     | vehicle_detection | toggle_theme:9301 | Theme toggled to: dark
+2026-05-04 12:06:57 | WARNING  | vehicle_detection | broadcast_alert:10349 | Broadcast alert: speed_exceeded
+2026-05-04 12:07:34 | INFO     | vehicle_detection | <module>:112 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-05-04 12:07:34 | INFO     | vehicle_detection | <module>:121 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-05-04 12:07:34 | INFO     | vehicle_detection | <module>:130 | Cache initialized with type: simple
+2026-05-04 12:07:34 | INFO     | vehicle_detection | <module>:144 | Flask-Mail initialized
+2026-05-04 12:07:35 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | REGISTER | User:newuser | SUCCESS | IP:127.0.0.1
+2026-05-04 12:07:35 | INFO     | vehicle_detection | register:752 | New user registered: newuser (newuser@example.com) from 127.0.0.1
+2026-05-04 12:07:35 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | REGISTER | User:newuser | FAILED | IP:127.0.0.1
+2026-05-04 12:07:35 | WARNING  | vehicle_detection | register:714 | Password mismatch during registration for newuser from 127.0.0.1
+2026-05-04 12:07:35 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | REGISTER | User:newuser | FAILED | IP:127.0.0.1
+2026-05-04 12:07:35 | WARNING  | vehicle_detection | register:720 | Password too short for newuser from 127.0.0.1
+2026-05-04 12:07:35 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | REGISTER | User:newuser | FAILED | IP:127.0.0.1
+2026-05-04 12:07:35 | WARNING  | vehicle_detection | register:708 | Registration attempt with missing fields from 127.0.0.1
+2026-05-04 12:07:35 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:None | FAILED | IP:127.0.0.1
+2026-05-04 12:07:35 | WARNING  | vehicle_detection | login:645 | Failed login attempt for email: None from 127.0.0.1
+2026-05-04 12:07:35 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:None | FAILED | IP:127.0.0.1
+2026-05-04 12:07:35 | WARNING  | vehicle_detection | login:645 | Failed login attempt for email: None from 127.0.0.1
+2026-05-04 12:07:35 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGOUT | User:testuser | SUCCESS | IP:127.0.0.1
+2026-05-04 12:07:35 | INFO     | vehicle_detection | logout:774 | User testuser logged out from 127.0.0.1
+2026-05-04 12:07:35 | INFO     | vehicle_detection | forgot_password:804 | Password reset link generated for test@example.com
+2026-05-04 12:07:39 | INFO     | vehicle_detection | forgot_password:842 | Password reset email sent to test@example.com
+2026-05-04 12:07:39 | INFO     | vehicle_detection | forgot_password:804 | Password reset link generated for test@example.com
+2026-05-04 12:07:42 | ERROR    | vehicle_detection | forgot_password:845 | Failed to send reset email: (550, b'5.7.0 Too many emails per second. Please upgrade your plan https://mailtrap.io/billing/plans/testing')
+2026-05-04 12:07:42 | WARNING  | vehicle_detection | reset_password:877 | Password reset attempted with invalid token
+2026-05-04 12:07:42 | WARNING  | vehicle_detection | reset_password:885 | Password reset attempted with expired token for user testuser
+2026-05-04 12:07:42 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | PASSWORD_RESET | User:testuser | SUCCESS | IP:127.0.0.1
+2026-05-04 12:07:42 | INFO     | vehicle_detection | reset_password:912 | Password reset successful for user testuser
+2026-05-04 12:07:42 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:None | FAILED | IP:127.0.0.1
+2026-05-04 12:07:42 | WARNING  | vehicle_detection | login:645 | Failed login attempt for email: None from 127.0.0.1
+2026-05-04 12:07:43 | INFO     | vehicle_detection | toggle_theme:9301 | Theme toggled to: dark
+2026-05-04 12:07:43 | INFO     | vehicle_detection | toggle_theme:9301 | Theme toggled to: dark
+2026-05-04 12:07:48 | WARNING  | vehicle_detection | broadcast_alert:10349 | Broadcast alert: speed_exceeded
+2026-05-04 12:08:20 | INFO     | vehicle_detection | <module>:112 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-05-04 12:08:20 | INFO     | vehicle_detection | <module>:121 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-05-04 12:08:20 | INFO     | vehicle_detection | <module>:130 | Cache initialized with type: simple
+2026-05-04 12:08:20 | INFO     | vehicle_detection | <module>:144 | Flask-Mail initialized
+2026-05-04 12:09:19 | INFO     | vehicle_detection | <module>:112 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-05-04 12:09:19 | INFO     | vehicle_detection | <module>:121 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-05-04 12:09:19 | INFO     | vehicle_detection | <module>:130 | Cache initialized with type: simple
+2026-05-04 12:09:19 | INFO     | vehicle_detection | <module>:144 | Flask-Mail initialized
+2026-05-04 12:10:13 | INFO     | vehicle_detection | <module>:112 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-05-04 12:10:13 | INFO     | vehicle_detection | <module>:121 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-05-04 12:10:13 | INFO     | vehicle_detection | <module>:130 | Cache initialized with type: simple
+2026-05-04 12:10:13 | INFO     | vehicle_detection | <module>:144 | Flask-Mail initialized
+2026-05-04 12:11:07 | INFO     | vehicle_detection | <module>:112 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-05-04 12:11:07 | INFO     | vehicle_detection | <module>:121 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-05-04 12:11:07 | INFO     | vehicle_detection | <module>:130 | Cache initialized with type: simple
+2026-05-04 12:11:07 | INFO     | vehicle_detection | <module>:144 | Flask-Mail initialized
+2026-05-04 12:11:08 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:None | FAILED | IP:127.0.0.1
+2026-05-04 12:11:08 | ERROR    | vehicle_detection | log_error:133 | ERROR | Type:Database | Database connection failed during login | Anonymous | Details:{'email': None}
+2026-05-04 12:11:59 | INFO     | vehicle_detection | <module>:112 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-05-04 12:11:59 | INFO     | vehicle_detection | <module>:121 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-05-04 12:11:59 | INFO     | vehicle_detection | <module>:130 | Cache initialized with type: simple
+2026-05-04 12:11:59 | INFO     | vehicle_detection | <module>:144 | Flask-Mail initialized
+2026-05-04 12:12:54 | INFO     | vehicle_detection | <module>:112 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-05-04 12:12:54 | INFO     | vehicle_detection | <module>:121 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-05-04 12:12:54 | INFO     | vehicle_detection | <module>:130 | Cache initialized with type: simple
+2026-05-04 12:12:54 | INFO     | vehicle_detection | <module>:144 | Flask-Mail initialized
+2026-05-04 12:17:27 | INFO     | vehicle_detection | <module>:112 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-05-04 12:17:27 | INFO     | vehicle_detection | <module>:121 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-05-04 12:17:27 | INFO     | vehicle_detection | <module>:130 | Cache initialized with type: simple
+2026-05-04 12:17:27 | INFO     | vehicle_detection | <module>:144 | Flask-Mail initialized
+2026-05-04 12:17:28 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | REGISTER | User:newuser | SUCCESS | IP:127.0.0.1
+2026-05-04 12:17:28 | INFO     | vehicle_detection | register:752 | New user registered: newuser (newuser@example.com) from 127.0.0.1
+2026-05-04 12:17:28 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | REGISTER | User:newuser | FAILED | IP:127.0.0.1
+2026-05-04 12:17:28 | WARNING  | vehicle_detection | register:714 | Password mismatch during registration for newuser from 127.0.0.1
+2026-05-04 12:17:28 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | REGISTER | User:newuser | FAILED | IP:127.0.0.1
+2026-05-04 12:17:28 | WARNING  | vehicle_detection | register:720 | Password too short for newuser from 127.0.0.1
+2026-05-04 12:17:28 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | REGISTER | User:newuser | FAILED | IP:127.0.0.1
+2026-05-04 12:17:28 | WARNING  | vehicle_detection | register:708 | Registration attempt with missing fields from 127.0.0.1
+2026-05-04 12:17:28 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:None | FAILED | IP:127.0.0.1
+2026-05-04 12:17:28 | WARNING  | vehicle_detection | login:645 | Failed login attempt for email: None from 127.0.0.1
+2026-05-04 12:17:29 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:None | FAILED | IP:127.0.0.1
+2026-05-04 12:17:29 | WARNING  | vehicle_detection | login:645 | Failed login attempt for email: None from 127.0.0.1
+2026-05-04 12:17:29 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGOUT | User:testuser | SUCCESS | IP:127.0.0.1
+2026-05-04 12:17:29 | INFO     | vehicle_detection | logout:774 | User testuser logged out from 127.0.0.1
+2026-05-04 12:17:29 | INFO     | vehicle_detection | forgot_password:804 | Password reset link generated for test@example.com
+2026-05-04 12:17:34 | INFO     | vehicle_detection | forgot_password:842 | Password reset email sent to test@example.com
+2026-05-04 12:17:34 | INFO     | vehicle_detection | forgot_password:804 | Password reset link generated for test@example.com
+2026-05-04 12:17:38 | ERROR    | vehicle_detection | forgot_password:845 | Failed to send reset email: (550, b'5.7.0 Too many emails per second. Please upgrade your plan https://mailtrap.io/billing/plans/testing')
+2026-05-04 12:17:39 | WARNING  | vehicle_detection | reset_password:877 | Password reset attempted with invalid token
+2026-05-04 12:17:39 | WARNING  | vehicle_detection | reset_password:885 | Password reset attempted with expired token for user testuser
+2026-05-04 12:17:39 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | PASSWORD_RESET | User:testuser | SUCCESS | IP:127.0.0.1
+2026-05-04 12:17:39 | INFO     | vehicle_detection | reset_password:912 | Password reset successful for user testuser
+2026-05-04 12:17:39 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:None | FAILED | IP:127.0.0.1
+2026-05-04 12:17:39 | WARNING  | vehicle_detection | login:645 | Failed login attempt for email: None from 127.0.0.1
+2026-05-04 12:17:39 | INFO     | vehicle_detection | toggle_theme:9301 | Theme toggled to: dark
+2026-05-04 12:17:39 | INFO     | vehicle_detection | toggle_theme:9301 | Theme toggled to: dark
+2026-05-04 12:17:46 | WARNING  | vehicle_detection | broadcast_alert:10349 | Broadcast alert: speed_exceeded
+2026-05-04 12:18:40 | INFO     | vehicle_detection | <module>:112 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-05-04 12:18:40 | INFO     | vehicle_detection | <module>:121 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-05-04 12:18:40 | INFO     | vehicle_detection | <module>:130 | Cache initialized with type: simple
+2026-05-04 12:18:40 | INFO     | vehicle_detection | <module>:144 | Flask-Mail initialized
+2026-05-04 12:18:40 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:None | FAILED | IP:127.0.0.1
+2026-05-04 12:18:40 | WARNING  | vehicle_detection | login:645 | Failed login attempt for email: None from 127.0.0.1
+2026-05-04 12:18:40 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:None | FAILED | IP:127.0.0.1
+2026-05-04 12:18:40 | WARNING  | vehicle_detection | login:645 | Failed login attempt for email: None from 127.0.0.1
+2026-05-04 12:18:41 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | PASSWORD_RESET | User:testuser | SUCCESS | IP:127.0.0.1
+2026-05-04 12:18:41 | INFO     | vehicle_detection | reset_password:912 | Password reset successful for user testuser
+2026-05-04 12:18:41 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:None | FAILED | IP:127.0.0.1
+2026-05-04 12:18:41 | WARNING  | vehicle_detection | login:645 | Failed login attempt for email: None from 127.0.0.1
+2026-05-04 12:20:22 | INFO     | vehicle_detection | <module>:112 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-05-04 12:20:22 | INFO     | vehicle_detection | <module>:121 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-05-04 12:20:22 | INFO     | vehicle_detection | <module>:130 | Cache initialized with type: simple
+2026-05-04 12:20:22 | INFO     | vehicle_detection | <module>:144 | Flask-Mail initialized
+2026-05-04 12:20:23 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | REGISTER | User:newuser | SUCCESS | IP:127.0.0.1
+2026-05-04 12:20:23 | INFO     | vehicle_detection | register:752 | New user registered: newuser (newuser@example.com) from 127.0.0.1
+2026-05-04 12:20:23 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | REGISTER | User:newuser | FAILED | IP:127.0.0.1
+2026-05-04 12:20:23 | WARNING  | vehicle_detection | register:714 | Password mismatch during registration for newuser from 127.0.0.1
+2026-05-04 12:20:23 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | REGISTER | User:newuser | FAILED | IP:127.0.0.1
+2026-05-04 12:20:23 | WARNING  | vehicle_detection | register:720 | Password too short for newuser from 127.0.0.1
+2026-05-04 12:20:23 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | REGISTER | User:newuser | FAILED | IP:127.0.0.1
+2026-05-04 12:20:23 | WARNING  | vehicle_detection | register:708 | Registration attempt with missing fields from 127.0.0.1
+2026-05-04 12:20:23 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:None | FAILED | IP:127.0.0.1
+2026-05-04 12:20:23 | WARNING  | vehicle_detection | login:645 | Failed login attempt for email: None from 127.0.0.1
+2026-05-04 12:20:23 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:None | FAILED | IP:127.0.0.1
+2026-05-04 12:20:23 | WARNING  | vehicle_detection | login:645 | Failed login attempt for email: None from 127.0.0.1
+2026-05-04 12:20:23 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGOUT | User:testuser | SUCCESS | IP:127.0.0.1
+2026-05-04 12:20:23 | INFO     | vehicle_detection | logout:774 | User testuser logged out from 127.0.0.1
+2026-05-04 12:20:24 | INFO     | vehicle_detection | forgot_password:804 | Password reset link generated for test@example.com
+2026-05-04 12:20:27 | INFO     | vehicle_detection | forgot_password:842 | Password reset email sent to test@example.com
+2026-05-04 12:20:27 | INFO     | vehicle_detection | forgot_password:804 | Password reset link generated for test@example.com
+2026-05-04 12:20:31 | ERROR    | vehicle_detection | forgot_password:845 | Failed to send reset email: (550, b'5.7.0 Too many emails per second. Please upgrade your plan https://mailtrap.io/billing/plans/testing')
+2026-05-04 12:20:31 | WARNING  | vehicle_detection | reset_password:877 | Password reset attempted with invalid token
+2026-05-04 12:20:31 | WARNING  | vehicle_detection | reset_password:885 | Password reset attempted with expired token for user testuser
+2026-05-04 12:20:31 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | PASSWORD_RESET | User:testuser | SUCCESS | IP:127.0.0.1
+2026-05-04 12:20:31 | INFO     | vehicle_detection | reset_password:912 | Password reset successful for user testuser
+2026-05-04 12:20:31 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:None | FAILED | IP:127.0.0.1
+2026-05-04 12:20:31 | WARNING  | vehicle_detection | login:645 | Failed login attempt for email: None from 127.0.0.1
+2026-05-04 12:20:31 | INFO     | vehicle_detection | toggle_theme:9301 | Theme toggled to: dark
+2026-05-04 12:20:31 | INFO     | vehicle_detection | toggle_theme:9301 | Theme toggled to: dark
+2026-05-04 12:20:36 | WARNING  | vehicle_detection | broadcast_alert:10349 | Broadcast alert: speed_exceeded
+2026-05-04 12:21:24 | INFO     | vehicle_detection | <module>:112 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-05-04 12:21:24 | INFO     | vehicle_detection | <module>:121 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-05-04 12:21:24 | INFO     | vehicle_detection | <module>:130 | Cache initialized with type: simple
+2026-05-04 12:21:24 | INFO     | vehicle_detection | <module>:144 | Flask-Mail initialized
+2026-05-04 12:21:24 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:test@test.com | FAILED | IP:127.0.0.1
+2026-05-04 12:21:24 | ERROR    | vehicle_detection | log_error:133 | ERROR | Type:Database | Database connection failed during login | Anonymous | Details:{'email': 'test@test.com'}
+2026-05-04 12:22:40 | INFO     | vehicle_detection | <module>:112 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-05-04 12:22:40 | INFO     | vehicle_detection | <module>:121 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-05-04 12:22:40 | INFO     | vehicle_detection | <module>:130 | Cache initialized with type: simple
+2026-05-04 12:22:40 | INFO     | vehicle_detection | <module>:144 | Flask-Mail initialized
+2026-05-04 12:34:35 | INFO     | vehicle_detection | <module>:112 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-05-04 12:34:35 | INFO     | vehicle_detection | <module>:121 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-05-04 12:34:35 | INFO     | vehicle_detection | <module>:130 | Cache initialized with type: simple
+2026-05-04 12:34:35 | INFO     | vehicle_detection | <module>:144 | Flask-Mail initialized
+2026-05-04 12:36:48 | INFO     | vehicle_detection | <module>:112 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-05-04 12:36:48 | INFO     | vehicle_detection | <module>:121 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-05-04 12:36:48 | INFO     | vehicle_detection | <module>:130 | Cache initialized with type: simple
+2026-05-04 12:36:48 | INFO     | vehicle_detection | <module>:144 | Flask-Mail initialized
+2026-05-04 12:36:48 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:test@example.com | FAILED | IP:127.0.0.1
+2026-05-04 12:36:48 | ERROR    | vehicle_detection | log_error:133 | ERROR | Type:Database | Database connection failed during login | Anonymous | Details:{'email': 'test@example.com'}
+2026-05-04 12:38:50 | INFO     | vehicle_detection | <module>:112 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-05-04 12:38:50 | INFO     | vehicle_detection | <module>:121 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-05-04 12:38:50 | INFO     | vehicle_detection | <module>:130 | Cache initialized with type: simple
+2026-05-04 12:38:50 | INFO     | vehicle_detection | <module>:144 | Flask-Mail initialized
+2026-05-04 12:40:50 | INFO     | vehicle_detection | <module>:112 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-05-04 12:40:50 | INFO     | vehicle_detection | <module>:121 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-05-04 12:40:50 | INFO     | vehicle_detection | <module>:130 | Cache initialized with type: simple
+2026-05-04 12:40:50 | INFO     | vehicle_detection | <module>:144 | Flask-Mail initialized
+2026-05-04 12:40:50 | INFO     | vehicle_detection | init_db:563 | Database connection established: postgresql://postgres:admin@localhost:5432/vehical_detections
+2026-05-04 12:40:50 | INFO     | vehicle_detection | init_db:564 | Tables created successfully
+2026-05-04 12:41:11 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:drashti@gmail.com | SUCCESS | IP:127.0.0.1
+2026-05-04 12:41:11 | INFO     | vehicle_detection | login:584 | User drashti@gmail.com logged in successfully from 127.0.0.1
+2026-05-04 12:43:44 | INFO     | vehicle_detection | <module>:112 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-05-04 12:43:44 | INFO     | vehicle_detection | <module>:121 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-05-04 12:43:44 | INFO     | vehicle_detection | <module>:130 | Cache initialized with type: simple
+2026-05-04 12:43:44 | INFO     | vehicle_detection | <module>:144 | Flask-Mail initialized
+2026-05-04 12:47:27 | INFO     | vehicle_detection | <module>:112 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-05-04 12:47:27 | INFO     | vehicle_detection | <module>:121 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-05-04 12:47:27 | INFO     | vehicle_detection | <module>:130 | Cache initialized with type: simple
+2026-05-04 12:47:27 | INFO     | vehicle_detection | <module>:144 | Flask-Mail initialized
+2026-05-04 12:47:28 | INFO     | vehicle_detection | init_db:563 | Database connection established: postgresql://postgres:admin@localhost:5432/vehical_detections
+2026-05-04 12:47:28 | INFO     | vehicle_detection | init_db:564 | Tables created successfully
+2026-05-04 12:49:37 | INFO     | vehicle_detection | <module>:112 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-05-04 12:49:37 | INFO     | vehicle_detection | <module>:121 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-05-04 12:49:37 | INFO     | vehicle_detection | <module>:130 | Cache initialized with type: simple
+2026-05-04 12:49:37 | INFO     | vehicle_detection | <module>:144 | Flask-Mail initialized
+2026-05-04 12:50:07 | INFO     | vehicle_detection | <module>:112 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-05-04 12:50:07 | INFO     | vehicle_detection | <module>:121 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-05-04 12:50:07 | INFO     | vehicle_detection | <module>:130 | Cache initialized with type: simple
+2026-05-04 12:50:07 | INFO     | vehicle_detection | <module>:144 | Flask-Mail initialized
+2026-05-04 12:51:03 | INFO     | vehicle_detection | <module>:112 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-05-04 12:51:03 | INFO     | vehicle_detection | <module>:121 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-05-04 12:51:03 | INFO     | vehicle_detection | <module>:130 | Cache initialized with type: simple
+2026-05-04 12:51:03 | INFO     | vehicle_detection | <module>:144 | Flask-Mail initialized
+2026-05-04 12:52:12 | INFO     | vehicle_detection | <module>:112 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-05-04 12:52:12 | INFO     | vehicle_detection | <module>:121 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-05-04 12:52:12 | INFO     | vehicle_detection | <module>:130 | Cache initialized with type: simple
+2026-05-04 12:52:12 | INFO     | vehicle_detection | <module>:144 | Flask-Mail initialized
+2026-05-04 12:52:13 | INFO     | vehicle_detection | init_db:563 | Database connection established: postgresql://postgres:admin@localhost:5432/vehical_detections
+2026-05-04 12:52:13 | INFO     | vehicle_detection | init_db:564 | Tables created successfully
+2026-05-04 12:54:23 | INFO     | vehicle_detection | <module>:112 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-05-04 12:54:23 | INFO     | vehicle_detection | <module>:121 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-05-04 12:54:23 | INFO     | vehicle_detection | <module>:130 | Cache initialized with type: simple
+2026-05-04 12:54:23 | INFO     | vehicle_detection | <module>:144 | Flask-Mail initialized
+2026-05-04 13:03:59 | INFO     | vehicle_detection | <module>:112 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-05-04 13:03:59 | INFO     | vehicle_detection | <module>:121 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-05-04 13:03:59 | INFO     | vehicle_detection | <module>:130 | Cache initialized with type: simple
+2026-05-04 13:03:59 | INFO     | vehicle_detection | <module>:144 | Flask-Mail initialized
+2026-05-04 13:03:59 | INFO     | vehicle_detection | init_db:563 | Database connection established: postgresql://postgres:admin@localhost:5432/vehical_detections
+2026-05-04 13:03:59 | INFO     | vehicle_detection | init_db:564 | Tables created successfully
+2026-05-04 13:09:59 | INFO     | vehicle_detection | <module>:112 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-05-04 13:09:59 | INFO     | vehicle_detection | <module>:121 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-05-04 13:09:59 | INFO     | vehicle_detection | <module>:130 | Cache initialized with type: simple
+2026-05-04 13:09:59 | INFO     | vehicle_detection | <module>:144 | Flask-Mail initialized
+2026-05-04 13:11:37 | INFO     | vehicle_detection | <module>:112 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-05-04 13:11:37 | INFO     | vehicle_detection | <module>:121 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-05-04 13:11:37 | INFO     | vehicle_detection | <module>:130 | Cache initialized with type: simple
+2026-05-04 13:11:37 | INFO     | vehicle_detection | <module>:144 | Flask-Mail initialized
+2026-05-04 13:15:38 | INFO     | vehicle_detection | <module>:112 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-05-04 13:15:38 | INFO     | vehicle_detection | <module>:121 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-05-04 13:15:38 | INFO     | vehicle_detection | <module>:130 | Cache initialized with type: simple
+2026-05-04 13:15:38 | INFO     | vehicle_detection | <module>:144 | Flask-Mail initialized
+2026-05-04 13:15:38 | INFO     | vehicle_detection | init_db:563 | Database connection established: postgresql://postgres:admin@localhost:5432/vehical_detections
+2026-05-04 13:15:38 | INFO     | vehicle_detection | init_db:564 | Tables created successfully
+2026-05-04 13:15:48 | INFO     | vehicle_detection | handle_connect:10344 | Client connected: RV7CIndvrstIy6-4AAAB
+2026-05-04 13:15:51 | INFO     | vehicle_detection | multi_camera_start:1920 | Multi-camera detection started with 2 cameras: [0, 1]
+2026-05-04 13:16:00 | ERROR    | vehicle_detection | stream_frames:2037 | Multi-camera stream error: Working outside of request context.
+
+This typically means that you attempted to use functionality that needed
+an active HTTP request. Consult the documentation on testing for
+information about how to avoid this problem.
+2026-05-04 13:16:03 | INFO     | vehicle_detection | handle_disconnect:10351 | Client disconnected: RV7CIndvrstIy6-4AAAB
+2026-05-04 13:16:03 | INFO     | vehicle_detection | handle_connect:10344 | Client connected: ZcNnPef9te0fYsuMAAAD
+2026-05-04 13:16:07 | INFO     | vehicle_detection | multi_camera_start:1920 | Multi-camera detection started with 2 cameras: [0, 1]
+2026-05-04 13:16:12 | ERROR    | vehicle_detection | stream_frames:2037 | Multi-camera stream error: Working outside of request context.
+
+This typically means that you attempted to use functionality that needed
+an active HTTP request. Consult the documentation on testing for
+information about how to avoid this problem.
+2026-05-04 13:16:14 | INFO     | vehicle_detection | multi_camera_stop:1944 | Multi-camera detection stopped
+2026-05-04 13:16:38 | INFO     | vehicle_detection | handle_disconnect:10351 | Client disconnected: ZcNnPef9te0fYsuMAAAD
+2026-05-04 13:25:59 | INFO     | vehicle_detection | create_scheduled_task:2158 | Scheduled task created: 1 (every 300s)
+2026-05-04 13:30:59 | INFO     | vehicle_detection | detection_task:2139 | [Scheduled] Running task 1
+2026-05-04 13:35:59 | INFO     | vehicle_detection | detection_task:2139 | [Scheduled] Running task 1
+2026-05-04 13:41:00 | INFO     | vehicle_detection | detection_task:2139 | [Scheduled] Running task 1
+2026-05-04 13:46:00 | INFO     | vehicle_detection | detection_task:2139 | [Scheduled] Running task 1
+2026-05-04 14:14:30 | INFO     | vehicle_detection | detection_task:2139 | [Scheduled] Running task 1
+2026-05-04 14:17:39 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:drashti@gmail.com | SUCCESS | IP:127.0.0.1
+2026-05-04 14:17:39 | INFO     | vehicle_detection | login:640 | User drashti@gmail.com logged in successfully from 127.0.0.1
+2026-05-04 14:23:56 | INFO     | vehicle_detection | delete_scheduled_task:2197 | Scheduled task deleted: 1
+2026-05-04 14:24:15 | INFO     | vehicle_detection | create_scheduled_task:2158 | Scheduled task created: new task (every 300s)
+2026-05-04 14:27:35 | INFO     | vehicle_detection | create_scheduled_task:2158 | Scheduled task created: task2 (every 60s)
+2026-05-04 14:28:35 | INFO     | vehicle_detection | detection_task:2139 | [Scheduled] Running task task2
+2026-05-04 14:29:15 | INFO     | vehicle_detection | detection_task:2139 | [Scheduled] Running task new task
+2026-05-04 14:29:35 | INFO     | vehicle_detection | detection_task:2139 | [Scheduled] Running task task2
+2026-05-04 14:30:35 | INFO     | vehicle_detection | detection_task:2139 | [Scheduled] Running task task2
+2026-05-04 14:32:50 | INFO     | vehicle_detection | <module>:112 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-05-04 14:32:50 | INFO     | vehicle_detection | <module>:121 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-05-04 14:32:50 | INFO     | vehicle_detection | <module>:130 | Cache initialized with type: simple
+2026-05-04 14:32:50 | INFO     | vehicle_detection | <module>:144 | Flask-Mail initialized
+2026-05-04 14:35:18 | INFO     | vehicle_detection | <module>:112 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-05-04 14:35:18 | INFO     | vehicle_detection | <module>:121 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-05-04 14:35:18 | INFO     | vehicle_detection | <module>:130 | Cache initialized with type: simple
+2026-05-04 14:35:18 | INFO     | vehicle_detection | <module>:144 | Flask-Mail initialized
+2026-05-04 14:35:18 | INFO     | vehicle_detection | init_db:563 | Database connection established: postgresql://postgres:admin@localhost:5432/vehical_detections
+2026-05-04 14:35:18 | INFO     | vehicle_detection | init_db:564 | Tables created successfully
+2026-05-04 14:35:42 | INFO     | vehicle_detection | create_scheduled_task:2213 | Creating scheduled task: task3, interval: 60s, source: 1, type: webcam
+2026-05-04 14:35:42 | INFO     | vehicle_detection | create_scheduled_task:2214 | Scheduler running: False, existing tasks: 0
+2026-05-04 14:35:42 | INFO     | vehicle_detection | detection_task:2139 | [Scheduled Task task3] STARTING - Type: webcam, Source: 1
+2026-05-04 14:35:42 | INFO     | vehicle_detection | create_scheduled_task:2219 | Scheduled task created successfully: task3 (every 60s)
+2026-05-04 14:35:42 | INFO     | vehicle_detection | detection_task:2143 | [Scheduled Task task3] Opening webcam 1
+2026-05-04 14:35:42 | INFO     | vehicle_detection | create_scheduled_task:2220 | Task will first run at: 2026-05-04T14:35:42.043553
+2026-05-04 14:35:42 | ERROR    | vehicle_detection | detection_task:2147 | [Scheduled Task task3] Failed to open webcam 1
+2026-05-04 14:35:42 | INFO     | vehicle_detection | detection_task:2210 | [Scheduled Task task3] COMPLETED
+2026-05-04 14:36:42 | INFO     | vehicle_detection | detection_task:2139 | [Scheduled Task task3] STARTING - Type: webcam, Source: 1
+2026-05-04 14:36:42 | INFO     | vehicle_detection | detection_task:2143 | [Scheduled Task task3] Opening webcam 1
+2026-05-04 14:36:42 | ERROR    | vehicle_detection | detection_task:2147 | [Scheduled Task task3] Failed to open webcam 1
+2026-05-04 14:36:42 | INFO     | vehicle_detection | detection_task:2210 | [Scheduled Task task3] COMPLETED
+2026-05-04 14:37:42 | INFO     | vehicle_detection | detection_task:2139 | [Scheduled Task task3] STARTING - Type: webcam, Source: 1
+2026-05-04 14:37:42 | INFO     | vehicle_detection | detection_task:2143 | [Scheduled Task task3] Opening webcam 1
+2026-05-04 14:37:42 | ERROR    | vehicle_detection | detection_task:2147 | [Scheduled Task task3] Failed to open webcam 1
+2026-05-04 14:37:42 | INFO     | vehicle_detection | detection_task:2210 | [Scheduled Task task3] COMPLETED
+2026-05-04 14:38:42 | INFO     | vehicle_detection | detection_task:2139 | [Scheduled Task task3] STARTING - Type: webcam, Source: 1
+2026-05-04 14:38:42 | INFO     | vehicle_detection | detection_task:2143 | [Scheduled Task task3] Opening webcam 1
+2026-05-04 14:38:42 | ERROR    | vehicle_detection | detection_task:2147 | [Scheduled Task task3] Failed to open webcam 1
+2026-05-04 14:38:42 | INFO     | vehicle_detection | detection_task:2210 | [Scheduled Task task3] COMPLETED
+2026-05-04 14:39:42 | INFO     | vehicle_detection | detection_task:2139 | [Scheduled Task task3] STARTING - Type: webcam, Source: 1
+2026-05-04 14:39:42 | INFO     | vehicle_detection | detection_task:2143 | [Scheduled Task task3] Opening webcam 1
+2026-05-04 14:39:42 | ERROR    | vehicle_detection | detection_task:2147 | [Scheduled Task task3] Failed to open webcam 1
+2026-05-04 14:39:42 | INFO     | vehicle_detection | detection_task:2210 | [Scheduled Task task3] COMPLETED
+2026-05-04 14:40:42 | INFO     | vehicle_detection | detection_task:2139 | [Scheduled Task task3] STARTING - Type: webcam, Source: 1
+2026-05-04 14:40:42 | INFO     | vehicle_detection | detection_task:2143 | [Scheduled Task task3] Opening webcam 1
+2026-05-04 14:40:42 | ERROR    | vehicle_detection | detection_task:2147 | [Scheduled Task task3] Failed to open webcam 1
+2026-05-04 14:40:42 | INFO     | vehicle_detection | detection_task:2210 | [Scheduled Task task3] COMPLETED
+2026-05-04 14:41:42 | INFO     | vehicle_detection | detection_task:2139 | [Scheduled Task task3] STARTING - Type: webcam, Source: 1
+2026-05-04 14:41:42 | INFO     | vehicle_detection | detection_task:2143 | [Scheduled Task task3] Opening webcam 1
+2026-05-04 14:41:42 | ERROR    | vehicle_detection | detection_task:2147 | [Scheduled Task task3] Failed to open webcam 1
+2026-05-04 14:41:42 | INFO     | vehicle_detection | detection_task:2210 | [Scheduled Task task3] COMPLETED
+2026-05-04 14:42:42 | INFO     | vehicle_detection | detection_task:2139 | [Scheduled Task task3] STARTING - Type: webcam, Source: 1
+2026-05-04 14:42:42 | INFO     | vehicle_detection | detection_task:2143 | [Scheduled Task task3] Opening webcam 1
+2026-05-04 14:42:42 | ERROR    | vehicle_detection | detection_task:2147 | [Scheduled Task task3] Failed to open webcam 1
+2026-05-04 14:42:42 | INFO     | vehicle_detection | detection_task:2210 | [Scheduled Task task3] COMPLETED
+2026-05-04 14:43:42 | INFO     | vehicle_detection | detection_task:2139 | [Scheduled Task task3] STARTING - Type: webcam, Source: 1
+2026-05-04 14:43:42 | INFO     | vehicle_detection | detection_task:2143 | [Scheduled Task task3] Opening webcam 1
+2026-05-04 14:43:42 | ERROR    | vehicle_detection | detection_task:2147 | [Scheduled Task task3] Failed to open webcam 1
+2026-05-04 14:43:42 | INFO     | vehicle_detection | detection_task:2210 | [Scheduled Task task3] COMPLETED
+2026-05-04 14:44:42 | INFO     | vehicle_detection | detection_task:2139 | [Scheduled Task task3] STARTING - Type: webcam, Source: 1
+2026-05-04 14:44:42 | INFO     | vehicle_detection | detection_task:2143 | [Scheduled Task task3] Opening webcam 1
+2026-05-04 14:44:42 | ERROR    | vehicle_detection | detection_task:2147 | [Scheduled Task task3] Failed to open webcam 1
+2026-05-04 14:44:42 | INFO     | vehicle_detection | detection_task:2210 | [Scheduled Task task3] COMPLETED
+2026-05-04 14:45:42 | INFO     | vehicle_detection | detection_task:2139 | [Scheduled Task task3] STARTING - Type: webcam, Source: 1
+2026-05-04 14:45:42 | INFO     | vehicle_detection | detection_task:2143 | [Scheduled Task task3] Opening webcam 1
+2026-05-04 14:45:42 | ERROR    | vehicle_detection | detection_task:2147 | [Scheduled Task task3] Failed to open webcam 1
+2026-05-04 14:45:42 | INFO     | vehicle_detection | detection_task:2210 | [Scheduled Task task3] COMPLETED
+2026-05-04 14:46:42 | INFO     | vehicle_detection | detection_task:2139 | [Scheduled Task task3] STARTING - Type: webcam, Source: 1
+2026-05-04 14:46:42 | INFO     | vehicle_detection | detection_task:2143 | [Scheduled Task task3] Opening webcam 1
+2026-05-04 14:46:42 | ERROR    | vehicle_detection | detection_task:2147 | [Scheduled Task task3] Failed to open webcam 1
+2026-05-04 14:46:42 | INFO     | vehicle_detection | detection_task:2210 | [Scheduled Task task3] COMPLETED
+2026-05-04 14:51:44 | INFO     | vehicle_detection | <module>:113 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-05-04 14:51:44 | INFO     | vehicle_detection | <module>:122 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-05-04 14:51:44 | INFO     | vehicle_detection | <module>:131 | Cache initialized with type: simple
+2026-05-04 14:51:44 | INFO     | vehicle_detection | <module>:145 | Flask-Mail initialized
+2026-05-04 14:51:45 | INFO     | vehicle_detection | init_db:564 | Database connection established: postgresql://postgres:admin@localhost:5432/vehical_detections
+2026-05-04 14:51:45 | INFO     | vehicle_detection | init_db:565 | Tables created successfully
+2026-05-04 14:52:07 | INFO     | vehicle_detection | detection_task:2139 | [Scheduled Task task3] STARTING - Type: webcam, Source: 1
+2026-05-04 14:52:07 | INFO     | vehicle_detection | detection_task:2143 | [Scheduled Task task3] Opening webcam 1
+2026-05-04 14:52:07 | ERROR    | vehicle_detection | detection_task:2147 | [Scheduled Task task3] Failed to open webcam 1
+2026-05-04 14:52:07 | INFO     | vehicle_detection | detection_task:2210 | [Scheduled Task task3] COMPLETED
+2026-05-04 14:53:07 | INFO     | vehicle_detection | detection_task:2139 | [Scheduled Task task3] STARTING - Type: webcam, Source: 1
+2026-05-04 14:53:07 | INFO     | vehicle_detection | detection_task:2143 | [Scheduled Task task3] Opening webcam 1
+2026-05-04 14:53:07 | ERROR    | vehicle_detection | detection_task:2147 | [Scheduled Task task3] Failed to open webcam 1
+2026-05-04 14:53:07 | INFO     | vehicle_detection | detection_task:2210 | [Scheduled Task task3] COMPLETED
+2026-05-04 14:54:07 | INFO     | vehicle_detection | detection_task:2139 | [Scheduled Task task3] STARTING - Type: webcam, Source: 1
+2026-05-04 14:54:07 | INFO     | vehicle_detection | detection_task:2143 | [Scheduled Task task3] Opening webcam 1
+2026-05-04 14:54:08 | ERROR    | vehicle_detection | detection_task:2147 | [Scheduled Task task3] Failed to open webcam 1
+2026-05-04 14:54:08 | INFO     | vehicle_detection | detection_task:2210 | [Scheduled Task task3] COMPLETED
+2026-05-04 14:54:45 | INFO     | vehicle_detection | create_scheduled_task:2213 | Creating scheduled task: task2, interval: 60s, source: 1, type: webcam
+2026-05-04 14:54:45 | INFO     | vehicle_detection | create_scheduled_task:2214 | Scheduler running: True, existing tasks: 1
+2026-05-04 14:54:45 | INFO     | vehicle_detection | create_scheduled_task:2219 | Scheduled task created successfully: task2 (every 60s)
+2026-05-04 14:54:45 | INFO     | vehicle_detection | create_scheduled_task:2220 | Task will first run at: 2026-05-04T14:54:45.619797
+2026-05-04 14:54:46 | INFO     | vehicle_detection | detection_task:2139 | [Scheduled Task task2] STARTING - Type: webcam, Source: 1
+2026-05-04 14:54:46 | INFO     | vehicle_detection | detection_task:2143 | [Scheduled Task task2] Opening webcam 1
+2026-05-04 14:54:46 | ERROR    | vehicle_detection | detection_task:2147 | [Scheduled Task task2] Failed to open webcam 1
+2026-05-04 14:54:46 | INFO     | vehicle_detection | detection_task:2210 | [Scheduled Task task2] COMPLETED
+2026-05-04 15:22:22 | INFO     | vehicle_detection | <module>:113 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-05-04 15:22:22 | INFO     | vehicle_detection | <module>:122 | Rate limiting initialized with default limits: 200/day, 50/hour
+2026-05-04 15:22:22 | INFO     | vehicle_detection | <module>:131 | Cache initialized with type: simple
+2026-05-04 15:22:22 | INFO     | vehicle_detection | <module>:145 | Flask-Mail initialized
+2026-05-04 15:22:22 | INFO     | vehicle_detection | init_db:564 | Database connection established: postgresql://postgres:admin@localhost:5432/vehical_detections
+2026-05-04 15:22:22 | INFO     | vehicle_detection | init_db:565 | Tables created successfully
+2026-05-04 15:23:57 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:drashti@gmail.com | SUCCESS | IP:127.0.0.1
+2026-05-04 15:23:58 | INFO     | vehicle_detection | login:640 | User drashti@gmail.com logged in successfully from 127.0.0.1
+2026-05-04 15:30:57 | INFO     | vehicle_detection | <module>:113 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-05-04 15:30:57 | INFO     | vehicle_detection | <module>:122 | Rate limiting initialized with default limits: 2000/day, 500/hour
+2026-05-04 15:30:57 | INFO     | vehicle_detection | <module>:131 | Cache initialized with type: simple
+2026-05-04 15:30:57 | INFO     | vehicle_detection | <module>:145 | Flask-Mail initialized
+2026-05-04 15:30:57 | INFO     | vehicle_detection | init_db:564 | Database connection established: postgresql://postgres:admin@localhost:5432/vehical_detections
+2026-05-04 15:30:57 | INFO     | vehicle_detection | init_db:565 | Tables created successfully
+2026-05-04 15:33:00 | INFO     | vehicle_detection | <module>:113 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-05-04 15:33:00 | INFO     | vehicle_detection | <module>:127 | Rate limiting initialized with default limits: 2000/day, 500/hour
+2026-05-04 15:33:00 | INFO     | vehicle_detection | <module>:136 | Cache initialized with type: simple
+2026-05-04 15:33:00 | INFO     | vehicle_detection | <module>:150 | Flask-Mail initialized
+2026-05-04 15:33:00 | INFO     | vehicle_detection | init_db:569 | Database connection established: postgresql://postgres:admin@localhost:5432/vehical_detections
+2026-05-04 15:33:00 | INFO     | vehicle_detection | init_db:570 | Tables created successfully
+2026-05-04 15:47:59 | INFO     | vehicle_detection | <module>:113 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-05-04 15:47:59 | INFO     | vehicle_detection | <module>:128 | Rate limiting initialized with default limits: 5000/day, 1000/hour
+2026-05-04 15:47:59 | INFO     | vehicle_detection | <module>:137 | Cache initialized with type: simple
+2026-05-04 15:47:59 | INFO     | vehicle_detection | <module>:151 | Flask-Mail initialized
+2026-05-04 15:47:59 | INFO     | vehicle_detection | init_db:570 | Database connection established: postgresql://postgres:admin@localhost:5432/vehical_detections
+2026-05-04 15:47:59 | INFO     | vehicle_detection | init_db:571 | Tables created successfully
+2026-05-04 15:49:26 | INFO     | vehicle_detection | <module>:113 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-05-04 15:49:26 | INFO     | vehicle_detection | <module>:128 | Rate limiting initialized with default limits: 5000/day, 1000/hour
+2026-05-04 15:49:26 | INFO     | vehicle_detection | <module>:137 | Cache initialized with type: simple
+2026-05-04 15:49:26 | INFO     | vehicle_detection | <module>:151 | Flask-Mail initialized
+2026-05-04 15:49:27 | INFO     | vehicle_detection | init_db:570 | Database connection established: postgresql://postgres:admin@localhost:5432/vehical_detections
+2026-05-04 15:49:27 | INFO     | vehicle_detection | init_db:571 | Tables created successfully
+2026-05-04 15:49:49 | INFO     | vehicle_detection | detection_task:2139 | [Scheduled Task task2] STARTING - Type: webcam, Source: 1
+2026-05-04 15:49:49 | INFO     | vehicle_detection | detection_task:2143 | [Scheduled Task task2] Opening webcam 1
+2026-05-04 15:49:49 | ERROR    | vehicle_detection | detection_task:2147 | [Scheduled Task task2] Failed to open webcam 1
+2026-05-04 15:49:49 | INFO     | vehicle_detection | detection_task:2210 | [Scheduled Task task2] COMPLETED
+2026-05-04 15:50:49 | INFO     | vehicle_detection | detection_task:2139 | [Scheduled Task task2] STARTING - Type: webcam, Source: 1
+2026-05-04 15:50:49 | INFO     | vehicle_detection | detection_task:2143 | [Scheduled Task task2] Opening webcam 1
+2026-05-04 15:50:49 | ERROR    | vehicle_detection | detection_task:2147 | [Scheduled Task task2] Failed to open webcam 1
+2026-05-04 15:50:49 | INFO     | vehicle_detection | detection_task:2210 | [Scheduled Task task2] COMPLETED
+2026-05-04 15:51:49 | INFO     | vehicle_detection | detection_task:2139 | [Scheduled Task task2] STARTING - Type: webcam, Source: 1
+2026-05-04 15:51:49 | INFO     | vehicle_detection | detection_task:2143 | [Scheduled Task task2] Opening webcam 1
+2026-05-04 15:51:49 | ERROR    | vehicle_detection | detection_task:2147 | [Scheduled Task task2] Failed to open webcam 1
+2026-05-04 15:51:49 | INFO     | vehicle_detection | detection_task:2210 | [Scheduled Task task2] COMPLETED
+2026-05-04 15:52:49 | INFO     | vehicle_detection | create_scheduled_task:2213 | Creating scheduled task: 1, interval: 60s, source: 0, type: webcam
+2026-05-04 15:52:49 | INFO     | vehicle_detection | create_scheduled_task:2214 | Scheduler running: True, existing tasks: 2
+2026-05-04 15:52:49 | INFO     | vehicle_detection | create_scheduled_task:2219 | Scheduled task created successfully: 1 (every 60s)
+2026-05-04 15:52:49 | INFO     | vehicle_detection | create_scheduled_task:2220 | Task will first run at: 2026-05-04T15:52:49.523966
+2026-05-04 15:52:49 | INFO     | vehicle_detection | detection_task:2139 | [Scheduled Task 1] STARTING - Type: webcam, Source: 0
+2026-05-04 15:52:49 | INFO     | vehicle_detection | detection_task:2143 | [Scheduled Task 1] Opening webcam 0
+2026-05-04 15:52:50 | INFO     | vehicle_detection | detection_task:2151 | [Scheduled Task 1] Frame captured: True
+2026-05-04 15:52:50 | INFO     | vehicle_detection | detection_task:2154 | [Scheduled Task 1] Running detection...
+2026-05-04 15:52:50 | ERROR    | vehicle_detection | detection_task:2206 | [Scheduled Task 1] ERROR: name 'VehicleDetector' is not defined
+2026-05-04 15:52:51 | ERROR    | vehicle_detection | detection_task:2208 | Traceback (most recent call last):
+  File "C:\vehical  detection\web_test_app.py", line 2156, in detection_task
+    task_func=detection_task,
+                           ^^
+NameError: name 'VehicleDetector' is not defined
+
+2026-05-04 15:52:51 | INFO     | vehicle_detection | detection_task:2210 | [Scheduled Task 1] COMPLETED
+2026-05-04 15:53:50 | INFO     | vehicle_detection | detection_task:2139 | [Scheduled Task 1] STARTING - Type: webcam, Source: 0
+2026-05-04 15:53:50 | INFO     | vehicle_detection | detection_task:2143 | [Scheduled Task 1] Opening webcam 0
+2026-05-04 15:53:51 | INFO     | vehicle_detection | detection_task:2151 | [Scheduled Task 1] Frame captured: True
+2026-05-04 15:53:51 | INFO     | vehicle_detection | detection_task:2154 | [Scheduled Task 1] Running detection...
+2026-05-04 15:53:51 | ERROR    | vehicle_detection | detection_task:2206 | [Scheduled Task 1] ERROR: name 'VehicleDetector' is not defined
+2026-05-04 15:53:51 | ERROR    | vehicle_detection | detection_task:2208 | Traceback (most recent call last):
+  File "C:\vehical  detection\web_test_app.py", line 2156, in detection_task
+    task_func=detection_task,
+                           ^^
+NameError: name 'VehicleDetector' is not defined
+
+2026-05-04 15:53:51 | INFO     | vehicle_detection | detection_task:2210 | [Scheduled Task 1] COMPLETED
+2026-05-04 15:54:50 | INFO     | vehicle_detection | detection_task:2139 | [Scheduled Task 1] STARTING - Type: webcam, Source: 0
+2026-05-04 15:54:50 | INFO     | vehicle_detection | detection_task:2143 | [Scheduled Task 1] Opening webcam 0
+2026-05-04 15:54:51 | INFO     | vehicle_detection | detection_task:2151 | [Scheduled Task 1] Frame captured: True
+2026-05-04 15:54:51 | INFO     | vehicle_detection | detection_task:2154 | [Scheduled Task 1] Running detection...
+2026-05-04 15:54:51 | ERROR    | vehicle_detection | detection_task:2206 | [Scheduled Task 1] ERROR: name 'VehicleDetector' is not defined
+2026-05-04 15:54:51 | ERROR    | vehicle_detection | detection_task:2208 | Traceback (most recent call last):
+  File "C:\vehical  detection\web_test_app.py", line 2156, in detection_task
+    task_func=detection_task,
+                           ^^
+NameError: name 'VehicleDetector' is not defined
+
+2026-05-04 15:54:51 | INFO     | vehicle_detection | detection_task:2210 | [Scheduled Task 1] COMPLETED
+2026-05-04 15:55:50 | INFO     | vehicle_detection | detection_task:2139 | [Scheduled Task 1] STARTING - Type: webcam, Source: 0
+2026-05-04 15:55:50 | INFO     | vehicle_detection | detection_task:2143 | [Scheduled Task 1] Opening webcam 0
+2026-05-04 15:55:51 | INFO     | vehicle_detection | detection_task:2151 | [Scheduled Task 1] Frame captured: True
+2026-05-04 15:55:51 | INFO     | vehicle_detection | detection_task:2154 | [Scheduled Task 1] Running detection...
+2026-05-04 15:55:51 | ERROR    | vehicle_detection | detection_task:2206 | [Scheduled Task 1] ERROR: name 'VehicleDetector' is not defined
+2026-05-04 15:55:51 | ERROR    | vehicle_detection | detection_task:2208 | Traceback (most recent call last):
+  File "C:\vehical  detection\web_test_app.py", line 2156, in detection_task
+    task_func=detection_task,
+                           ^^
+NameError: name 'VehicleDetector' is not defined
+
+2026-05-04 15:55:51 | INFO     | vehicle_detection | detection_task:2210 | [Scheduled Task 1] COMPLETED
+2026-05-04 16:01:25 | INFO     | vehicle_detection | <module>:113 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-05-04 16:01:25 | INFO     | vehicle_detection | <module>:129 | Rate limiting initialized with default limits: 5000/day, 1000/hour
+2026-05-04 16:01:25 | INFO     | vehicle_detection | <module>:138 | Cache initialized with type: simple
+2026-05-04 16:01:25 | INFO     | vehicle_detection | <module>:152 | Flask-Mail initialized
+2026-05-04 16:01:25 | INFO     | vehicle_detection | init_db:571 | Database connection established: postgresql://postgres:admin@localhost:5432/vehical_detections
+2026-05-04 16:01:25 | INFO     | vehicle_detection | init_db:572 | Tables created successfully
+2026-05-04 16:04:25 | INFO     | vehicle_detection | <module>:113 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-05-04 16:04:25 | INFO     | vehicle_detection | <module>:129 | Rate limiting initialized with default limits: 5000/day, 1000/hour
+2026-05-04 16:04:25 | INFO     | vehicle_detection | <module>:138 | Cache initialized with type: simple
+2026-05-04 16:04:25 | INFO     | vehicle_detection | <module>:152 | Flask-Mail initialized
+2026-05-04 16:04:25 | INFO     | vehicle_detection | init_db:571 | Database connection established: postgresql://postgres:admin@localhost:5432/vehical_detections
+2026-05-04 16:04:25 | INFO     | vehicle_detection | init_db:572 | Tables created successfully
+2026-05-04 16:06:11 | INFO     | vehicle_detection | <module>:113 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-05-04 16:06:11 | INFO     | vehicle_detection | <module>:129 | Rate limiting initialized with default limits: 5000/day, 1000/hour
+2026-05-04 16:06:11 | INFO     | vehicle_detection | <module>:138 | Cache initialized with type: simple
+2026-05-04 16:06:11 | INFO     | vehicle_detection | <module>:152 | Flask-Mail initialized
+2026-05-04 16:06:11 | INFO     | vehicle_detection | init_db:571 | Database connection established: postgresql://postgres:admin@localhost:5432/vehical_detections
+2026-05-04 16:06:11 | INFO     | vehicle_detection | init_db:572 | Tables created successfully
+2026-05-04 16:06:27 | INFO     | vehicle_detection | create_scheduled_task:2150 | Creating scheduled task: task2, interval: 60s, source: 0, type: webcam
+2026-05-04 16:06:27 | INFO     | vehicle_detection | detection_task:2503 | [16:06:27] [Scheduled Task task2] STARTING - Type: webcam, Source: 0
+2026-05-04 16:06:27 | INFO     | vehicle_detection | detection_task:2508 | [Scheduled Task task2] Opening webcam 0
+2026-05-04 16:06:27 | INFO     | vehicle_detection | create_scheduled_task:2165 | Scheduled task created successfully: task2 (every 60s)
+2026-05-04 16:06:27 | INFO     | vehicle_detection | create_scheduled_task:2166 | Task will first run at: 2026-05-04T16:06:27.256808
+2026-05-04 16:06:28 | INFO     | vehicle_detection | detection_task:2540 | [Scheduled Task task2] Frame captured: True
+2026-05-04 16:06:28 | INFO     | vehicle_detection | detection_task:2543 | [Scheduled Task task2] Running detection...
+2026-05-04 16:06:38 | INFO     | vehicle_detection | detection_task:2551 | [Scheduled Task task2] Detection complete: 0 vehicles
+2026-05-04 16:06:38 | INFO     | vehicle_detection | save_detection_to_db:2732 | Detection saved to database: SCHED_task2_1777890998, type=scheduled_webcam, count=0
+2026-05-04 16:06:38 | INFO     | vehicle_detection | detection_task:2585 | [Scheduled Task task2] ✓ Saved to history: SCHED_task2_1777890998
+2026-05-04 16:06:38 | INFO     | vehicle_detection | detection_task:2600 | [Scheduled Task task2] Webcam released
+2026-05-04 16:06:38 | INFO     | vehicle_detection | detection_task:2601 | [Scheduled Task task2] COMPLETED
+2026-05-04 16:08:57 | INFO     | vehicle_detection | detection_task:2503 | [16:08:57] [Scheduled Task task2] STARTING - Type: webcam, Source: 0
+2026-05-04 16:08:57 | INFO     | vehicle_detection | detection_task:2508 | [Scheduled Task task2] Opening webcam 0
+2026-05-04 16:08:58 | INFO     | vehicle_detection | detection_task:2540 | [Scheduled Task task2] Frame captured: True
+2026-05-04 16:08:58 | INFO     | vehicle_detection | detection_task:2543 | [Scheduled Task task2] Running detection...
+2026-05-04 16:09:04 | INFO     | vehicle_detection | detection_task:2551 | [Scheduled Task task2] Detection complete: 0 vehicles
+2026-05-04 16:09:04 | INFO     | vehicle_detection | save_detection_to_db:2732 | Detection saved to database: SCHED_task2_1777891144, type=scheduled_webcam, count=0
+2026-05-04 16:09:04 | INFO     | vehicle_detection | detection_task:2585 | [Scheduled Task task2] ✓ Saved to history: SCHED_task2_1777891144
+2026-05-04 16:09:04 | INFO     | vehicle_detection | detection_task:2600 | [Scheduled Task task2] Webcam released
+2026-05-04 16:09:04 | INFO     | vehicle_detection | detection_task:2601 | [Scheduled Task task2] COMPLETED
+2026-05-04 16:14:01 | INFO     | vehicle_detection | <module>:113 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-05-04 16:14:01 | INFO     | vehicle_detection | <module>:129 | Rate limiting initialized with default limits: 5000/day, 1000/hour
+2026-05-04 16:14:01 | INFO     | vehicle_detection | <module>:138 | Cache initialized with type: simple
+2026-05-04 16:14:01 | INFO     | vehicle_detection | <module>:152 | Flask-Mail initialized
+2026-05-04 16:14:01 | INFO     | vehicle_detection | init_db:571 | Database connection established: postgresql://postgres:admin@localhost:5432/vehical_detections
+2026-05-04 16:14:01 | INFO     | vehicle_detection | init_db:572 | Tables created successfully
+2026-05-04 16:17:54 | INFO     | vehicle_detection | <module>:113 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-05-04 16:17:54 | INFO     | vehicle_detection | <module>:129 | Rate limiting initialized with default limits: 5000/day, 1000/hour
+2026-05-04 16:17:54 | INFO     | vehicle_detection | <module>:138 | Cache initialized with type: simple
+2026-05-04 16:17:54 | INFO     | vehicle_detection | <module>:152 | Flask-Mail initialized
+2026-05-04 16:17:54 | INFO     | vehicle_detection | init_db:571 | Database connection established: postgresql://postgres:admin@localhost:5432/vehical_detections
+2026-05-04 16:17:54 | INFO     | vehicle_detection | init_db:572 | Tables created successfully
+2026-05-04 16:18:28 | INFO     | vehicle_detection | <module>:113 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-05-04 16:18:28 | INFO     | vehicle_detection | <module>:129 | Rate limiting initialized with default limits: 5000/day, 1000/hour
+2026-05-04 16:18:28 | INFO     | vehicle_detection | <module>:138 | Cache initialized with type: simple
+2026-05-04 16:18:28 | INFO     | vehicle_detection | <module>:152 | Flask-Mail initialized
+2026-05-04 16:18:29 | INFO     | vehicle_detection | init_db:571 | Database connection established: postgresql://postgres:admin@localhost:5432/vehical_detections
+2026-05-04 16:18:29 | INFO     | vehicle_detection | init_db:572 | Tables created successfully
+2026-05-04 16:18:44 | INFO     | vehicle_detection | create_scheduled_task:2150 | Creating scheduled task: task3, interval: 60s, source: 0, type: webcam
+2026-05-04 16:18:44 | INFO     | vehicle_detection | create_scheduled_task:2165 | Scheduled task created successfully: task3 (every 60s)
+2026-05-04 16:18:44 | INFO     | vehicle_detection | create_scheduled_task:2166 | Task will first run at: 2026-05-04T16:18:44.375224
+2026-05-04 16:18:44 | INFO     | vehicle_detection | detection_task:2503 | [16:18:44] [Scheduled Task task3] STARTING - Type: webcam, Source: 0
+2026-05-04 16:18:44 | INFO     | vehicle_detection | detection_task:2508 | [Scheduled Task task3] Opening webcam 0
+2026-05-04 16:18:45 | INFO     | vehicle_detection | detection_task:2540 | [Scheduled Task task3] Frame captured: True
+2026-05-04 16:18:45 | INFO     | vehicle_detection | detection_task:2543 | [Scheduled Task task3] Running detection...
+2026-05-04 16:18:53 | INFO     | vehicle_detection | detection_task:2551 | [Scheduled Task task3] Detection complete: 0 vehicles
+2026-05-04 16:18:53 | INFO     | vehicle_detection | save_detection_to_db:2732 | Detection saved to database: SCHED_task3_1777891733, type=scheduled_webcam, count=0
+2026-05-04 16:18:53 | INFO     | vehicle_detection | detection_task:2585 | [Scheduled Task task3] ✓ Saved to history: SCHED_task3_1777891733
+2026-05-04 16:18:54 | INFO     | vehicle_detection | detection_task:2600 | [Scheduled Task task3] Webcam released
+2026-05-04 16:18:54 | INFO     | vehicle_detection | detection_task:2601 | [Scheduled Task task3] COMPLETED
+2026-05-04 16:21:47 | INFO     | vehicle_detection | <module>:113 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-05-04 16:21:47 | INFO     | vehicle_detection | <module>:129 | Rate limiting initialized with default limits: 5000/day, 1000/hour
+2026-05-04 16:21:47 | INFO     | vehicle_detection | <module>:138 | Cache initialized with type: simple
+2026-05-04 16:21:47 | INFO     | vehicle_detection | <module>:152 | Flask-Mail initialized
+2026-05-04 16:21:47 | INFO     | vehicle_detection | init_db:571 | Database connection established: postgresql://postgres:admin@localhost:5432/vehical_detections
+2026-05-04 16:21:47 | INFO     | vehicle_detection | init_db:572 | Tables created successfully
+2026-05-04 16:22:22 | INFO     | vehicle_detection | <module>:113 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-05-04 16:22:22 | INFO     | vehicle_detection | <module>:129 | Rate limiting initialized with default limits: 5000/day, 1000/hour
+2026-05-04 16:22:22 | INFO     | vehicle_detection | <module>:138 | Cache initialized with type: simple
+2026-05-04 16:22:22 | INFO     | vehicle_detection | <module>:152 | Flask-Mail initialized
+2026-05-04 16:22:22 | INFO     | vehicle_detection | init_db:571 | Database connection established: postgresql://postgres:admin@localhost:5432/vehical_detections
+2026-05-04 16:22:22 | INFO     | vehicle_detection | init_db:572 | Tables created successfully
+2026-05-04 16:22:31 | INFO     | vehicle_detection | detection_task:2503 | [16:22:31] [Scheduled Task task2] STARTING - Type: webcam, Source: 0
+2026-05-04 16:22:31 | INFO     | vehicle_detection | detection_task:2508 | [Scheduled Task task2] Opening webcam 0
+2026-05-04 16:22:32 | INFO     | vehicle_detection | detection_task:2540 | [Scheduled Task task2] Frame captured: True
+2026-05-04 16:22:32 | INFO     | vehicle_detection | detection_task:2543 | [Scheduled Task task2] Running detection...
+2026-05-04 16:22:39 | INFO     | vehicle_detection | detection_task:2551 | [Scheduled Task task2] Detection complete: 0 vehicles
+2026-05-04 16:22:39 | INFO     | vehicle_detection | save_detection_to_db:2732 | Detection saved to database: SCHED_task2_1777891959, type=scheduled_webcam, count=0
+2026-05-04 16:22:39 | INFO     | vehicle_detection | detection_task:2585 | [Scheduled Task task2] ✓ Saved to history: SCHED_task2_1777891959
+2026-05-04 16:22:40 | INFO     | vehicle_detection | detection_task:2600 | [Scheduled Task task2] Webcam released
+2026-05-04 16:22:40 | INFO     | vehicle_detection | detection_task:2601 | [Scheduled Task task2] COMPLETED
+2026-05-04 16:24:43 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:drashti@gmail.com | SUCCESS | IP:127.0.0.1
+2026-05-04 16:24:43 | INFO     | vehicle_detection | login:648 | User drashti@gmail.com logged in successfully from 127.0.0.1
+2026-05-04 16:37:58 | INFO     | vehicle_detection | detection_task:2503 | [16:37:58] [Scheduled Task task3] STARTING - Type: webcam, Source: 0
+2026-05-04 16:37:58 | INFO     | vehicle_detection | detection_task:2508 | [Scheduled Task task3] Opening webcam 0
+2026-05-04 16:37:59 | INFO     | vehicle_detection | detection_task:2540 | [Scheduled Task task3] Frame captured: True
+2026-05-04 16:37:59 | INFO     | vehicle_detection | detection_task:2543 | [Scheduled Task task3] Running detection...
+2026-05-04 16:38:05 | INFO     | vehicle_detection | detection_task:2551 | [Scheduled Task task3] Detection complete: 0 vehicles
+2026-05-04 16:38:05 | INFO     | vehicle_detection | save_detection_to_db:2732 | Detection saved to database: SCHED_task3_1777892885, type=scheduled_webcam, count=0
+2026-05-04 16:38:05 | INFO     | vehicle_detection | detection_task:2585 | [Scheduled Task task3] ✓ Saved to history: SCHED_task3_1777892885
+2026-05-04 16:38:05 | INFO     | vehicle_detection | detection_task:2600 | [Scheduled Task task3] Webcam released
+2026-05-04 16:38:05 | INFO     | vehicle_detection | detection_task:2601 | [Scheduled Task task3] COMPLETED
+2026-05-04 16:44:24 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:drashti@gmail.com | SUCCESS | IP:127.0.0.1
+2026-05-04 16:44:24 | INFO     | vehicle_detection | login:648 | User drashti@gmail.com logged in successfully from 127.0.0.1
+2026-05-04 16:44:35 | INFO     | vehicle_detection | detection_task:2503 | [16:44:35] [Scheduled Task task2] STARTING - Type: webcam, Source: 0
+2026-05-04 16:44:35 | INFO     | vehicle_detection | detection_task:2508 | [Scheduled Task task2] Opening webcam 0
+2026-05-04 16:44:36 | INFO     | vehicle_detection | detection_task:2540 | [Scheduled Task task2] Frame captured: True
+2026-05-04 16:44:36 | INFO     | vehicle_detection | detection_task:2543 | [Scheduled Task task2] Running detection...
+2026-05-04 16:44:43 | INFO     | vehicle_detection | detection_task:2551 | [Scheduled Task task2] Detection complete: 0 vehicles
+2026-05-04 16:44:43 | INFO     | vehicle_detection | save_detection_to_db:2732 | Detection saved to database: SCHED_task2_1777893283, type=scheduled_webcam, count=0
+2026-05-04 16:44:43 | INFO     | vehicle_detection | detection_task:2585 | [Scheduled Task task2] ✓ Saved to history: SCHED_task2_1777893283
+2026-05-04 16:44:43 | INFO     | vehicle_detection | detection_task:2600 | [Scheduled Task task2] Webcam released
+2026-05-04 16:44:43 | INFO     | vehicle_detection | detection_task:2601 | [Scheduled Task task2] COMPLETED
+2026-05-04 16:45:23 | INFO     | vehicle_detection | <module>:113 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-05-04 16:45:23 | INFO     | vehicle_detection | <module>:129 | Rate limiting initialized with default limits: 5000/day, 1000/hour
+2026-05-04 16:45:23 | INFO     | vehicle_detection | <module>:138 | Cache initialized with type: simple
+2026-05-04 16:45:23 | INFO     | vehicle_detection | <module>:152 | Flask-Mail initialized
+2026-05-04 16:45:23 | INFO     | vehicle_detection | init_db:571 | Database connection established: postgresql://postgres:admin@localhost:5432/vehical_detections
+2026-05-04 16:45:23 | INFO     | vehicle_detection | init_db:572 | Tables created successfully
+2026-05-04 16:45:40 | INFO     | vehicle_detection | detection_task:2503 | [16:45:40] [Scheduled Task task2] STARTING - Type: webcam, Source: 0
+2026-05-04 16:45:40 | INFO     | vehicle_detection | detection_task:2508 | [Scheduled Task task2] Opening webcam 0
+2026-05-04 16:45:41 | INFO     | vehicle_detection | detection_task:2540 | [Scheduled Task task2] Frame captured: True
+2026-05-04 16:45:41 | INFO     | vehicle_detection | detection_task:2543 | [Scheduled Task task2] Running detection...
+2026-05-04 16:45:48 | INFO     | vehicle_detection | detection_task:2551 | [Scheduled Task task2] Detection complete: 0 vehicles
+2026-05-04 16:45:48 | INFO     | vehicle_detection | save_detection_to_db:2732 | Detection saved to database: SCHED_task2_1777893348, type=scheduled_webcam, count=0
+2026-05-04 16:45:48 | INFO     | vehicle_detection | detection_task:2585 | [Scheduled Task task2] ✓ Saved to history: SCHED_task2_1777893348
+2026-05-04 16:45:49 | INFO     | vehicle_detection | detection_task:2600 | [Scheduled Task task2] Webcam released
+2026-05-04 16:45:49 | INFO     | vehicle_detection | detection_task:2601 | [Scheduled Task task2] COMPLETED
+2026-05-04 16:46:28 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:drashti@gmail.com | SUCCESS | IP:10.138.85.27
+2026-05-04 16:46:28 | INFO     | vehicle_detection | login:648 | User drashti@gmail.com logged in successfully from 10.138.85.27
+2026-05-04 16:57:22 | INFO     | vehicle_detection | <module>:113 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-05-04 16:57:22 | INFO     | vehicle_detection | <module>:129 | Rate limiting initialized with default limits: 5000/day, 1000/hour
+2026-05-04 16:57:22 | INFO     | vehicle_detection | <module>:138 | Cache initialized with type: simple
+2026-05-04 16:57:22 | INFO     | vehicle_detection | <module>:152 | Flask-Mail initialized
+2026-05-04 16:57:23 | INFO     | vehicle_detection | init_db:571 | Database connection established: postgresql://postgres:admin@localhost:5432/vehical_detections
+2026-05-04 16:57:23 | INFO     | vehicle_detection | init_db:572 | Tables created successfully
+2026-05-04 16:57:35 | INFO     | vehicle_detection | create_scheduled_task:2150 | Creating scheduled task: tt, interval: 60s, source: 0, type: webcam
+2026-05-04 16:57:35 | INFO     | vehicle_detection | create_scheduled_task:2165 | Scheduled task created successfully: tt (every 60s)
+2026-05-04 16:57:35 | INFO     | vehicle_detection | create_scheduled_task:2166 | Task will first run at: 2026-05-04T16:57:35.971310
+2026-05-04 16:57:36 | INFO     | vehicle_detection | detection_task:2503 | [16:57:36] [Scheduled Task tt] STARTING - Type: webcam, Source: 0
+2026-05-04 16:57:36 | INFO     | vehicle_detection | detection_task:2508 | [Scheduled Task tt] Opening webcam 0
+2026-05-04 16:57:37 | INFO     | vehicle_detection | detection_task:2540 | [Scheduled Task tt] Frame captured: True
+2026-05-04 16:57:37 | INFO     | vehicle_detection | detection_task:2543 | [Scheduled Task tt] Running detection...
+2026-05-04 16:57:44 | INFO     | vehicle_detection | detection_task:2551 | [Scheduled Task tt] Detection complete: 0 vehicles
+2026-05-04 16:57:44 | INFO     | vehicle_detection | save_detection_to_db:2732 | Detection saved to database: SCHED_tt_1777894064, type=scheduled_webcam, count=0
+2026-05-04 16:57:44 | INFO     | vehicle_detection | detection_task:2585 | [Scheduled Task tt] ✓ Saved to history: SCHED_tt_1777894064
+2026-05-04 16:57:44 | INFO     | vehicle_detection | detection_task:2600 | [Scheduled Task tt] Webcam released
+2026-05-04 16:57:44 | INFO     | vehicle_detection | detection_task:2601 | [Scheduled Task tt] COMPLETED
+2026-05-04 17:02:07 | INFO     | vehicle_detection | <module>:113 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-05-04 17:02:07 | INFO     | vehicle_detection | <module>:129 | Rate limiting initialized with default limits: 5000/day, 1000/hour
+2026-05-04 17:02:07 | INFO     | vehicle_detection | <module>:138 | Cache initialized with type: simple
+2026-05-04 17:02:07 | INFO     | vehicle_detection | <module>:152 | Flask-Mail initialized
+2026-05-04 17:02:07 | INFO     | vehicle_detection | init_db:571 | Database connection established: postgresql://postgres:admin@localhost:5432/vehical_detections
+2026-05-04 17:02:07 | INFO     | vehicle_detection | init_db:572 | Tables created successfully
+2026-05-04 17:02:29 | INFO     | vehicle_detection | detection_task:2503 | [17:02:29] [Scheduled Task tt] STARTING - Type: webcam, Source: 0
+2026-05-04 17:02:29 | INFO     | vehicle_detection | detection_task:2508 | [Scheduled Task tt] Opening webcam 0
+2026-05-04 17:02:30 | INFO     | vehicle_detection | detection_task:2540 | [Scheduled Task tt] Frame captured: True
+2026-05-04 17:02:30 | INFO     | vehicle_detection | detection_task:2543 | [Scheduled Task tt] Running detection...
+2026-05-04 17:02:38 | INFO     | vehicle_detection | detection_task:2551 | [Scheduled Task tt] Detection complete: 0 vehicles
+2026-05-04 17:02:38 | INFO     | vehicle_detection | save_detection_to_db:2732 | Detection saved to database: SCHED_tt_1777894358, type=scheduled_webcam, count=0
+2026-05-04 17:02:38 | INFO     | vehicle_detection | detection_task:2585 | [Scheduled Task tt] ✓ Saved to history: SCHED_tt_1777894358
+2026-05-04 17:02:38 | INFO     | vehicle_detection | detection_task:2600 | [Scheduled Task tt] Webcam released
+2026-05-04 17:02:38 | INFO     | vehicle_detection | detection_task:2601 | [Scheduled Task tt] COMPLETED
+2026-05-04 17:19:02 | INFO     | vehicle_detection | detect_vehicles_image:4196 | Image detection started | Resolution: 400x299 | Confidence: 0.25
+2026-05-04 17:19:03 | INFO     | vehicle_detection | log_detection:111 | DETECTION | Type:image | Vehicles:3 | Time:0.386s | Confidence:0.25 | User:3
+2026-05-04 17:19:03 | INFO     | vehicle_detection | detect_vehicles_image:4253 | Image detection complete | Vehicles: 3 | Time: 0.386s | Breakdown: Truck: 1, Car: 1, Motorcycle/Scooty: 1
+2026-05-04 17:19:03 | INFO     | vehicle_detection | save_detection_to_db:2732 | Detection saved to database: efdfcf07, type=image, count=3
+2026-05-04 17:19:33 | INFO     | vehicle_detection | detect_vehicles_image:4196 | Image detection started | Resolution: 553x275 | Confidence: 0.25
+2026-05-04 17:19:33 | INFO     | vehicle_detection | log_detection:111 | DETECTION | Type:image | Vehicles:1 | Time:0.238s | Confidence:0.25 | User:3
+2026-05-04 17:19:33 | INFO     | vehicle_detection | detect_vehicles_image:4253 | Image detection complete | Vehicles: 1 | Time: 0.238s | Breakdown: Car: 1
+2026-05-04 17:19:33 | INFO     | vehicle_detection | save_detection_to_db:2732 | Detection saved to database: 548a8b03, type=image, count=1
+2026-05-04 17:21:18 | INFO     | vehicle_detection | handle_connect:10472 | Client connected: JvGl8FLbqDVnpiv1AAAB
+2026-05-04 17:21:20 | INFO     | vehicle_detection | multi_camera_start:1928 | Multi-camera detection started with 2 cameras: [0, 1]
+2026-05-04 17:21:26 | INFO     | vehicle_detection | multi_camera_stop:1952 | Multi-camera detection stopped
+2026-05-04 17:21:28 | INFO     | vehicle_detection | multi_camera_start:1928 | Multi-camera detection started with 2 cameras: [0, 0]
+2026-05-04 17:21:34 | INFO     | vehicle_detection | multi_camera_stop:1952 | Multi-camera detection stopped
+2026-05-04 17:21:37 | INFO     | vehicle_detection | multi_camera_start:1928 | Multi-camera detection started with 2 cameras: [0, 0]
+2026-05-04 17:21:50 | INFO     | vehicle_detection | multi_camera_stop:1952 | Multi-camera detection stopped
+2026-05-04 17:21:51 | INFO     | vehicle_detection | multi_camera_start:1928 | Multi-camera detection started with 1 cameras: [0]
+2026-05-04 17:21:57 | ERROR    | vehicle_detection | stream_frames:2046 | Multi-camera stream error: Working outside of request context.
+
+This typically means that you attempted to use functionality that needed
+an active HTTP request. Consult the documentation on testing for
+information about how to avoid this problem.
+2026-05-04 17:22:07 | INFO     | vehicle_detection | multi_camera_stop:1952 | Multi-camera detection stopped
+2026-05-04 17:22:09 | INFO     | vehicle_detection | handle_disconnect:10479 | Client disconnected: JvGl8FLbqDVnpiv1AAAB
+2026-05-04 17:25:26 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:drashti@gmail.com | SUCCESS | IP:127.0.0.1
+2026-05-04 17:25:26 | INFO     | vehicle_detection | login:648 | User drashti@gmail.com logged in successfully from 127.0.0.1
+2026-05-04 17:27:45 | INFO     | vehicle_detection | handle_connect:10472 | Client connected: jeeJ4CjudScg-7mqAAAD
+2026-05-04 17:27:52 | INFO     | vehicle_detection | multi_camera_start:1928 | Multi-camera detection started with 2 cameras: [0, 0]
+2026-05-04 17:27:56 | INFO     | vehicle_detection | multi_camera_stop:1952 | Multi-camera detection stopped
+2026-05-04 17:27:58 | INFO     | vehicle_detection | handle_disconnect:10479 | Client disconnected: jeeJ4CjudScg-7mqAAAD
+2026-05-04 17:46:27 | INFO     | vehicle_detection | <module>:113 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-05-04 17:46:27 | INFO     | vehicle_detection | <module>:129 | Rate limiting initialized with default limits: 5000/day, 1000/hour
+2026-05-04 17:46:27 | INFO     | vehicle_detection | <module>:138 | Cache initialized with type: simple
+2026-05-04 17:46:27 | INFO     | vehicle_detection | <module>:152 | Flask-Mail initialized
+2026-05-04 17:46:27 | INFO     | vehicle_detection | init_db:571 | Database connection established: postgresql://postgres:admin@localhost:5432/vehical_detections
+2026-05-04 17:46:27 | INFO     | vehicle_detection | init_db:572 | Tables created successfully
+2026-05-04 17:46:52 | INFO     | vehicle_detection | <module>:113 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-05-04 17:46:52 | INFO     | vehicle_detection | <module>:129 | Rate limiting initialized with default limits: 5000/day, 1000/hour
+2026-05-04 17:46:52 | INFO     | vehicle_detection | <module>:138 | Cache initialized with type: simple
+2026-05-04 17:46:52 | INFO     | vehicle_detection | <module>:152 | Flask-Mail initialized
+2026-05-04 17:46:52 | INFO     | vehicle_detection | init_db:571 | Database connection established: postgresql://postgres:admin@localhost:5432/vehical_detections
+2026-05-04 17:46:52 | INFO     | vehicle_detection | init_db:572 | Tables created successfully
+2026-05-04 17:47:06 | INFO     | vehicle_detection | delete_scheduled_task:2206 | Scheduled task deleted: tt
+2026-05-04 17:47:15 | INFO     | vehicle_detection | create_scheduled_task:2150 | Creating scheduled task: task4, interval: 60s, source: 0, type: webcam
+2026-05-04 17:47:15 | INFO     | vehicle_detection | create_scheduled_task:2165 | Scheduled task created successfully: task4 (every 60s)
+2026-05-04 17:47:15 | INFO     | vehicle_detection | create_scheduled_task:2166 | Task will first run at: 2026-05-04T17:47:15.300982
+2026-05-04 17:47:16 | INFO     | vehicle_detection | detection_task:2503 | [17:47:16] [Scheduled Task task4] STARTING - Type: webcam, Source: 0
+2026-05-04 17:47:16 | INFO     | vehicle_detection | detection_task:2508 | [Scheduled Task task4] Opening webcam 0
+2026-05-04 17:47:17 | INFO     | vehicle_detection | detection_task:2540 | [Scheduled Task task4] Frame captured: True
+2026-05-04 17:47:17 | INFO     | vehicle_detection | detection_task:2543 | [Scheduled Task task4] Running detection...
+2026-05-04 17:47:25 | INFO     | vehicle_detection | detection_task:2551 | [Scheduled Task task4] Detection complete: 0 vehicles
+2026-05-04 17:47:25 | INFO     | vehicle_detection | save_detection_to_db:2732 | Detection saved to database: SCHED_task4_1777897045, type=scheduled_webcam, count=0
+2026-05-04 17:47:25 | INFO     | vehicle_detection | detection_task:2585 | [Scheduled Task task4] ✓ Saved to history: SCHED_task4_1777897045
+2026-05-04 17:47:25 | INFO     | vehicle_detection | detection_task:2600 | [Scheduled Task task4] Webcam released
+2026-05-04 17:47:25 | INFO     | vehicle_detection | detection_task:2601 | [Scheduled Task task4] COMPLETED
+2026-05-04 17:48:24 | INFO     | vehicle_detection | detection_task:2503 | [17:48:24] [Scheduled Task task4] STARTING - Type: webcam, Source: 0
+2026-05-04 17:48:24 | INFO     | vehicle_detection | detection_task:2508 | [Scheduled Task task4] Opening webcam 0
+2026-05-04 17:48:25 | INFO     | vehicle_detection | detection_task:2540 | [Scheduled Task task4] Frame captured: True
+2026-05-04 17:48:25 | INFO     | vehicle_detection | detection_task:2543 | [Scheduled Task task4] Running detection...
+2026-05-04 17:48:31 | INFO     | vehicle_detection | detection_task:2551 | [Scheduled Task task4] Detection complete: 0 vehicles
+2026-05-04 17:48:31 | INFO     | vehicle_detection | save_detection_to_db:2732 | Detection saved to database: SCHED_task4_1777897111, type=scheduled_webcam, count=0
+2026-05-04 17:48:31 | INFO     | vehicle_detection | detection_task:2585 | [Scheduled Task task4] ✓ Saved to history: SCHED_task4_1777897111
+2026-05-04 17:48:31 | INFO     | vehicle_detection | detection_task:2600 | [Scheduled Task task4] Webcam released
+2026-05-04 17:48:31 | INFO     | vehicle_detection | detection_task:2601 | [Scheduled Task task4] COMPLETED
+2026-05-04 17:48:57 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | 2FA_SETUP | User:drashti@gmail.com | SUCCESS | IP:127.0.0.1
+2026-05-04 17:50:05 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | 2FA_SETUP | User:drashti@gmail.com | SUCCESS | IP:127.0.0.1
+2026-05-04 17:50:11 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | 2FA_VERIFY | User:drashti | FAILED | IP:127.0.0.1
+2026-05-04 17:50:21 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | 2FA_VERIFY | User:drashti | FAILED | IP:127.0.0.1
+2026-05-04 17:50:25 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | 2FA_VERIFY | User:drashti | FAILED | IP:127.0.0.1
+2026-05-04 17:50:30 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGOUT | User:drashti | SUCCESS | IP:127.0.0.1
+2026-05-04 17:50:30 | INFO     | vehicle_detection | logout:782 | User drashti logged out from 127.0.0.1
+2026-05-04 17:50:32 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:drashti@gmail.com | SUCCESS | IP:127.0.0.1
+2026-05-04 17:50:32 | INFO     | vehicle_detection | login:648 | User drashti@gmail.com logged in successfully from 127.0.0.1
+2026-05-04 17:50:53 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | 2FA_SETUP | User:drashti@gmail.com | SUCCESS | IP:127.0.0.1
+2026-05-04 17:50:56 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | 2FA_SETUP | User:drashti@gmail.com | SUCCESS | IP:127.0.0.1
+2026-05-04 17:54:13 | INFO     | vehicle_detection | <module>:113 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-05-04 17:54:13 | INFO     | vehicle_detection | <module>:129 | Rate limiting initialized with default limits: 5000/day, 1000/hour
+2026-05-04 17:54:13 | INFO     | vehicle_detection | <module>:138 | Cache initialized with type: simple
+2026-05-04 17:54:13 | INFO     | vehicle_detection | <module>:152 | Flask-Mail initialized
+2026-05-04 17:54:13 | INFO     | vehicle_detection | init_db:571 | Database connection established: postgresql://postgres:admin@localhost:5432/vehical_detections
+2026-05-04 17:54:13 | INFO     | vehicle_detection | init_db:572 | Tables created successfully
+2026-05-04 17:55:03 | INFO     | vehicle_detection | <module>:113 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-05-04 17:55:03 | INFO     | vehicle_detection | <module>:129 | Rate limiting initialized with default limits: 5000/day, 1000/hour
+2026-05-04 17:55:03 | INFO     | vehicle_detection | <module>:138 | Cache initialized with type: simple
+2026-05-04 17:55:03 | INFO     | vehicle_detection | <module>:152 | Flask-Mail initialized
+2026-05-04 17:55:03 | INFO     | vehicle_detection | init_db:571 | Database connection established: postgresql://postgres:admin@localhost:5432/vehical_detections
+2026-05-04 17:55:03 | INFO     | vehicle_detection | init_db:572 | Tables created successfully
+2026-05-04 17:58:59 | INFO     | vehicle_detection | <module>:113 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-05-04 17:58:59 | INFO     | vehicle_detection | <module>:129 | Rate limiting initialized with default limits: 5000/day, 1000/hour
+2026-05-04 17:58:59 | INFO     | vehicle_detection | <module>:138 | Cache initialized with type: simple
+2026-05-04 17:58:59 | INFO     | vehicle_detection | <module>:152 | Flask-Mail initialized
+2026-05-04 17:58:59 | INFO     | vehicle_detection | init_db:571 | Database connection established: postgresql://postgres:admin@localhost:5432/vehical_detections
+2026-05-04 17:58:59 | INFO     | vehicle_detection | init_db:572 | Tables created successfully
+2026-05-04 17:59:26 | INFO     | vehicle_detection | <module>:113 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-05-04 17:59:26 | INFO     | vehicle_detection | <module>:129 | Rate limiting initialized with default limits: 5000/day, 1000/hour
+2026-05-04 17:59:26 | INFO     | vehicle_detection | <module>:138 | Cache initialized with type: simple
+2026-05-04 17:59:26 | INFO     | vehicle_detection | <module>:152 | Flask-Mail initialized
+2026-05-04 17:59:26 | INFO     | vehicle_detection | init_db:571 | Database connection established: postgresql://postgres:admin@localhost:5432/vehical_detections
+2026-05-04 17:59:26 | INFO     | vehicle_detection | init_db:572 | Tables created successfully
+2026-05-04 17:59:55 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:hellothere@gmail.com | SUCCESS | IP:127.0.0.1
+2026-05-04 17:59:55 | INFO     | vehicle_detection | login:648 | User hellothere@gmail.com logged in successfully from 127.0.0.1
+2026-05-04 18:01:45 | INFO     | vehicle_detection | handle_connect:10472 | Client connected: 6nMh1tekYEgz7EdRAAAF
+2026-05-04 18:01:50 | INFO     | vehicle_detection | handle_disconnect:10479 | Client disconnected: 6nMh1tekYEgz7EdRAAAF
+2026-05-04 18:02:16 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGOUT | User:hello | SUCCESS | IP:127.0.0.1
+2026-05-04 18:02:16 | INFO     | vehicle_detection | logout:782 | User hello logged out from 127.0.0.1
+2026-05-04 18:02:28 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:test@gmail.com | FAILED | IP:127.0.0.1
+2026-05-04 18:02:28 | WARNING  | vehicle_detection | login:653 | Failed login attempt for email: test@gmail.com from 127.0.0.1
+2026-05-04 18:02:47 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:test@gmail.com | SUCCESS | IP:127.0.0.1
+2026-05-04 18:02:47 | INFO     | vehicle_detection | login:648 | User test@gmail.com logged in successfully from 127.0.0.1
+2026-05-04 18:09:16 | INFO     | vehicle_detection | create_scheduled_task:2150 | Creating scheduled task: task6, interval: 60s, source: 0, type: webcam
+2026-05-04 18:09:16 | INFO     | vehicle_detection | create_scheduled_task:2165 | Scheduled task created successfully: task6 (every 60s)
+2026-05-04 18:09:16 | INFO     | vehicle_detection | create_scheduled_task:2166 | Task will first run at: 2026-05-04T18:09:16.293167
+2026-05-04 18:09:16 | INFO     | vehicle_detection | detection_task:2503 | [18:09:16] [Scheduled Task task6] STARTING - Type: webcam, Source: 0
+2026-05-04 18:09:16 | INFO     | vehicle_detection | detection_task:2508 | [Scheduled Task task6] Opening webcam 0
+2026-05-04 18:09:17 | INFO     | vehicle_detection | detection_task:2540 | [Scheduled Task task6] Frame captured: True
+2026-05-04 18:09:17 | INFO     | vehicle_detection | detection_task:2543 | [Scheduled Task task6] Running detection...
+2026-05-04 18:09:25 | INFO     | vehicle_detection | detection_task:2551 | [Scheduled Task task6] Detection complete: 0 vehicles
+2026-05-04 18:09:25 | INFO     | vehicle_detection | save_detection_to_db:2732 | Detection saved to database: SCHED_task6_1777898365, type=scheduled_webcam, count=0
+2026-05-04 18:09:25 | INFO     | vehicle_detection | detection_task:2585 | [Scheduled Task task6] ✓ Saved to history: SCHED_task6_1777898365
+2026-05-04 18:09:26 | INFO     | vehicle_detection | detection_task:2600 | [Scheduled Task task6] Webcam released
+2026-05-04 18:09:26 | INFO     | vehicle_detection | detection_task:2601 | [Scheduled Task task6] COMPLETED
+2026-05-05 14:54:22 | INFO     | vehicle_detection | <module>:113 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-05-05 14:54:22 | INFO     | vehicle_detection | <module>:129 | Rate limiting initialized with default limits: 5000/day, 1000/hour
+2026-05-05 14:54:22 | INFO     | vehicle_detection | <module>:138 | Cache initialized with type: simple
+2026-05-05 14:54:22 | INFO     | vehicle_detection | <module>:152 | Flask-Mail initialized
+2026-05-05 14:54:23 | INFO     | vehicle_detection | init_db:571 | Database connection established: postgresql://postgres:admin@localhost:5432/vehical_detections
+2026-05-05 14:54:23 | INFO     | vehicle_detection | init_db:572 | Tables created successfully
+2026-05-05 14:54:33 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:test@gmail.com | SUCCESS | IP:127.0.0.1
+2026-05-05 14:54:33 | INFO     | vehicle_detection | login:641 | User test@gmail.com logged in successfully from 127.0.0.1
+2026-05-05 14:54:55 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGOUT | User:test | SUCCESS | IP:127.0.0.1
+2026-05-05 14:54:55 | INFO     | vehicle_detection | logout:775 | User test logged out from 127.0.0.1
+2026-05-05 14:55:04 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:hellothere@gmail.com | FAILED | IP:127.0.0.1
+2026-05-05 14:55:04 | WARNING  | vehicle_detection | login:646 | Failed login attempt for email: hellothere@gmail.com from 127.0.0.1
+2026-05-05 14:55:13 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:hellothere@gmail.com | SUCCESS | IP:127.0.0.1
+2026-05-05 14:55:13 | INFO     | vehicle_detection | login:641 | User hellothere@gmail.com logged in successfully from 127.0.0.1
+2026-05-05 14:55:25 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGOUT | User:hello | SUCCESS | IP:127.0.0.1
+2026-05-05 14:55:25 | INFO     | vehicle_detection | logout:775 | User hello logged out from 127.0.0.1
+2026-05-05 16:05:58 | INFO     | vehicle_detection | <module>:113 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-05-05 16:05:58 | INFO     | vehicle_detection | <module>:129 | Rate limiting initialized with default limits: 5000/day, 1000/hour
+2026-05-05 16:05:58 | INFO     | vehicle_detection | <module>:138 | Cache initialized with type: simple
+2026-05-05 16:05:58 | INFO     | vehicle_detection | <module>:152 | Flask-Mail initialized
+2026-05-05 16:05:59 | INFO     | vehicle_detection | init_db:571 | Database connection established: postgresql://postgres:admin@localhost:5432/vehical_detections
+2026-05-05 16:05:59 | INFO     | vehicle_detection | init_db:572 | Tables created successfully
+2026-05-05 16:06:10 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:test@gmail.com | SUCCESS | IP:127.0.0.1
+2026-05-05 16:06:10 | INFO     | vehicle_detection | login:641 | User test@gmail.com logged in successfully from 127.0.0.1
+2026-05-05 19:29:36 | INFO     | vehicle_detection | <module>:113 | Sentry error monitoring not enabled (no DSN or in testing mode)
+2026-05-05 19:29:36 | INFO     | vehicle_detection | <module>:129 | Rate limiting initialized with default limits: 5000/day, 1000/hour
+2026-05-05 19:29:36 | INFO     | vehicle_detection | <module>:138 | Cache initialized with type: simple
+2026-05-05 19:29:36 | INFO     | vehicle_detection | <module>:152 | Flask-Mail initialized
+2026-05-05 19:29:36 | INFO     | vehicle_detection | init_db:571 | Database connection established: postgresql://postgres:admin@localhost:5432/vehical_detections
+2026-05-05 19:29:36 | INFO     | vehicle_detection | init_db:572 | Tables created successfully
+2026-05-05 19:29:40 | INFO     | vehicle_detection | log_auth_event:150 | AUTH | LOGIN | User:test@gmail.com | SUCCESS | IP:127.0.0.1
+2026-05-05 19:29:40 | INFO     | vehicle_detection | login:641 | User test@gmail.com logged in successfully from 127.0.0.1
+2026-05-05 19:29:48 | INFO     | vehicle_detection | handle_connect:9930 | Client connected: -E5yUnuyKcI27w5gAAAB
+2026-05-05 19:29:54 | INFO     | vehicle_detection | detection_task:1959 | [19:29:54] [Scheduled Task task2] STARTING - Type: webcam, Source: 0
+2026-05-05 19:29:54 | INFO     | vehicle_detection | detection_task:1967 | [Scheduled Task task2] Opening webcam 0
+2026-05-05 19:29:56 | INFO     | vehicle_detection | detection_task:1993 | [Scheduled Task task2] Warming up camera...
+2026-05-05 19:29:57 | INFO     | vehicle_detection | detection_task:2001 | [Scheduled Task task2] Frame captured: True
+2026-05-05 19:29:57 | INFO     | vehicle_detection | detection_task:2004 | [Scheduled Task task2] Running detection...
+2026-05-05 19:29:57 | INFO     | vehicle_detection | detection_task:2008 | [Scheduled Task task2] Detector ready with YOLOv8s (Conf: 0.20, Enhancement: OFF)
+2026-05-05 19:29:59 | INFO     | vehicle_detection | detection_task:2014 | [Scheduled Task task2] Detection complete: 0 vehicles
+2026-05-05 19:29:59 | INFO     | vehicle_detection | save_detection_to_db:2210 | Detection saved to database: SCHED_task2_1777989599, type=scheduled_webcam, count=0
+2026-05-05 19:29:59 | INFO     | vehicle_detection | detection_task:2061 | [Scheduled Task task2] ✅ Saved to history: SCHED_task2_1777989599
+2026-05-05 19:30:00 | INFO     | vehicle_detection | detection_task:2076 | [Scheduled Task task2] Webcam released
+2026-05-05 19:30:00 | INFO     | vehicle_detection | detection_task:2079 | [Scheduled Task task2] COMPLETED
+2026-05-05 19:30:19 | INFO     | vehicle_detection | handle_disconnect:9937 | Client disconnected: -E5yUnuyKcI27w5gAAAB
+2026-05-05 19:30:19 | INFO     | vehicle_detection | handle_connect:9930 | Client connected: HR2z0n_rU-4D0AJSAAAD
+2026-05-05 19:30:23 | INFO     | vehicle_detection | handle_disconnect:9937 | Client disconnected: HR2z0n_rU-4D0AJSAAAD
+2026-05-05 19:30:41 | INFO     | vehicle_detection | handle_connect:9930 | Client connected: 6EUzr41a2wKFVfL2AAAF
+2026-05-05 19:30:47 | INFO     | vehicle_detection | multi_camera_start:1271 | Multi-camera detection started with 2 cameras: [0, 0]
+2026-05-05 19:30:54 | INFO     | vehicle_detection | multi_camera_stop:1295 | Multi-camera detection stopped
+2026-05-05 19:30:57 | INFO     | vehicle_detection | handle_disconnect:9937 | Client disconnected: 6EUzr41a2wKFVfL2AAAF
